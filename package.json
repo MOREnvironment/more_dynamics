@@ -1,0 +1,8 @@
+{
+    "Library": "more_dynamics",
+    "Id": "c20f22fe-c193-4b3e-a7ce-0dc76c5ecad7",
+    "Version": "0.0.1",
+    "Dependencies": [],
+    "RosDependencies": ["rclcpp"],
+    "Install": ["casadi"]
+}

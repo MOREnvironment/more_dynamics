@@ -1,0 +1,22 @@
+{
+    "Library": "more_dynamics",
+    "Plugins": [
+        {
+            "Name": "more_dynamics::HullVessel",
+            "Path": "more_dynamics/plugins/hull_vessel.py",
+            "Type": "file"
+        },
+        {
+            "Name": "more_dynamics::JetNozzle",
+            "Path": "more_dynamics/plugins/jet_nozzle.py",
+            "Type": "file"
+        }
+    ],
+    "PluginTypes": [
+        {
+            "Name": "more_dynamics::VehicleModel2D",
+            "Path": "more_dynamics/plugin_types/vehicle_model.capnp",
+            "Type": "file"
+        }
+    ]
+}
