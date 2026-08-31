@@ -1,0 +1,21 @@
+{
+    "ScriptPath": "/home/luka/fer/rpp/libraries/more_dynamics/scripts/vehicle_models/hull_vessel_simulation.py",
+    "Language": "python",
+    "Configurations": {
+        "Default": {
+            "Description": "One hull vessel with propulsion and pose sensing",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "11111111-1111-4111-8111-111111111111",
+                        "PluginName": "more_dynamics::HullVessel"
+                    }
+                ]
+            }
+        }
+    },
+    "ActiveConfiguration": "Default",
+    "Spec": {
+        "vessels": "List[more_dynamics::VehicleModel3D]"
+    }
+}

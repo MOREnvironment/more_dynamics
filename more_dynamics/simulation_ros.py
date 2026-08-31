@@ -4,9 +4,12 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from rosgraph_msgs.msg import Clock
 from std_msgs.msg import Float64MultiArray
-from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context_builder import ComponentContextBuilder
+from rpp_py.data_manager import DataManager
 
+_DATA_MANAGER = DataManager()
+
+from rpp_plugin_types.more_dynamics import VehicleModel3D  # noqa: E402
 
 
 class SimulationRos(Node):
@@ -17,8 +20,10 @@ class SimulationRos(Node):
 
     def __init__(self):
         super().__init__("simulation_node")
-        self.context_builder = ComponentContextBuilder()
-        self.rpp_context = self.context_builder.build_from_script(__file__)
+        self.context_builder = ComponentContextBuilder(
+            data_manager=_DATA_MANAGER
+        )
+        self.rpp_context = self.context_builder.build_script_from_path(__file__)
         self.rpp_context.initialize()
         self.vessel: VehicleModel3D = self.rpp_context.get_component("vessel")
 

@@ -1,10 +1,6 @@
 from typing import List
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
-from rpp_py.parameter_description import ParameterDescription
-
-
-from .casadi_helpers import vessel_model_casadi
 
 
 class Thruster(ForceProducer):

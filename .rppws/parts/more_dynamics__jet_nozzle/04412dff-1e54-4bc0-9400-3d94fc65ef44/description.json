@@ -1,0 +1,10 @@
+{
+    "Id": "04412dff-1e54-4bc0-9400-3d94fc65ef44",
+    "Name": "JetNozzle_comp",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::JetNozzle",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

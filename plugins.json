@@ -3,12 +3,22 @@
     "Plugins": [
         {
             "Name": "more_dynamics::HullVessel",
-            "Path": "more_dynamics/plugins/hull_vessel.py",
+            "Path": "more_dynamics/plugins/vehicle_models/hull_vessel.py",
             "Type": "file"
         },
         {
             "Name": "more_dynamics::JetNozzle",
-            "Path": "more_dynamics/plugins/jet_nozzle.py",
+            "Path": "more_dynamics/plugins/force_producers/jet_nozzle.py",
+            "Type": "file"
+        },
+        {
+            "Name": "more_dynamics::LinearSurfaceHydrostatics",
+            "Path": "more_dynamics/plugins/hydrostatics/linear_surface_hydrostatics.py",
+            "Type": "file"
+        },
+        {
+            "Name": "more_dynamics::LinearSurfaceHydrodynamics",
+            "Path": "more_dynamics/plugins/hydrodynamics/linear_surface_hydrodynamics.py",
             "Type": "file"
         }
     ],

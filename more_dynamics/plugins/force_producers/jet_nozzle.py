@@ -6,7 +6,7 @@ from rpp_py.parameter_description import ParameterDescription
 from rpp_schema.more_dynamics.IODescription import IODescription
 from rpp_schema.more_dynamics.StateDescription import StateDescription
 
-from .casadi_helpers import graph_to_bytes
+from more_common.casadi_graph import graph_to_bytes
 
 class JetNozzle(ForceProducer):
 

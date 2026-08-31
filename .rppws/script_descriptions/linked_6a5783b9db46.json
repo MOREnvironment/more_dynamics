@@ -1,0 +1,16 @@
+{
+    "ScriptPath": "/home/luka/fer/rpp/libraries/more_simulation/more_simulation/simulation.py",
+    "Language": "python",
+    "Configurations": {
+        "Default": {
+            "Components": {}
+        }
+    },
+    "ActiveConfiguration": "Default",
+    "Spec": {
+        "vessels": "List[more_dynamics::VehicleModel3D]"
+    },
+    "Linked": true,
+    "ScriptName": "more_simulation::simulation",
+    "ScriptLibrary": "more_simulation"
+}

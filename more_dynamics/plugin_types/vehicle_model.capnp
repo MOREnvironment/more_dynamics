@@ -8,6 +8,19 @@ interface ForceProducer $Anot.plugin("ForceProducer") {
     graph @1 () -> (graph : CasadyPayload);
 }
 
+# A stateless hydrostatics graph maps vessel pose to a signed generalized
+# force, displaced volume, and wetted surface area. Vehicle dynamics add the
+# returned generalized force to the other applied forces.
+interface HydrostaticsModel $Anot.plugin("HydrostaticsModel") {
+    graph @0 () -> (graph :CasadyPayload);
+}
+
+# A stateless hydrodynamics graph maps vessel velocity to a signed generalized
+# force. Vehicle dynamics add the returned force to the other applied forces.
+interface HydrodynamicsModel $Anot.plugin("HydrodynamicsModel") {
+    graph @0 () -> (graph :CasadyPayload);
+}
+
 interface DynamicsModel(State, CommandType) {
     step @0 (state :State, command :CommandType, t :Float64, dt :Float64) -> (new_state :State);
     graph @1 () -> (graph :CasadyPayload);
@@ -39,8 +52,7 @@ struct CasadyPayload {
     inputDescription @0 :List(IODescription);
     outputDescription @1 :List(IODescription);
     stateDescription @2 :List(StateDescription);
+    # Empty when the component has no state dynamics.
     dynamics @3 :Data;
     output @4 :Data;
 }
-
-
