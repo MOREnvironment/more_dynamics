@@ -6,11 +6,9 @@ import numpy as np
 
 @dataclass(frozen=True)
 class HullMassProperties:
-    """Constant hull properties computed before building the CasADi graph."""
+    """Constant rigid-body and added-mass properties for ``HullVessel``."""
 
     mass: float
-    displaced_volume: float
-    wetted_surface_area: float
     inertia_at_center_of_gravity: np.ndarray
     inertia_at_center_of_origin: np.ndarray
     rigid_body_mass_matrix: np.ndarray
@@ -36,78 +34,48 @@ def _skew(vector: np.ndarray) -> np.ndarray:
 
 
 def preprocess_hull_mass_properties(
-    length: float,
-    beam: float,
-    draft: float,
-    block_coefficient: float,
-    water_density: float,
-    radii_of_gyration: Sequence[float],
+    mass: float,
+    inertia: Sequence[float],
     center_of_gravity: Sequence[float],
-    center_of_buoyancy: Sequence[float],
-    added_mass_coefficients: Sequence[float],
+    added_mass: Sequence[float],
 ) -> HullMassProperties:
-    """Compute the constant mass properties used by ``HullUSV``."""
-    positive_values = {
-        "length": length,
-        "beam": beam,
-        "draft": draft,
-        "block_coefficient": block_coefficient,
-        "water_density": water_density,
-    }
-    for name, value in positive_values.items():
-        if not np.isfinite(value) or value <= 0.0:
-            raise ValueError(f"{name} must be a positive finite value")
+    """Build mass matrices from explicit rigid-body and added-mass values.
 
-    radius_scale = _vector(radii_of_gyration, 3, "radii_of_gyration")
+    Hull geometry belongs to hydrostatic models.  These values define only the
+    vehicle inertia about the body-frame origin used by the dynamics state.
+    """
+    if not np.isfinite(mass) or mass <= 0.0:
+        raise ValueError("mass must be a positive finite value")
+
+    inertia_cg = _vector(inertia, 3, "inertia")
+    if np.any(inertia_cg <= 0.0):
+        raise ValueError("inertia must contain positive values")
+
     r_cg = _vector(center_of_gravity, 3, "center_of_gravity")
-    r_cb = _vector(center_of_buoyancy, 3, "center_of_buoyancy")
-    added_mass_scale = _vector(
-        added_mass_coefficients,
-        6,
-        "added_mass_coefficients",
-    )
+    added_mass_diagonal = _vector(added_mass, 6, "added_mass")
+    if np.any(added_mass_diagonal < 0.0):
+        raise ValueError("added_mass must contain non-negative values")
 
-    displaced_volume = block_coefficient * length * beam * draft
-    mass = water_density * displaced_volume
-    radii = radius_scale * np.array([beam, length, length], dtype=float)
-    inertia_cg = np.diag(mass * np.square(radii))
-
-    r_bg = r_cg - r_cb
-    skew_r_bg = _skew(r_bg)
-    inertia_co = inertia_cg - mass * (skew_r_bg @ skew_r_bg)
+    inertia_cg_matrix = np.diag(inertia_cg)
+    skew_r_cg = _skew(r_cg)
+    inertia_co = inertia_cg_matrix - mass * (skew_r_cg @ skew_r_cg)
 
     transform = np.block(
         [
-            [np.eye(3), skew_r_bg.T],
+            [np.eye(3), skew_r_cg.T],
             [np.zeros((3, 3)), np.eye(3)],
         ]
     )
     mass_at_cg = np.block(
         [
             [mass * np.eye(3), np.zeros((3, 3))],
-            [np.zeros((3, 3)), inertia_cg],
+            [np.zeros((3, 3)), inertia_cg_matrix],
         ]
     )
     rigid_body_mass = transform.T @ mass_at_cg @ transform
 
-    surge_added_mass = (
-        2.7
-        * water_density
-        * displaced_volume ** (5.0 / 3.0)
-        / length**2
-    )
-    added_mass_derivatives = added_mass_scale * np.array(
-        [
-            surge_added_mass,
-            mass,
-            mass,
-            inertia_co[0, 0],
-            inertia_co[1, 1],
-            inertia_co[2, 2],
-        ]
-    )
-    added_mass = np.diag(-added_mass_derivatives)
-    total_mass = rigid_body_mass + added_mass
+    added_mass_matrix = np.diag(added_mass_diagonal)
+    total_mass = rigid_body_mass + added_mass_matrix
 
     if not np.allclose(total_mass, total_mass.T):
         raise ValueError("total hull mass matrix must be symmetric")
@@ -116,11 +84,9 @@ def preprocess_hull_mass_properties(
 
     return HullMassProperties(
         mass=mass,
-        displaced_volume=displaced_volume,
-        wetted_surface_area=length * beam + 2.0 * draft * beam,
-        inertia_at_center_of_gravity=inertia_cg,
+        inertia_at_center_of_gravity=inertia_cg_matrix,
         inertia_at_center_of_origin=inertia_co,
         rigid_body_mass_matrix=rigid_body_mass,
-        added_mass_matrix=added_mass,
+        added_mass_matrix=added_mass_matrix,
         total_mass_matrix=total_mass,
     )

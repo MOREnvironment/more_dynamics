@@ -55,15 +55,17 @@ class JetNozzle(ForceProducer):
         states = ca.SX.sym("state", 2)
         inputs = ca.SX.sym("input", 2)
 
-        thrust = states[0]
+        thrust = ca.fmax(ca.fmin(states[0], 1.0), -1.0)
         nozzle_angle = states[1]
 
-
-        thrust_ref = inputs[0]
-        nozzle_angle_ref = inputs[1]
-
         nozzle_angle = ca.fmax(ca.fmin(nozzle_angle, self.max_angle), self.min_angle)
-        nozzle_angle_ref = ca.fmax(ca.fmin(inputs[1], self.max_angle), self.min_angle)
+        thrust_ref = ca.fmax(ca.fmin(inputs[0], 1.0), -1.0)
+        normalized_nozzle_angle_ref = ca.fmax(ca.fmin(inputs[1], 1.0), -1.0)
+        nozzle_angle_ref = ca.if_else(
+            normalized_nozzle_angle_ref >= 0.0,
+            normalized_nozzle_angle_ref * self.max_angle,
+            -normalized_nozzle_angle_ref * self.min_angle,
+        )
         thrust_dot = ca.if_else(
             thrust_ref > thrust,
             (thrust_ref - thrust) / self.thrust_rise_time,
@@ -84,7 +86,9 @@ class JetNozzle(ForceProducer):
 
         payload.dynamics = graph_to_bytes(dynamics_fn)
 
-        generated_thrust = self.thrust_coefficient * thrust * ca.vertcat(
+        generated_thrust = (
+            self.max_thrust * self.thrust_coefficient * thrust
+        ) * ca.vertcat(
             ca.cos(nozzle_angle + self.yaw_bias) * ca.cos(self.trim_angle),
             ca.sin(nozzle_angle + self.yaw_bias),
             -ca.sin(self.trim_angle),
@@ -108,16 +112,16 @@ class JetNozzle(ForceProducer):
             IODescription(
                 name="desired_thrust",
                 size=1,
-                min=[0.0],
+                min=[-1.0],
                 max=[1.0],
             )
         )
         payload.inputDescription.append(
             IODescription(
-                name="desired_nozzle_angle",
+                name="desired_normalized_nozzle_angle",
                 size=1,
-                min=[self.min_angle],
-                max=[self.max_angle],
+                min=[-1.0],
+                max=[1.0],
             )
         )
         payload.outputDescription.append(
@@ -133,8 +137,8 @@ class JetNozzle(ForceProducer):
             StateDescription(
                 name="thrust",
                 size=1,
-                min=[0.0],
-                max=[self.max_thrust],
+                min=[-1.0],
+                max=[1.0],
                 ic=[0.0]
             )
         )

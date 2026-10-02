@@ -11,30 +11,31 @@ from more_dynamics.models.hull_vessel import (
 
 
 DEFAULT_PARAMETERS = {
-    "length": 5.2,
-    "beam": 2.15,
-    "draft": 0.3,
-    "block_coefficient": 0.233,
-    "water_density": 1025.0,
-    "radii_of_gyration": [0.35, 0.25, 0.25],
+    "mass": 801.01905,
+    "inertia": [
+        453.5820434315624,
+        1353.7221945000001,
+        1353.7221945000001,
+    ],
     "center_of_gravity": [0.0, 0.0, 0.025],
-    "center_of_buoyancy": [0.0, 0.0, 0.0],
-    "added_mass_coefficients": [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7],
+    "added_mass": [
+        67.85979986031616,
+        1201.528575,
+        801.01905,
+        90.81653606756248,
+        1083.378265125,
+        2301.32773065,
+    ],
 }
 
 
-def test_preprocessing_matches_hull_usv_mass_formulas():
+def test_preprocessing_uses_explicit_hull_mass_properties():
     properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
 
-    expected_volume = 0.233 * 5.2 * 2.15 * 0.3
-    expected_mass = 1025.0 * expected_volume
-    expected_radii = np.array([0.35 * 2.15, 0.25 * 5.2, 0.25 * 5.2])
-
-    np.testing.assert_allclose(properties.displaced_volume, expected_volume)
-    np.testing.assert_allclose(properties.mass, expected_mass)
+    np.testing.assert_allclose(properties.mass, DEFAULT_PARAMETERS["mass"])
     np.testing.assert_allclose(
         properties.inertia_at_center_of_gravity,
-        np.diag(expected_mass * expected_radii**2),
+        np.diag(DEFAULT_PARAMETERS["inertia"]),
     )
     expected_total_mass = np.array(
         [
@@ -74,3 +75,15 @@ def test_casadi_graph_uses_preprocessed_total_mass_matrix():
         state_dot[6:],
         np.linalg.solve(properties.total_mass_matrix, force),
     )
+
+
+def test_casadi_graph_rotates_body_velocity_into_global_frame():
+    properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
+    model = vessel_model_casadi(mass_properties=properties)
+    state = np.zeros(12)
+    state[5] = np.pi / 2.0
+    state[6:9] = [4.0, 1.0, 0.0]
+
+    state_dot = np.asarray(model(state, np.zeros(6))).reshape(-1)
+
+    np.testing.assert_allclose(state_dot[:3], [-1.0, 4.0, 0.0])

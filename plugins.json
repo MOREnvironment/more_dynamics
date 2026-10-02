@@ -2,29 +2,29 @@
     "Library": "more_dynamics",
     "Plugins": [
         {
-            "Name": "more_dynamics::HullVessel",
+            "Name": "HullVessel",
             "Path": "more_dynamics/plugins/vehicle_models/hull_vessel.py",
             "Type": "file"
         },
         {
-            "Name": "more_dynamics::JetNozzle",
+            "Name": "JetNozzle",
             "Path": "more_dynamics/plugins/force_producers/jet_nozzle.py",
             "Type": "file"
         },
         {
-            "Name": "more_dynamics::LinearSurfaceHydrostatics",
+            "Name": "LinearSurfaceHydrostatics",
             "Path": "more_dynamics/plugins/hydrostatics/linear_surface_hydrostatics.py",
             "Type": "file"
         },
         {
-            "Name": "more_dynamics::LinearSurfaceHydrodynamics",
+            "Name": "LinearSurfaceHydrodynamics",
             "Path": "more_dynamics/plugins/hydrodynamics/linear_surface_hydrodynamics.py",
             "Type": "file"
         }
     ],
     "PluginTypes": [
         {
-            "Name": "more_dynamics::VehicleModel2D",
+            "Name": "VehicleModel2D",
             "Path": "more_dynamics/plugin_types/vehicle_model.capnp",
             "Type": "file"
         }

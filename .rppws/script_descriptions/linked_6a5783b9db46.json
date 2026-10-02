@@ -1,5 +1,5 @@
 {
-    "ScriptPath": "/home/luka/fer/rpp/libraries/more_simulation/more_simulation/simulation.py",
+    "ScriptPath": "more_simulation/simulation.py",
     "Language": "python",
     "Configurations": {
         "Default": {

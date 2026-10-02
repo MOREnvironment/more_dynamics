@@ -10,11 +10,31 @@ def vessel_model_casadi(
     state = ca.SX.sym("state", 12)
     tau = ca.SX.sym("input", 6)
 
-    roll, pitch = state[3], state[4]
+    roll, pitch, yaw = state[3], state[4], state[5]
     body_velocity = state[6:9]
     body_angular_rate = state[9:12]
 
     s_roll, c_roll = ca.sin(roll), ca.cos(roll)
+    s_pitch, c_pitch = ca.sin(pitch), ca.cos(pitch)
+    s_yaw, c_yaw = ca.sin(yaw), ca.cos(yaw)
+    body_to_global = ca.vertcat(
+        ca.horzcat(
+            c_yaw * c_pitch,
+            c_yaw * s_pitch * s_roll - s_yaw * c_roll,
+            c_yaw * s_pitch * c_roll + s_yaw * s_roll,
+        ),
+        ca.horzcat(
+            s_yaw * c_pitch,
+            s_yaw * s_pitch * s_roll + c_yaw * c_roll,
+            s_yaw * s_pitch * c_roll - c_yaw * s_roll,
+        ),
+        ca.horzcat(
+            -s_pitch,
+            c_pitch * s_roll,
+            c_pitch * c_roll,
+        ),
+    )
+    global_velocity = body_to_global @ body_velocity
     euler_rates = ca.vertcat(
         ca.horzcat(1.0, s_roll * ca.tan(pitch), c_roll * ca.tan(pitch)),
         ca.horzcat(0.0, c_roll, -s_roll),
@@ -26,7 +46,7 @@ def vessel_model_casadi(
         tau,
     )
 
-    state_dot = ca.vertcat(body_velocity, euler_rates, acceleration)
+    state_dot = ca.vertcat(global_velocity, euler_rates, acceleration)
     return ca.Function(
         "vessel_model",
         [state, tau],

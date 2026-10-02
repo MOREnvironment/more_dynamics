@@ -1,5 +1,5 @@
 {
-    "ScriptPath": "/home/luka/fer/rpp/libraries/more_dynamics/scripts/vehicle_models/hull_vessel_simulation.py",
+    "ScriptPath": "scripts/vehicle_models/hull_vessel_simulation.py",
     "Language": "python",
     "Configurations": {
         "Default": {

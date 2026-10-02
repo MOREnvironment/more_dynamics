@@ -22,18 +22,23 @@ class HullVessel(VehicleModel3D):
     }
 
     PARAMETERS = [
-        ParameterDescription("length", 5.2),
-        ParameterDescription("beam", 2.15),
-        ParameterDescription("draft", 0.3),
-        ParameterDescription("block_coefficient", 0.233),
-        ParameterDescription("radii_of_gyration", [0.35, 0.25, 0.25]),
+        ParameterDescription("mass", 801.01905),
         ParameterDescription(
-            "added_mass_coefficients",
-            [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7],
+            "inertia",
+            [453.5820434315624, 1353.7221945000001, 1353.7221945000001],
+        ),
+        ParameterDescription(
+            "added_mass",
+            [
+                67.85979986031616,
+                1201.528575,
+                801.01905,
+                90.81653606756248,
+                1083.378265125,
+                2301.32773065,
+            ],
         ),
         ParameterDescription("center_of_gravity", [0.0, 0.0, 0.025]),
-        ParameterDescription("center_of_buoyancy", [0.0, 0.0, 0.0]),
-        ParameterDescription("water_density", 1025.0),
     ]
 
     def __init__(self):
@@ -48,7 +53,6 @@ class HullVessel(VehicleModel3D):
         self.current_input_idx = 0
         self.current_state_idx = 0
         self.current_output_idx = 0
-
 
     def initialize(self, context: ComponentContext):
         hydrostatics = context.get_component("hydrostatics")
@@ -82,21 +86,11 @@ class HullVessel(VehicleModel3D):
             self.sensors.append(sensor)
             self._sensor_graphs.append(self._get_sensor_graph(sensor))
 
-        center_of_gravity = context.get_parameter("center_of_gravity")
-        center_of_buoyancy = context.get_parameter("center_of_buoyancy")
-        water_density = context.get_parameter("water_density")
         self._mass_properties = preprocess_hull_mass_properties(
-            length=context.get_parameter("length"),
-            beam=context.get_parameter("beam"),
-            draft=context.get_parameter("draft"),
-            block_coefficient=context.get_parameter("block_coefficient"),
-            water_density=water_density,
-            radii_of_gyration=context.get_parameter("radii_of_gyration"),
-            center_of_gravity=center_of_gravity,
-            center_of_buoyancy=center_of_buoyancy,
-            added_mass_coefficients=context.get_parameter(
-                "added_mass_coefficients"
-            ),
+            mass=context.get_parameter("mass"),
+            inertia=context.get_parameter("inertia"),
+            center_of_gravity=context.get_parameter("center_of_gravity"),
+            added_mass=context.get_parameter("added_mass"),
         )
         self._model = vessel_model_casadi(
             mass_properties=self._mass_properties,
