@@ -2,11 +2,6 @@
     "Library": "more_dynamics",
     "Plugins": [
         {
-            "Name": "HullVessel",
-            "Path": "more_dynamics/plugins/vehicle_models/hull_vessel.py",
-            "Type": "file"
-        },
-        {
             "Name": "JetNozzle",
             "Path": "more_dynamics/plugins/force_producers/jet_nozzle.py",
             "Type": "file"
@@ -19,6 +14,11 @@
         {
             "Name": "LinearSurfaceHydrodynamics",
             "Path": "more_dynamics/plugins/hydrodynamics/linear_surface_hydrodynamics.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HullVessel",
+            "Path": "more_dynamics/plugins/vehicle_models/hull_vessel.py",
             "Type": "file"
         }
     ],

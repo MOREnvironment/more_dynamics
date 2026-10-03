@@ -87,3 +87,80 @@ def test_casadi_graph_rotates_body_velocity_into_global_frame():
     state_dot = np.asarray(model(state, np.zeros(6))).reshape(-1)
 
     np.testing.assert_allclose(state_dot[:3], [-1.0, 4.0, 0.0])
+
+
+def test_casadi_graph_applies_body_frame_centripetal_acceleration():
+    parameters = DEFAULT_PARAMETERS | {
+        "center_of_gravity": [0.0, 0.0, 0.0]
+    }
+    properties = preprocess_hull_mass_properties(**parameters)
+    model = vessel_model_casadi(mass_properties=properties)
+    state = np.zeros(12)
+    surge_velocity = 8.0
+    yaw_rate = 0.7
+    state[6] = surge_velocity
+    state[11] = yaw_rate
+
+    state_dot = np.asarray(model(state, np.zeros(6))).reshape(-1)
+    expected_sway_acceleration = -(
+        properties.total_mass_matrix[0, 0]
+        / properties.total_mass_matrix[1, 1]
+        * surge_velocity
+        * yaw_rate
+    )
+
+    np.testing.assert_allclose(
+        state_dot[7],
+        expected_sway_acceleration,
+    )
+
+
+def test_casadi_graph_can_disable_coriolis_acceleration():
+    properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
+    model = vessel_model_casadi(
+        mass_properties=properties,
+        include_coriolis=False,
+    )
+    state = np.zeros(12)
+    state[6] = 8.0
+    state[11] = 0.7
+
+    state_dot = np.asarray(model(state, np.zeros(6))).reshape(-1)
+
+    np.testing.assert_allclose(state_dot[6:], np.zeros(6), atol=1e-12)
+
+
+def test_casadi_graph_coriolis_force_does_not_create_kinetic_energy():
+    properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
+    model = vessel_model_casadi(mass_properties=properties)
+    state = np.zeros(12)
+    state[6:] = [4.0, -1.0, 0.2, 0.3, -0.1, 0.7]
+
+    state_dot = np.asarray(model(state, np.zeros(6))).reshape(-1)
+    velocity = state[6:]
+    kinetic_energy_rate = velocity @ properties.total_mass_matrix @ state_dot[6:]
+
+    np.testing.assert_allclose(kinetic_energy_rate, 0.0, atol=1e-12)
+
+
+def test_high_speed_turn_couples_into_roll_for_an_elevated_centre_of_gravity():
+    centered_parameters = DEFAULT_PARAMETERS | {
+        "center_of_gravity": [0.0, 0.0, 0.0]
+    }
+    elevated_properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
+    centered_properties = preprocess_hull_mass_properties(**centered_parameters)
+    elevated_model = vessel_model_casadi(mass_properties=elevated_properties)
+    centered_model = vessel_model_casadi(mass_properties=centered_properties)
+    state = np.zeros(12)
+    state[6] = 8.0
+    state[11] = 0.7
+
+    elevated_state_dot = np.asarray(
+        elevated_model(state, np.zeros(6))
+    ).reshape(-1)
+    centered_state_dot = np.asarray(
+        centered_model(state, np.zeros(6))
+    ).reshape(-1)
+
+    assert abs(elevated_state_dot[9]) > 1e-12
+    np.testing.assert_allclose(centered_state_dot[9], 0.0, atol=1e-12)
