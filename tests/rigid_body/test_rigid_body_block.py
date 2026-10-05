@@ -1,23 +1,31 @@
 """Gate tests for the rigid-body + added-mass block (Otter-based catamaran).
 
 Written before the block existed (job A-4a, 2026-10-05); the block was ported
-by job A-4b. Repaired by job A-4c (2026-10-05) for owner decision E-11 c: the
-block has a ``legacy_otter_inertia`` flag, default False = the corrected MSS
-inertia. The legacy path (flag True) is tested against the frozen reference and
-the numpy source (G1, G2); the default path against MSS ``otter.m`` (G5); G4 runs
-on both paths.
+by job A-4b. Repaired by job A-4c (2026-10-05) for owner decision E-11 c (the
+corrected MSS inertia by default).
+
+Rewired by job A-30 (2026-10-05), owner decision E-24: the temporary
+``legacy_otter_inertia`` flag is dropped. The block has one path, the inertia
+about the combined CG of current ``otter.m``. G1 and G4 read the MATLAB
+reference regenerated with current MSS (job A-26,
+``matlab_reference_mss_current.csv``); the legacy ``matlab_reference.csv`` stays
+on disk and no test reads it. The numpy source keeps the old inertia, so G2
+compares it with the block outside the rotational 3x3 block only (the inertia
+reaches no other entry); the ``otter.m`` transcriptions (G5) are the second
+check of the whole matrices. ``test_E24_contract_has_no_legacy_otter_inertia_flag``
+fails until job A-31 removes the flag from the block.
 
 Contract the porter must provide
 --------------------------------
 ``more_dynamics.models.rigid_body`` exports:
 
-* ``preprocess_rigid_body(**PARAMETERS, legacy_otter_inertia=False)
-  -> RigidBodyConstants`` (numpy). The keyword names are the keys of
-  ``PARAMETERS`` below plus the flag (E-11 c).
+* ``preprocess_rigid_body(**PARAMETERS) -> RigidBodyConstants`` (numpy). The
+  keyword names are the keys of ``PARAMETERS`` below; no inertia flag (E-24).
 * ``RigidBodyConstants``: frozen dataclass with at least
   ``rigid_body_mass_matrix`` (M_RB), ``added_mass_matrix`` (M_A) and
   ``total_mass_matrix`` (M = M_RB + M_A), each a 6x6 ``np.ndarray``, and
-  ``inertia`` (3x3) and ``center_of_gravity`` (3,), checked on the default path.
+  ``inertia`` (3x3) and ``center_of_gravity`` (3,); no ``legacy_otter_inertia``
+  field.
 * ``rigid_body_casadi(constants) -> ca.Function`` with inputs named
   ``["nu", "nu_r"]`` (6x1 each) and outputs named ``["M", "C_RB", "C_A"]``
   (6x6 each): ``C_RB(nu)`` and ``C_A(nu_r)``.
@@ -42,10 +50,10 @@ Conventions found in the source (hidden assumptions, see the ledger)
 * Body frame, z down; CO is the body origin; ``r_g`` is CO -> CG.
 * ``H(r) = [[I, S(r)^T], [0, I]]``; ``M_RB = H^T diag(m I, I_o) H`` with
   ``m = m_hull + m_payload`` and ``r_g = (m_hull r_hull + m_p r_p) / m``.
-* Legacy path: ``I_o = I_CG - m_hull S(r_g)^2 - m_p S(r_p)^2`` is already
-  about the CO and is shifted a second time by ``H`` (as in the reference
-  generator). Default path: the inertia about the combined CG, as MSS
-  ``otter.m`` lines 123-129 since its revision of 2026-04-20 (line 78).
+* The numpy source (and the legacy generator) use ``I_o = I_CG - m_hull
+  S(r_g)^2 - m_p S(r_p)^2``, already about the CO, and shift it a second time by
+  ``H``. The block uses the inertia about the combined CG, as MSS ``otter.m``
+  lines 123-129 since its revision of 2026-04-20 (line 78).
 * ``C_RB = H^T diag(m S(w), -S(I_o w)) H`` depends only on ``w = nu[3:]``.
 * ``M_A = -diag(c * [A11, m_hull, m_hull, I_o[0,0], I_o[1,1], I_o[2,2]])``,
   ``A11 = 2.7 rho (m_hull/rho)^(5/3) / L^2``; added mass uses the hull mass
@@ -53,11 +61,12 @@ Conventions found in the source (hidden assumptions, see the ledger)
 * ``C_A = m2c(M_A, nu_r)`` (Fossen 2021 Theorem 3.2 form), no Munk-moment
   cancellation.
 
-Frozen reference: ``tests/data/rigid_body/`` (``SOURCE.md`` names origin,
-revisions and layout).
+Frozen reference: ``tests/data/rigid_body/matlab_reference_mss_current.csv``
+(``SOURCE.md`` names origin, revisions and layout).
 """
 
 import importlib
+import inspect
 from pathlib import Path
 
 import numpy as np
@@ -86,14 +95,18 @@ PARAMETERS = {
     "radii_of_gyration": [0.4, 0.25, 0.25],          # R_456_scale, line 28
 }
 
+# MATLAB reference regenerated with current MSS (job A-26; SOURCE.md). The
+# legacy matlab_reference.csv is not read (owner decision E-24).
+REFERENCE_CSV = "matlab_reference_mss_current.csv"
+
+# The corrected inertia (otter.m 123-129) reaches only the rotational 3x3 block
+# of M_RB, M_A, C_RB and C_A; every other entry is the same in the numpy source.
+OUTSIDE_ROTATIONAL_BLOCK = np.ones((6, 6), dtype=bool)
+OUTSIDE_ROTATIONAL_BLOCK[3:, 3:] = False
+
 # Current of the reference generator, test_dynamics_consistency.m lines 14-15.
 CURRENT_SPEED = 0.3
 CURRENT_DIRECTION = np.deg2rad(30.0)
-
-# Owner decision E-11 c (agents-more/80_owner/inbox/E-11_otter_inertia.md): the
-# frozen reference and the numpy source are the legacy inertia path.
-LEGACY = {"legacy_otter_inertia": True}
-INERTIA_PATHS = {"legacy": True, "default": False}
 
 
 # --------------------------------------------------------------------------
@@ -131,7 +144,7 @@ def _load_csv(name):
 def _reference_cases():
     """The 50 frozen cases: nu, nu_r and the reference matrices."""
     in_header, inputs = _load_csv("inputs.csv")
-    ref_header, ref = _load_csv("matlab_reference.csv")
+    ref_header, ref = _load_csv(REFERENCE_CSV)
     assert in_header[:12] == [f"x{i}" for i in range(1, 13)]
 
     def matrix(prefix):
@@ -195,7 +208,14 @@ def test_reference_shapes_and_current_model():
 # --------------------------------------------------------------------------
 # G1 — numpy source vs MATLAB reference
 # --------------------------------------------------------------------------
-def test_G1_numpy_source_matches_matlab_reference():
+def _outside_rotational_block(a):
+    return np.asarray(a)[OUTSIDE_ROTATIONAL_BLOCK]
+
+
+def test_G1_numpy_source_matches_current_mss_outside_the_rotational_block():
+    """The numpy source keeps the pre-2026-04-20 inertia: it equals current MSS
+    everywhere the inertia does not reach, and differs inside the rotational
+    block (E-11, the reason for E-24)."""
     vessel = _numpy_source()
     ref = _reference_cases()
     for k in range(len(ref["nu"])):
@@ -208,11 +228,14 @@ def test_G1_numpy_source_matches_matlab_reference():
             "C_total": (vessel.get_C_total(nu, nu_r), ref["C_total"][k]),
         }
         for name, (value, expected) in checks.items():
-            assert _max_diff(value, expected) <= G1_TOLERANCE, (name, k)
+            assert _max_diff(_outside_rotational_block(value),
+                             _outside_rotational_block(expected)) <= G1_TOLERANCE, (name, k)
+    assert _max_diff(vessel.get_M_RB(), ref["M_RB"][0]) > G4_FACTOR * G1_TOLERANCE
 
 
 def test_G1_block_matches_matlab_reference():
-    constants, function = _build(**LEGACY)
+    """The block (one path, E-24) vs MATLAB running current MSS otter.m (A-26)."""
+    constants, function = _build()
     ref = _reference_cases()
     np.testing.assert_allclose(
         constants.rigid_body_mass_matrix, ref["M_RB"][0], atol=G1_TOLERANCE, rtol=0.0
@@ -252,31 +275,42 @@ def test_G2_function_signature():
 
 
 def _assert_block_equals_source(function, constants, vessel, nu_cases, nu_r_cases):
-    np.testing.assert_allclose(
-        constants.rigid_body_mass_matrix, vessel.get_M_RB(), atol=G2_TOLERANCE, rtol=0.0
-    )
-    np.testing.assert_allclose(
-        constants.added_mass_matrix, vessel.get_M_A(), atol=G2_TOLERANCE, rtol=0.0
-    )
+    """Outside the rotational 3x3 block only: the source keeps the old inertia."""
+    inside = _outside_rotational_block
+    assert _max_diff(inside(constants.rigid_body_mass_matrix), inside(vessel.get_M_RB())) <= G2_TOLERANCE
+    assert _max_diff(inside(constants.added_mass_matrix), inside(vessel.get_M_A())) <= G2_TOLERANCE
     for k, (nu, nu_r) in enumerate(zip(nu_cases, nu_r_cases)):
         out = _evaluate(function, nu, nu_r)
-        assert _max_diff(out["M"], vessel.get_M_total()) <= G2_TOLERANCE, ("M", k)
-        assert _max_diff(out["C_RB"], vessel.get_C_RB(nu)) <= G2_TOLERANCE, ("C_RB", k)
-        assert _max_diff(out["C_A"], vessel.get_C_A(nu_r)) <= G2_TOLERANCE, ("C_A", k)
+        assert _max_diff(inside(out["M"]), inside(vessel.get_M_total())) <= G2_TOLERANCE, ("M", k)
+        assert _max_diff(inside(out["C_RB"]), inside(vessel.get_C_RB(nu))) <= G2_TOLERANCE, ("C_RB", k)
+        assert _max_diff(inside(out["C_A"]), inside(vessel.get_C_A(nu_r))) <= G2_TOLERANCE, ("C_A", k)
 
 
 def test_G2_block_matches_numpy_source_on_reference_cases():
-    constants, function = _build(**LEGACY)
+    constants, function = _build()
     vessel = _numpy_source()
     ref = _reference_cases()
     _assert_block_equals_source(function, constants, vessel, ref["nu"], ref["nu_r"])
 
 
 def test_G2_block_matches_numpy_source_on_random_states():
-    constants, function = _build(**LEGACY)
+    constants, function = _build()
     vessel = _numpy_source()
     nu, nu_r = _random_states()
     _assert_block_equals_source(function, constants, vessel, nu, nu_r)
+
+
+def test_G2_block_matches_otter_m_transcription_on_random_states():
+    """Second check of the whole matrices, the rotational block included:
+    ``otter.m`` lines 123-160 transcribed below (``_otter_m_current_matrices``,
+    ``_otter_m_crb``) on the 1000 seeded states."""
+    _, function = _build()
+    mrb, ma, ig, rg_total = _otter_m_current_matrices()
+    nu, nu_r = _random_states()
+    for k in range(len(nu)):
+        out = _evaluate(function, nu[k], nu_r[k])
+        assert _max_diff(out["M"], mrb + ma) <= G2_TOLERANCE, ("M", k)
+        assert _max_diff(out["C_RB"], _otter_m_crb(ig, rg_total, nu[k][3:])) <= G2_TOLERANCE, ("C_RB", k)
 
 
 # --------------------------------------------------------------------------
@@ -294,49 +328,40 @@ def _perturbations():
     }
 
 
-def _path_reference(legacy):
-    """Per reference case: M, C_RB and C_A the unperturbed block must reproduce.
-
-    Legacy path: the frozen MATLAB reference. Default path: M and C_RB re-derived
-    from MSS otter.m (``_otter_m_current_matrices``); otter.m has no frozen C_A,
-    so C_A is not compared on that path (None).
-    """
-    ref = _reference_cases()
-    if legacy:
-        return [
-            {"M": ref["M_RB"][k] + ref["M_A"][k], "C_RB": ref["C_RB"][k], "C_A": ref["C_A"][k]}
-            for k in range(len(ref["nu"]))
-        ]
-    mrb, ma, ig, rg_total = _otter_m_current_matrices()
-    return [
-        {"M": mrb + ma, "C_RB": _otter_m_crb(ig, rg_total, ref["nu"][k][3:]), "C_A": None}
-        for k in range(len(ref["nu"]))
-    ]
-
-
-def _worst_diff(function, legacy):
+def _worst_diff(function):
+    """Largest deviation of M, C_RB, C_A from the current-MSS MATLAB reference."""
     ref = _reference_cases()
     worst = 0.0
-    for k, expected in enumerate(_path_reference(legacy)):
+    for k in range(len(ref["nu"])):
         out = _evaluate(function, ref["nu"][k], ref["nu_r"][k])
+        expected = {"M": ref["M_RB"][k] + ref["M_A"][k], "C_RB": ref["C_RB"][k], "C_A": ref["C_A"][k]}
         for name, value in expected.items():
-            if value is not None:
-                worst = max(worst, _max_diff(out[name], value))
+            worst = max(worst, _max_diff(out[name], value))
     return worst
 
 
-@pytest.mark.parametrize("path", sorted(INERTIA_PATHS))
 @pytest.mark.parametrize("name", sorted(_perturbations()))
-def test_G4_perturbed_block_is_detected(name, path):
-    legacy = INERTIA_PATHS[path]
-    flag = {"legacy_otter_inertia": legacy}
-    # Control: the unperturbed block matches this path's reference, so a
-    # detection below is caused by the perturbation, not by the path.
-    _, control = _build(**flag)
-    assert _worst_diff(control, legacy) <= G1_TOLERANCE, (path, "control")
-    _, function = _build(**flag, **_perturbations()[name])
-    worst = _worst_diff(function, legacy)
-    assert worst > G4_FACTOR * G1_TOLERANCE, (name, path, worst)
+def test_G4_perturbed_block_is_detected(name):
+    # Control: the unperturbed block matches the reference, so a detection
+    # below is caused by the perturbation.
+    _, control = _build()
+    assert _worst_diff(control) <= G1_TOLERANCE, "control"
+    _, function = _build(**_perturbations()[name])
+    worst = _worst_diff(function)
+    assert worst > G4_FACTOR * G1_TOLERANCE, (name, worst)
+
+
+# --------------------------------------------------------------------------
+# E-24 — the temporary inertia flag is gone from the contract
+# --------------------------------------------------------------------------
+def test_E24_contract_has_no_legacy_otter_inertia_flag():
+    """Owner decision E-24 (drop ``legacy_otter_inertia``). Fails until job
+    A-31 removes the keyword and the field from the block."""
+    block = _contract()
+    signature = inspect.signature(block.preprocess_rigid_body)
+    assert "legacy_otter_inertia" not in signature.parameters, "keyword still in the contract"
+    constants, _ = _build()
+    assert not hasattr(constants, "legacy_otter_inertia"), "field still on the constants"
 
 
 # --------------------------------------------------------------------------
@@ -437,9 +462,8 @@ def _otter_m_current_inertia():
 
 
 def test_G5_otter_rotational_inertia_current_mss():
-    # Default path (E-11 c). Until A-4c this was a strict expected failure.
+    # The block's one path (E-11 c, E-24). Until A-4c this was a strict expected failure.
     constants, _ = _build(**_otter_inputs_as_parameters())
-    assert constants.legacy_otter_inertia is False
     ig, rg_total = _otter_m_current_inertia()
     m_total = OTTER["m"] + OTTER_MP
     h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
@@ -486,14 +510,13 @@ def _otter_m_crb(ig, rg_total, nu2):
 
 
 def test_G5_default_path_inertia_cg_and_rotational_added_mass():
-    """Default path (E-11 c) against MSS otter.m, computed here from the lines.
+    """The block (E-11 c, E-24) against MSS otter.m, computed here from the lines.
 
     Every constant comes from a line pinned by ``test_G5_cited_otter_lines_are_unchanged``
     (91-98 data, 123-129 inertia, 156-158 rotational added mass); the payload
     from the reference generator (``OTTER_MP``, ``OTTER_RP``).
     """
     constants, _ = _build(**_otter_inputs_as_parameters())
-    assert constants.legacy_otter_inertia is False
     m, mp = OTTER["m"], OTTER_MP
     rg_hull, rp = np.array(OTTER["rg"]), np.array(OTTER_RP)  # lines 95, 124; argument rp
     # line 96-98: R44 = 0.4*B, R55 = 0.25*L, R66 = 0.25*L
@@ -520,6 +543,3 @@ def test_G5_default_path_inertia_cg_and_rotational_added_mass():
         np.diag(constants.added_mass_matrix)[3:], [-k_pdot, -m_qdot, -n_rdot],
         atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 156-158, 160",
     )
-    # the default path must differ from the legacy one (otherwise the flag is dead)
-    legacy, _ = _build(**_otter_inputs_as_parameters(), **LEGACY)
-    assert _max_diff(legacy.inertia, constants.inertia) > G4_FACTOR * G1_TOLERANCE

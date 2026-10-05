@@ -34,3 +34,19 @@ cut -d, -f$cols $F | cmp - matlab_reference.csv
 ## Known divergence from current MSS
 
 The generator computes the inertia as `Ig = Ig_CG - m*S(rg_total)^2 - mp*S(rp)^2` (line 156), then shifts it again with `H(rg_total)` (lines 158–161). MSS `otter.m` has computed it about the combined CG since its revision of 2026-04-20 (*"Correct payload lever arm moment of inertia"*, otter.m line 78, commit `880b2ef`; formula at lines 123–129). The reference therefore reproduces the **pre-2026-04-20** Otter inertia. The rotational block of `M_RB` differs from current MSS by up to 6.99 kg·m² (roll 21.55 vs 15.53 kg·m²), and `K_pdot`, `M_qdot`, `N_rdot` follow. See ledger `agents-more/30_checks/2026-10-05_A4a_rigid_body_gates.md`.
+
+## Current-MSS regeneration (job A-26, 2026-10-05) — appended, nothing above changed
+
+**Generated:** 2026-10-05 with MATLAB `26.1.0.3312084 (R2026a) Update 4`, MSS `source-sim/MSS` HEAD `99bf0b30e9ae0dca3515d02e0bbd06c54cc0c2f7` (clean). Ledger: `agents-more/30_checks/2026-10-05_A26_matlab_references_current_mss.md`. The `*_mss_current.csv` files are the **current-MSS (default) path**. The legacy files above stay as they are (template path).
+
+How they were made: new generators named `*_mss_current.m` sit beside the old ones in `more_generic_models` and are not committed. They run MSS's own `remus100.m` / `otter.m` on the same `inputs.csv`. A copy of the MSS file is made in `tempdir` at run time; it adds only one extra output, the function's workspace, so the intermediate terms can be read. On every case that copy equals the unmodified MSS function (`xdot`, `M`): max |diff| = 0. External `tau` is added in the model's own state equation, because the MSS functions take actuator commands, which are set to zero.
+
+| File | Origin | How it was made | sha256 |
+|---|---|---|---|
+| `matlab_reference_mss_current.csv` | `test/plant/asv_catamaran/test_mss_matlab/catamaran_dynamics_full_debug_mss_current.csv` (sha256 `7db813baed8f5a72a3958524fbeb15e4efe46c43c6a82859d28ef9dd95bdcb79`), from `test_dynamics_consistency_mss_current.m` (sha256 `1c344c17bf5a9c5e4b4709d59b02f560f9fef68556859daa7ddc7b2182bd5a1c`) | same 180 columns and re-extraction command as above | `ce33d1401f586aaac6e3c09bae1b4b25157ec357311645ef8804140372229d06` |
+
+This is the **corrected Otter inertia** (E-11 c default path). `otter.m:123–129` gives `M_RB` rotational diagonal 15.52682 / 21.275 / 16.0125 kg·m². The legacy file has 21.55470 / 28.26826 / 16.97788. `M_A` and `C_RB` equal the A-4 test transcription of current `otter.m` (`_otter_m_current_matrices`, `_otter_m_crb`): differences 4.4e-15 and 8.1e-13. The translational blocks are unchanged.
+
+## Readers (job A-30, 2026-10-05) — appended
+
+- `matlab_reference_mss_current.csv` is read by `tests/rigid_body/test_rigid_body_block.py` (G1 block and numpy source, G2 cases, G4); since owner decision E-24 dropped `legacy_otter_inertia`, **`matlab_reference.csv` stays on disk for history and no test reads it**.

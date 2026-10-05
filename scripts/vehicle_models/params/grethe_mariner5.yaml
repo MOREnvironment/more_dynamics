@@ -1,0 +1,113 @@
+# ==========================================================================
+# Grethe — NTNU Mariner 5 USV (Maritime Robotics build 40402, Pioner 17 hull)
+# with one Torqeedo Cruise 2.0 R electric outboard. Vehicle parameter set.
+# ==========================================================================
+# Every entry: value, unit, source, kind.
+#   kind: document  — read off a cited page
+#         derived   — computed from documented values (formula in `note`)
+#         guess     — a starting value with no document behind it (to be identified)
+#         gap       — no source; value null
+# Source keys:
+#   D002  Maritime Robotics, USV 40402 / LARS assembly drawing, 16.04.2021, 3 pp.
+#   F003  Maritime Robotics, NTNU Mariner 5 USV Combined FAT/SAT, rev 1.5, signed 8 Apr 2021, 7 pp. (scan)
+#   M001  Maritime Robotics, Mariner 5 USV User Manual rev 1.0, Apr 2021, 76 pp.
+#   TQ    Torqeedo, Cruise 0.8/2.0/4.0 R/T Operating Manual DE/EN v7.0 10.2015 (PDF page numbers; English pp. 26-49)
+#   MGM   more_generic_models@big_cleanup usv_grethe.yaml / ASVHullParams / ElectricOutboardMotorParams
+# Coordinates: x forward, y starboard, z down; origin assumed amidships at the waterline (not stated in any document).
+# The .rppws hull_vessel part parameters carry copies of the `hull`, `mass` and `hydrostatics` values below.
+
+vehicle:
+  name: "NTNU USV Grethe"
+  type: {value: "Maritime Robotics Mariner 5, build 40402, Pioner 17 ft PE hull, foam-filled pontoons", source: "M001 p8; F003 p1; D002 p1", kind: document}
+
+# --------------------------------------------------------------------------
+hull:
+  length:              {value: 5.2,   unit: m, source: "F003 p2; M001 p7", kind: document, note: "hull length; used as L in every formula (waterline length is a gap)"}
+  length_overall:      {value: 5.374, unit: m, source: "D002 p1; F003 p2 handwriting '5.4 med motor + nose'", kind: document, note: "incl. motor and bow fitting; NOT the hull length (the weather-branch GretheUSVApprox uses it as L)"}
+  beam:                {value: 2.15,  unit: m, source: "F003 p2; M001 p7; D002 p1", kind: document}
+  draft:               {value: 0.3,   unit: m, source: "F003 p2 ('Approx 0.3 m'); M001 p7", kind: document, note: "loading condition not stated; M001 p6 gives 0.3-0.7 m by payload"}
+  draft_motor:         {value: 0.7,   unit: m, source: "M001 p7; D002 p1", kind: document, note: "lowest point of the motor; propeller 0.4 m below the hull"}
+  height_mast_to_keel: {value: 1.77,  unit: m, source: "D002 p1", kind: document}
+  moonpool:            {value: [0.5, 0.5], unit: m, source: "M001 p15; D002 p1", kind: document, note: "plus three 0.10 m sensor tubes"}
+  stern_well_width:    {value: 0.95,  unit: m, source: "D002 p1", kind: document}
+  waterline_length:    {value: null,  unit: m, source: "GAP", kind: gap}
+  deadrise:            {value: null,  unit: deg, source: "GAP", kind: gap}
+
+hydrostatics:
+  block_coefficient:      {value: 0.233, unit: "-", source: "MGM usv_grethe.yaml Cb", kind: guess, note: "a mass knob: 806/(1025*5.2*2.15*0.3) = 0.234; the weather branch has 0.227 (from L = 5.374)"}
+  waterplane_coefficient: {value: 0.8,   unit: "-", source: "MGM usv_grethe.yaml Cw", kind: guess}
+  longitudinal_center_of_flotation: {value: -0.3, unit: m, source: "MGM usv_grethe.yaml LCF", kind: guess, note: "weather branch has -0.5"}
+  restoring_scales:       {value: [1.0, 1.0, 1.0], unit: "-", source: "MGM usv_grethe.yaml coeff_restoring [heave, roll, pitch]", kind: guess,
+                           workspace_rppws_value: [1.0, 0.7, 1.0], note: "OPEN: the .rppws hydrostatics part has 0.7 in roll (the weather-branch value); not changed, owner to choose"}
+  restoring_reference_point: {value: [0.0, 0.0, 0.0], unit: m, source: "MGM asv_hull r_bp", kind: guess, note: "buoyancy reference assumed at CO"}
+  water_density:          {value: 1025.0, unit: kg/m^3, source: "standard sea water", kind: guess}
+  gravity:                {value: 9.81,  unit: m/s^2, source: "standard", kind: guess, note: "the library computes g from latitude 63.446827 deg"}
+  reference_latitude:     {value: 63.446827, unit: deg, source: "MGM usv_grethe.yaml mu", kind: document, note: "Trondheim; operating area, not a vehicle property"}
+
+# --------------------------------------------------------------------------
+mass:
+  mass_delivered:     {value: 806.0, unit: kg, source: "F003 p2 ('Pioner Hull 806 kg weight of boat'); M001 p7 gives 810", kind: document}
+  mass_model:         {value: 801.0, unit: kg, source: "derived", kind: derived, note: "rho*Cb*L*B*T = 1025*0.233*5.2*2.15*0.3; what the library model actually uses"}
+  mass_field:         {value: null,  unit: kg, source: "GAP", kind: gap, note: "USBL mount, payload, mats and rods added after delivery"}
+  launch_cradle:      {value: 410.0, unit: kg, source: "M001 p7", kind: document, note: "not part of the vessel"}
+  center_of_gravity:  {value: [0.0, 0.0, 0.025], unit: m, source: "MGM usv_grethe.yaml r_cg", kind: guess, note: "batteries are in the bow (M001 p11), so x = 0 is unchecked"}
+  center_of_buoyancy: {value: [0.0, 0.0, 0.0], unit: m, source: "MGM usv_grethe.yaml r_cb", kind: guess, note: "definition of the origin"}
+  radii_of_gyration_scale: {value: [0.35, 0.25, 0.25], unit: "fractions of [B, L, L]", source: "MGM usv_grethe.yaml R_456_scale", kind: guess, note: "= 0.75, 1.30, 1.30 m; Iz = 801*1.30^2 = 1354 kg m^2"}
+  added_mass_scales:  {value: [-1.0, -1.5, -1.0, -0.2, -0.8, -1.2], unit: "-", source: "MGM usv_grethe.yaml coeff_added_mass [X_udot, Y_vdot, Z_wdot, K_pdot, M_qdot, N_rdot]", kind: guess,
+                       workspace_rppws_value: [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7], note: "OPEN: the .rppws hull part has -1.7 in yaw; not changed, owner to choose. Weather branch: [-1, -1, -1, -0.2, -0.25, -0.2]"}
+
+damping:
+  time_constants_surge_sway_yaw: {value: [15.0, 8.0, 16.0], unit: s, source: "MGM usv_grethe.yaml T_126 ('needs tunning from real data')", kind: guess}
+  damping_ratios_heave_roll_pitch: {value: [0.3, 0.2, 0.5], unit: "-", source: "MGM usv_grethe.yaml zeta_345", kind: guess}
+  damping_scales:     {value: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0], unit: "-", source: "MGM usv_grethe.yaml coeff_damping", kind: guess}
+  surge_calibration_speed:  {value: 3.1,   unit: m/s, source: "MGM usv_grethe.yaml U_max", kind: guess, note: "close to the manual's 6 kn = 3.09 m/s (M001 p7)"}
+  surge_calibration_thrust: {value: 150.0, unit: N,   source: "MGM usv_grethe.yaml thrust_max_calib", kind: guess, note: "1 120 W at 3.1 m/s would be 361 N"}
+  cross_flow_model:   {value: hoerner, unit: "-", source: "MGM asv_hull", kind: guess}
+  cross_flow_scaling: {value: 1.0, unit: "-", source: "MGM usv_grethe.yaml", kind: guess}
+
+# --------------------------------------------------------------------------
+propulsion:
+  motor:                 {value: "Torqeedo Cruise 2.0 R, remote throttle over RS485", source: "F003 p2; M001 p7, p9", kind: document}
+  input_power:           {value: 2000.0, unit: W, source: "TQ p29", kind: document, note: "electrical input"}
+  propulsive_power:      {value: 1120.0, unit: W, source: "TQ p29", kind: document, note: "delivered to the water; the thrust cap"}
+  overall_efficiency_max: {value: 0.56,  unit: "-", source: "TQ p29", kind: document, note: "library uses 0.6"}
+  efficiency_model:      {value: 0.6,    unit: "-", source: "MGM usv_grethe.yaml efficiency", kind: guess}
+  static_thrust:         {value: 511.5,  unit: N, source: "TQ p29 (115 lbf, ISO measurement)", kind: document, note: "library uses 520"}
+  max_thrust_model:      {value: 520.0,  unit: N, source: "MGM usv_grethe.yaml max_thrust", kind: guess}
+  max_propeller_speed:   {value: 1300.0, unit: rpm, source: "TQ p29", kind: document}
+  propeller_diameter:    {value: 0.305,  unit: m, source: "TQ p29, p47 (12 x 10 in)", kind: document}
+  propeller_pitch:       {value: 0.254,  unit: m, source: "TQ p29 (10 in)", kind: document}
+  propeller_pitch_ratio: {value: 0.83,   unit: "-", source: "TQ p29 (10/12)", kind: derived}
+  propeller_type:        {value: "variable-pitch-variable-camber, GRP; not a Wageningen B-series", source: "TQ p47", kind: document, note: "which of the spare types is fitted: gap"}
+  blade_number:          {value: 3,     unit: "-", source: "MGM usv_grethe.yaml z (generic propeller default)", kind: guess}
+  blade_area_ratio:      {value: 0.718, unit: "-", source: "MGM usv_grethe.yaml AEAO (generic propeller default)", kind: guess}
+  thrust_deduction:      {value: 0.1,   unit: "-", source: "MGM usv_grethe.yaml t_prop", kind: guess}
+  wake_factor:           {value: 0.25,  unit: "-", source: "MGM usv_grethe.yaml w_prop", kind: guess}
+  thrust_time_constant:  {value: 0.3,   unit: s, source: "MGM usv_grethe.yaml tau_thrust; TQ p44 confirms a limit, no number", kind: guess}
+  rpm_time_constant:     {value: 0.25,  unit: s, source: "MGM usv_grethe.yaml tau_rpm", kind: guess}
+  reverse:               {value: "stepless forward and reverse", source: "TQ p29; M001 p24", kind: document}
+  supply_voltage:        {value: [24.0, 25.9], unit: V, source: "TQ p29 (rated); working 20-30 V, cut-off 21 V (TQ p35, p44)", kind: document}
+  motor_weight:          {value: [15.3, 16.2], unit: kg, source: "TQ p29 (short / long shaft)", kind: document, note: "which shaft Grethe has: gap"}
+  battery_energy:        {value: 50400000.0, unit: J, source: "M001 p7, p9; F003 p2", kind: document, note: "4 x Torqeedo 24-3500 = 14 000 Wh"}
+  aux_power:             {value: 30.0,  unit: W, source: "MGM usv_grethe.yaml aux_power", kind: guess, note: "system battery 2 x SR550 115 Ah 12 V (M001 p10) is separate"}
+  consumption_at_3kn:    {value: [400.0, 500.0], unit: W, source: "M001 p7", kind: document}
+  top_speed:             {value: [2.6, 3.1], unit: m/s, source: "M001 p7 (5-6 kn, payload dependent)", kind: document, note: "logs: 2.95 m/s peak"}
+  endurance:             {value: 24.0, unit: h, source: "M001 p7 ('approx. 24 hours'); F003 p2 'to be tested'", kind: document}
+
+# --------------------------------------------------------------------------
+steering:
+  arrangement:           {value: "whole motor turns (thrust vectoring, no rudder); push-pull rod on a linear actuator with internal feedback", source: "M001 p9; F003 p2; TQ p33", kind: document}
+  thruster_position:     {value: [-2.6, 0.0, 0.55], unit: m, source: "MGM usv_grethe.yaml r_body", kind: guess, note: "x = transom of a 5.2 m hull; z = 0.7 - 0.305/2. Dataclass default has x = -2.3"}
+  max_steering_angle:    {value: 0.61,  unit: rad, source: "MGM usv_grethe.yaml delta_max (35 deg)", kind: guess, note: "the motor turns 360 deg (TQ p29); the limit is the rod stroke: gap"}
+  max_steering_rate:     {value: 1.05,  unit: rad/s, source: "MGM usv_grethe.yaml delta_dot_max (60 deg/s)", kind: guess}
+  steering_time_constant: {value: 0.5,  unit: s, source: "MGM usv_grethe.yaml tau_steer", kind: guess}
+  steering_convention:   {value: starboard_positive, source: "MGM usv_grethe.yaml", kind: guess, note: "a code choice"}
+
+# --------------------------------------------------------------------------
+autopilot:
+  modes:                 {value: [Standby, Station, Course, Heading, Waypoint, Formation, External, Manual], source: "M001 p41, p42; F003 p6 (External not installed)", kind: document}
+  waypoint_acceptance_radius: {value: [15.0, 30.0], unit: m, source: "M001 p53 (15 m at 4 kn, 30 m at 8 kn); M001 p71 ('35 m is a good starting point')", kind: document}
+  comm_loss_stop_time:   {value: {course: 5, heading: 5, manual: 3, waypoint: 120, station: 30}, unit: s, source: "M001 p44", kind: document, note: "values in force on Grethe: gap"}
+  onboard_log_interval:  {value: 2.0,  unit: s, source: "M001 p38", kind: document}
+  heading_source:        {value: "Furuno SCX-20 satellite compass", source: "M001 p9, p71; F003 p5", kind: document}
+  inner_loop_gains:      {value: null, source: "GAP (Properties window hidden from field users, M001 p39)", kind: gap}
