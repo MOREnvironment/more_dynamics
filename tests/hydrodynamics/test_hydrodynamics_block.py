@@ -12,15 +12,39 @@ transcription plus the register's stated effect. D-MSS-2 (owner E-24): Hoerner
 below its table raises ``ValueError``. The test-side transcriptions stay as the
 second check and are themselves checked against the new files.
 
+Completed by job U3a (verifier, 2026-10-06; ledger
+``agents-more/30_checks/2026-10-06_U3_hydrodynamics_gates.md``):
+
+* MSS ``ac77394`` (issue #81) puts the cross-flow Reynolds number on the
+  diameter, so D-MSS-1 is resolved: the default path is G1 against MATLAB at
+  ``ac77394`` (``spheroid_matlab_reference_mss_ac77394.csv``) and the
+  ``cross_flow_reynolds_length`` flag goes (owner, 2026-10-06, E-20 "a"). The
+  block tests that drove that flag are removed here; ``test_D_MSS_1_flag_is_gone``
+  fails until the porter (U3b) removes it. The ``99bf0b3`` file stays for history.
+* Every U3 row has a test: ``get_D_linear_surface_vessel`` is ``Dmtrx.m``'s
+  surface-craft branch (a third function in ``linear_damping``), and
+  ``force_surge_damping`` is ``forceSurgeDamping.m`` (new module
+  ``surge_damping``); both G1 against MATLAB calling those MSS functions.
+* Physical-sign tests (owner E-23: MSS is the reference, not the truth): the
+  linear surge coefficient reproduces its time constant (MSS right, the numpy
+  source wrong); MSS's surge blend is not dissipative in reverse and its ITTC
+  branch blows up at Rn = 100 (documented, owner decision pending); cross-flow
+  pitch/yaw terms equal the first-principles strip integral.
+* A-27 finding 4: the Jacobian entries that are non-finite today are pinned.
+* E-25: no local transform in our hydrodynamics modules.
+
 Owner rulings these tests encode
 --------------------------------
 * E-18 / E-20 Q2 a: the **default** path equals current MSS; each template
   departure stays behind a named flag that reproduces the old source value.
 * E-10 a: cross-flow drag on MSS's 20 strip midpoints with the full-precision
   ``cylinderDrag.m`` table (default); the 21-end-point grid behind a flag.
-* E-20 Q3 b: the cross-flow Reynolds number uses the **diameter** by default;
-  ``cross_flow_reynolds_length="length"`` reproduces ``cylinderDrag.m:77``.
+* E-20 Q3 b: the cross-flow Reynolds number uses the **diameter**, which is
+  newest MSS since ``ac77394`` (``cylinderDrag.m`` 79-80); no flag (E-20, "a",
+  2026-10-06).
 * E-16: generic by construction (no vehicle name or number inside a block).
+* E-28: Luka's ``linear_surface.py`` and its tests are not touched; the U3
+  template audit of it is a reading, in the ledger.
 
 Contract the porter must provide
 --------------------------------
@@ -50,15 +74,50 @@ Contract the porter must provide
   ``["D", "tau"]``: ``D = -diag(damping_derivatives)`` (positive, the same
   sign as the submerged ``D``) and ``tau`` = ``otter.m`` 235-242 (the force
   on the vehicle, quadratic yaw term included).
+* ``preprocess_floating_linear_damping(rigid_body_mass_matrix,
+  added_mass_matrix, restoring_matrix, time_constants, damping_ratios)``
+  (U3a): ``Dmtrx.m`` 51-63, the surface-craft branch, which is the numpy
+  ``get_D_linear_surface_vessel`` with all six ``coeff`` = 1. Matrices 6x6
+  (``restoring_matrix`` = G, only G33, G44, G55 used), ``time_constants =
+  (T1, T2, T6)`` s, ``damping_ratios = (zeta3, zeta4, zeta5)``; MSS fixes
+  ``zeta3 = 0.2`` (``Dmtrx.m`` 57), so it is a parameter like the densities
+  and the MSS tests pass 0.2. The source's ``coeff`` multipliers are not in
+  the contract: ``coeff_i`` scales ``D_ii``, which a parameter set gets by
+  scaling ``T_i`` or ``zeta_i`` (G2 checks that mapping). Constants expose
+  ``damping_coefficients`` (6,).
+* ``floating_linear_damping_casadi(constants)``: input ``["nu_r"]``, outputs
+  ``["D", "tau"]``: ``D`` = that diagonal (positive, ``Dmtrx.m`` sign),
+  ``tau = -D @ nu_r``.
+
+``more_dynamics.models.hydrodynamics.surge_damping`` (U3a; ``forceSurgeDamping.m``):
+
+* ``preprocess_surge_damping_ittc(mass, length, wetted_surface,
+  water_density, time_constant, form_factor, crossover_speed)``: the
+  eight-argument call (``forceSurgeDamping.m`` 68-75), ``Xuu`` from the
+  ITTC-1957 line at the current speed. ``form_factor`` = the ``k = 0.1`` of
+  line 70, ``crossover_speed`` = the ``u_cross = 2`` of line 57; MSS
+  hard-codes both, they are parameters here (E-16) and the tests pass MSS's.
+* ``preprocess_surge_damping_max_thrust(mass, length, water_density,
+  time_constant, max_speed, max_thrust, crossover_speed)``: the nine-argument
+  call (lines 64-66), ``Xuu = -max_thrust / max_speed^2``.
+* Both: ``A11 = 2.7 rho (m/rho)^(5/3) / L^2`` (``addedMassSurge.m`` 33-34),
+  ``Xudot = -A11`` (line 60), ``Xu = -(m - Xudot) / T1 = -(m + A11) / T1``
+  (line 61). Constants expose ``added_mass`` (A11 > 0), ``linear_coefficient``
+  (Xu < 0) and, for ``max_thrust``, ``quadratic_coefficient`` (Xuu < 0).
+* ``surge_damping_casadi(constants)``: input ``["nu_r"]`` (6x1), output
+  ``["tau"]`` = ``[X 0 0 0 0 0]`` with ``sigma = 1 - tanh(u_r / u_cross)``
+  and ``X = sigma Xu u_r + (1 - sigma) Xuu |u_r| u_r`` (lines 79-82),
+  ``u_r = nu_r[0]``; the force on the vehicle (added, as ``osv.m`` 180-182).
+  The vehicle that uses it must set its linear ``D[0,0] = 0`` (``osv.m`` 185).
 
 ``more_dynamics.models.hydrodynamics.cross_flow``:
 
 * ``preprocess_cross_flow_drag(length, beam, draft, water_density,
-  drag_model, cross_flow_reynolds_length="diameter", strip_grid="midpoint")``;
-  ``drag_model`` in {"cylinder", "hoerner"} (no default), flag values
-  ``cross_flow_reynolds_length`` in {"diameter", "length"} and ``strip_grid``
-  in {"midpoint", "endpoint"}. "diameter" is the ``beam`` argument (MSS calls
-  ``crossFlowDrag(L, D, D, ...)``).
+  drag_model, strip_grid="midpoint")``; ``drag_model`` in {"cylinder",
+  "hoerner"} (no default), ``strip_grid`` in {"midpoint", "endpoint"}. The
+  Reynolds number is on the ``beam`` argument, the diameter (MSS calls
+  ``crossFlowDrag(L, D, D, ...)``; ``cylinderDrag.m`` 79-80 at ``ac77394``);
+  ``cross_flow_reynolds_length`` is gone (owner 2026-10-06).
 * ``cross_flow_drag_casadi(constants)``: input ``["nu_r"]``, output ``["tau"]``.
 
 ``more_dynamics.models.hydrodynamics.lift_drag``:
@@ -72,9 +131,13 @@ Map rows covered, numpy source read in full (``more_generic_models/more_generic_
 ---------------------------------------------------------------------------------------
 * ``dynamics/plant/matrices/linear_damping.py``: ``get_damping_coeff`` 16-84,
   ``D_linear`` 88-112 (fades surge **and sway**), ``D_linear_catamaran``
-  165-197, ``get_tau_damping`` 200-226. ``get_D_linear_surface_vessel`` is
-  already ported (``linear_surface.py``); ``force_surge_damping`` 230-294 is
-  not on either vehicle's path and is not tested here.
+  165-197, ``get_tau_damping`` 200-226, ``get_D_linear_surface_vessel``
+  115-160 (U3a; ``Dmtrx.m`` surface branch, not Luka's module, E-28),
+  ``force_surge_damping`` 230-294 (U3a; on ``ASVHull.get_tau_drag``'s path,
+  ``asv_hull.py`` 185-197, with ``D[0,0] = 0`` at 145). Its ``Xudot`` is
+  ``+A11`` (``added_mass.py`` 338-357 returns A11), so its ``Xu`` is
+  ``-(m - A11)/T1``: a sign error against ``forceSurgeDamping.m`` 60-61 and
+  Fossen (2011) eq. 6.76; G2 runs the source with that one sign corrected.
 * ``dynamics/plant/matrices/hydrodynamics.py``: ``get_lift_drag_coeff``
   62-75, ``force_lift_drag`` 78-88, ``_hoerner`` 95-100, ``_cylinder_drag``
   103-120 (Re column rounded to 4 digits, A-2), ``cross_flow_drag`` 127-178,
@@ -105,17 +168,27 @@ Frozen reference: ``tests/data/hydrodynamics/`` (``SOURCE.md``).
 import ast
 import importlib
 import inspect
+import json
+import os
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "hydrodynamics"
-MORE = Path(__file__).resolve().parents[4]
+# Outside this repo only through environment variables (agents-more rule 9):
+# MSS_DIR = an MSS checkout, MORE_GENERIC_MODELS_DIR = the more_generic_models
+# repository root. Default: not set. The gates read the frozen CSVs and the
+# snapshot of every cited MSS / generator line (``cited_lines_snapshot.json``,
+# made by ``snapshot_cited_lines.py``); only the live re-read of those lines
+# and the numpy-source tests need the variables, and they skip without them.
+CITED_SNAPSHOT = DATA_DIR / "cited_lines_snapshot.json"
 LINEAR_DAMPING = "more_dynamics.models.hydrodynamics.linear_damping"
 CROSS_FLOW = "more_dynamics.models.hydrodynamics.cross_flow"
 LIFT_DRAG = "more_dynamics.models.hydrodynamics.lift_drag"
+SURGE_DAMPING = "more_dynamics.models.hydrodynamics.surge_damping"
 
 G1_TOLERANCE = 1e-9   # 30_checks/README.md, gate G1
 G2_TOLERANCE = 1e-10  # 30_checks/README.md, gate G2
@@ -128,18 +201,22 @@ ROUNDED_TABLE_RESIDUAL_BOUND = 0.03
 VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
                  "mariner", "torqeedo", "cybership", "prestero")
 
-REMUS = "source-sim/MSS/CRAFT/AUV/models/remus100.m"
-OTTER = "source-sim/MSS/CRAFT/USV/models/otter.m"
-DMTRX = "source-sim/MSS/LIBRARY/modeling/Dmtrx.m"
-FLD = "source-sim/MSS/LIBRARY/modeling/forceLiftDrag.m"
-CLD = "source-sim/MSS/LIBRARY/modeling/coeffLiftDrag.m"
-CFD = "source-sim/MSS/LIBRARY/modeling/crossFlowDrag.m"
-CYL = "source-sim/MSS/HYDRO/cylinderDrag.m"
-HOERNER = "source-sim/MSS/HYDRO/Hoerner.m"
-GRAVITY = "source-sim/MSS/INS/functions/gravity.m"
-SPHEROID_M = "source-sim/MSS/LIBRARY/modeling/spheroid.m"
-GEN_SPH = "more_generic_models/more_generic_models/test/plant/auv_spheroid/test_mss_matlab/test_dynamics_consitency.m"
-GEN_CAT = "more_generic_models/more_generic_models/test/plant/asv_catamaran/test_mss_matlab/test_dynamics_consistency.m"
+REMUS = "$MSS_DIR/CRAFT/AUV/models/remus100.m"
+OTTER = "$MSS_DIR/CRAFT/USV/models/otter.m"
+DMTRX = "$MSS_DIR/LIBRARY/modeling/Dmtrx.m"
+FLD = "$MSS_DIR/LIBRARY/modeling/forceLiftDrag.m"
+CLD = "$MSS_DIR/LIBRARY/modeling/coeffLiftDrag.m"
+CFD = "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m"
+CYL = "$MSS_DIR/HYDRO/cylinderDrag.m"
+HOERNER = "$MSS_DIR/HYDRO/Hoerner.m"
+GRAVITY = "$MSS_DIR/INS/functions/gravity.m"
+SPHEROID_M = "$MSS_DIR/LIBRARY/modeling/spheroid.m"
+FSD = "$MSS_DIR/LIBRARY/modeling/forceSurgeDamping.m"
+AMS = "$MSS_DIR/LIBRARY/modeling/addedMassSurge.m"
+XITTC = "$MSS_DIR/LIBRARY/modeling/XuuITTC.m"
+OSV = "$MSS_DIR/CRAFT/SHIP/models/osv.m"
+GEN_SPH = "$MORE_GENERIC_MODELS_DIR/more_generic_models/test/plant/auv_spheroid/test_mss_matlab/test_dynamics_consitency.m"
+GEN_CAT = "$MORE_GENERIC_MODELS_DIR/more_generic_models/test/plant/asv_catamaran/test_mss_matlab/test_dynamics_consistency.m"
 
 # (file relative to <more>, line) -> how the stripped line starts. Pinned by
 # test_cited_lines_are_unchanged; every constant below is parsed from these.
@@ -191,9 +268,53 @@ CITED_LINES = {
     (CFD, 49): "Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;",
     (CFD, 50): "Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;",
     (CFD, 51): "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;",
-    (CYL, 76): "U_crossflow = sqrt(nu_r(2)^2+nu_r(3)^2);",
-    (CYL, 77): "Re = U_crossflow * L * 1e6;",
-    (CYL, 89): "if Re < 2e5",
+    # cylinderDrag.m at ac77394 (issue #81): the Reynolds number on the diameter
+    (CYL, 78): "U_crossflow = sqrt(nu_r(2)^2+nu_r(3)^2);",
+    (CYL, 79): "nu_water = 1e-6;",
+    (CYL, 80): "Re = U_crossflow * B / nu_water;",
+    (CYL, 92): "if Re < 2e5",
+    (DMTRX, 57): "zeta3 = 0.2;",
+    (DMTRX, 58): "w3 = sqrt( G33 / M(3,3) );",
+    (DMTRX, 62): "D = diag( [M(1,1)/T1 M(2,2)/T2 M(3,3)*2*zeta3*w3...",
+    (DMTRX, 63): "M(4,4)*2*zeta4*w4  M(5,5)*2*zeta5*w5 M(6,6)/T6 ] );",
+    (FSD, 57): "u_cross = 2;",
+    (FSD, 60): "Xudot = -addedMassSurge(m,L,rho);",
+    (FSD, 61): "Xu = -(m - Xudot) / T1;",
+    (FSD, 64): "if (nargin == 9)",
+    (FSD, 66): "Xuu = - thrust_max / u_max^2;",
+    (FSD, 69): "nu_kin = 1e-6;",
+    (FSD, 70): "k = 0.1;",
+    (FSD, 71): "eps = 1e-10;",
+    (FSD, 72): "Rn = (L / nu_kin) * abs(u_r);",
+    (FSD, 73): "Cf = 0.075 / (log10(Rn + eps) -  2)^2;",
+    (FSD, 74): "Xuu = -0.5 * rho * S * (1+k) * Cf;",
+    (FSD, 79): "sigma = 1 - tanh(u_r / u_cross);",
+    (FSD, 82): "X = sigma .* Xu .* u_r + (1 - sigma) .* Xuu .* abs(u_r) .* u_r;",
+    (AMS, 33): "nabla = m / rho;",
+    (AMS, 34): "A11 = 2.7 * rho * nabla^(5/3) / L^2;",
+    (XITTC, 29): "C_B = 0.65;",
+    (XITTC, 32): "nu_kin = 1e-6;",
+    (XITTC, 33): "k = 0.1;",
+    (XITTC, 34): "Re_min = 1e5;",
+    (XITTC, 35): "Re = max(L * abs(u_r) / nu_kin,Re_min);",
+    (XITTC, 36): "Cf = 0.075 / (log10(Re) - 2)^2;",
+    (XITTC, 38): "S = 1.025 * L * (C_B*B + 1.7*T);",
+    (XITTC, 39): "Xuu = -0.5 * rho * S * (1+k) * Cf;",
+    (OSV, 62): "vessel.L = 83;",
+    (OSV, 63): "vessel.B = 18;",
+    (OSV, 64): "vessel.T = 5;",
+    (OSV, 65): "vessel.rho = 1025;",
+    (OSV, 66): "vessel.Cb = 0.65;",
+    (OSV, 67): "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B;",
+    (OSV, 70): "vessel.K_max = [300e3 300e3 420e3 655e3]';",
+    (OSV, 76): "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4);",
+    (OSV, 77): "vessel.U_max = 7.7;",
+    (OSV, 79): "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T;",
+    (OSV, 80): "vessel.m = vessel.rho * vessel.nabla;",
+    (OSV, 129): "vessel.T1 = 100;",
+    (OSV, 180): "[X,Xuu,Xu] = forceSurgeDamping(flag,nu_r(1),vessel.m,vessel.S,vessel.L, ...",
+    (OSV, 181): "vessel.T1,vessel.rho,vessel.U_max,vessel.thrust_max);",
+    (OSV, 185): "vessel.D(1,1) = 0;",
     (HOERNER, 47): "if B/(2*T) <= 4.00309",
     (HOERNER, 48): "CY_2D = interp1(CD_DATA(:,1),CD_DATA(:,2),B/(2*T));",
     (HOERNER, 50): "CY_2D = 0.559315;",
@@ -241,14 +362,39 @@ CITED_LINES = {
 # --------------------------------------------------------------------------
 # Helpers: pinned text, contract, data
 # --------------------------------------------------------------------------
-def _line(rel, number):
-    path = MORE / rel
+def _env_dir(variable):
+    value = os.environ.get(variable)
+    if not value:
+        pytest.skip(f"{variable} is not set (agents-more rule 9); set it to run this check")
+    path = Path(value).expanduser()
+    if not path.is_dir():
+        pytest.skip(f"{variable}={value} is not a directory")
+    return path
+
+
+def _live_path(ref):
+    """``$VARIABLE/relative/path`` -> a file under that environment variable."""
+    variable, rel = ref[1:].split("/", 1)
+    path = _env_dir(variable) / rel
     if not path.exists():
-        pytest.skip(f"cited file not found: {path}")
-    line = path.read_text().splitlines()[number - 1].strip()
-    if (rel, number) in CITED_LINES:
-        assert line.startswith(CITED_LINES[(rel, number)]), (rel, number, line)
+        pytest.skip(f"{rel} not found under {variable}")
+    return path
+
+
+def _snapshot():
+    return json.loads(CITED_SNAPSHOT.read_text())
+
+
+def _line(rel, number):
+    """A cited line, stripped, from the frozen snapshot; it must be pinned."""
+    assert (rel, number) in CITED_LINES, ("cite the line first", rel, number)
+    line = _snapshot()["lines"][rel][str(number)]
+    assert line.startswith(CITED_LINES[(rel, number)]), (rel, number, line)
     return line
+
+
+def _live_line(rel, number):
+    return _live_path(rel).read_text().splitlines()[number - 1].strip()
 
 
 def _value(rel, number, env=None):
@@ -266,14 +412,21 @@ def _number_in(rel, number, pattern):
     return float(match.group(1))
 
 
-def _table(rel, name):
+TABLES = ((CYL, "CD_DATA"), (CYL, "KAPPA_SUBCRITICAL_DATA"),
+          (CYL, "KAPPA_SUPERCRITICAL_DATA"), (HOERNER, "CD_DATA"))
+
+
+def _parse_table(text, name):
     """A ``NAME = [ ... ];`` numeric table of an MSS file, parsed from the text."""
-    path = MORE / rel
-    if not path.exists():
-        pytest.skip(f"cited file not found: {path}")
-    block = re.split(rf"(?m)^{name} = \[", path.read_text())[1].split("];")[0]
+    block = re.split(rf"(?m)^{name} = \[", text)[1].split("];")[0]
     rows = [[float(t) for t in ln.replace("...", "").split()] for ln in block.splitlines()]
     return np.array([r for r in rows if r])
+
+
+def _table(rel, name):
+    """A cited MSS table from the frozen snapshot."""
+    assert (rel, name) in TABLES, (rel, name)
+    return np.array(_snapshot()["tables"][rel][name])
 
 
 def _gravity(mu):
@@ -311,8 +464,14 @@ def _columns(header, values, prefix, n):
 LEGACY_SPHEROID = "spheroid_matlab_reference.csv"
 LEGACY_CATAMARAN = "catamaran_matlab_reference.csv"
 # MATLAB running current MSS (job A-26, SOURCE.md): the default-path references
-MSS_SPHEROID = "spheroid_matlab_reference_mss_current.csv"
+MSS_SPHEROID = "spheroid_matlab_reference_mss_current.csv"      # MSS 99bf0b3
 MSS_CATAMARAN = "catamaran_matlab_reference_mss_current.csv"
+# job U3a: the A-26 generator re-run unchanged at MSS ac77394; only the four
+# non-zero tau_crossflow columns differ from MSS_SPHEROID (test below)
+MSS_AC_SPHEROID = "spheroid_matlab_reference_mss_ac77394.csv"
+MSS_SURGE = "surge_damping_mss_ac77394.csv"          # forceSurgeDamping.m, direct calls
+MSS_XUU_ITTC = "xuu_ittc_mss_ac77394.csv"            # XuuITTC.m, direct calls
+MSS_FLOATING = "floating_damping_mss_ac77394.csv"    # Dmtrx.m surface branch, direct calls
 
 
 def _spheroid_reference(csv=LEGACY_SPHEROID):
@@ -408,11 +567,11 @@ def _scaled_damping(fade):
             }
 
 
-def _cross_flow_spheroid(reynolds, grid):
+def _cross_flow_spheroid(grid):
     geo = _spheroid_geometry()
     return {"length": geo["L"], "beam": geo["D"], "draft": geo["D"],   # remus100.m 219
             "water_density": _value(CFD, 24), "drag_model": "cylinder",
-            "cross_flow_reynolds_length": reynolds, "strip_grid": grid}
+            "strip_grid": grid}
 
 
 def _catamaran_draft():
@@ -502,14 +661,17 @@ def _interp1_clamped(x, table):
     return float(np.interp(x, table[:, 0], table[:, 1]))
 
 
-def _mss_cylinder_cd(length, beam, nu_r, reynolds_length):
-    """cylinderDrag.m 23-107; ``reynolds_length`` replaces the L of line 77."""
+def _mss_cylinder_cd(length, beam, nu_r, reynolds_length=None):
+    """cylinderDrag.m 25-110 at ac77394: ``Re = U_cf B / nu_water`` (lines
+    78-80). ``reynolds_length=length`` gives the pre-fix line of ``99bf0b3``
+    (``Re = U_crossflow * L * 1e6``, line 77 there) for the history tests only."""
     cd_data = _table(CYL, "CD_DATA")
-    u_cf = np.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2)            # line 76
-    re_number = u_cf * reynolds_length * 1e6               # line 77
-    cd = _interp1_clamped(re_number, cd_data)              # lines 80-86
+    u_cf = np.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2)            # line 78
+    nu_water = _value(CYL, 79)                             # line 79
+    re_number = u_cf * (beam if reynolds_length is None else reynolds_length) / nu_water  # line 80
+    cd = _interp1_clamped(re_number, cd_data)              # lines 83-89
     kappa_table = _table(CYL, "KAPPA_SUBCRITICAL_DATA") if re_number < 2e5 \
-        else _table(CYL, "KAPPA_SUPERCRITICAL_DATA")       # lines 89-105
+        else _table(CYL, "KAPPA_SUPERCRITICAL_DATA")       # lines 92-108
     return cd * _interp1_clamped(length / beam, kappa_table)
 
 
@@ -521,13 +683,13 @@ def _mss_hoerner(beam, draft):
         else _number_in(HOERNER, 50, r"= ([0-9.]+);")
 
 
-def _mss_cross_flow(p, nu_r):
+def _mss_cross_flow(p, nu_r, history_reynolds_on_length=False):
     """crossFlowDrag.m 24-54 (current: 20 midpoints); ``strip_grid="endpoint"``
-    gives the pre-2026-08-26 loop ``for xL = -L/2:dx:L/2`` (A-2 section 1)."""
+    gives the pre-2026-08-26 loop ``for xL = -L/2:dx:L/2`` (A-2 section 1).
+    ``history_reynolds_on_length``: the cylinder Re of MSS before ``ac77394``."""
     length, beam, draft = p["length"], p["beam"], p["draft"]
     if p["drag_model"] == "cylinder":
-        re_len = beam if p.get("cross_flow_reynolds_length", "diameter") == "diameter" else length
-        cd = _mss_cylinder_cd(length, beam, nu_r, re_len)
+        cd = _mss_cylinder_cd(length, beam, nu_r, length if history_reynolds_on_length else None)
     else:
         cd = _mss_hoerner(beam, draft)
     n_strips = int(_value(CFD, 25))
@@ -582,17 +744,121 @@ def _build_lift_drag(p):
     return block.lift_drag_casadi(block.preprocess_lift_drag(**p))
 
 
+def _attribute(module_name, name):
+    block = _contract(module_name)
+    if not hasattr(block, name):
+        pytest.fail(f"block not ported yet: {module_name}.{name}")
+    return getattr(block, name)
+
+
+def _build_floating(p):
+    c = _attribute(LINEAR_DAMPING, "preprocess_floating_linear_damping")(**p)
+    return c, _attribute(LINEAR_DAMPING, "floating_linear_damping_casadi")(c)
+
+
+def _build_surge(p):
+    p = dict(p)
+    model = p.pop("quadratic_model")
+    c = _attribute(SURGE_DAMPING, f"preprocess_surge_damping_{model}")(**p)
+    return c, _attribute(SURGE_DAMPING, "surge_damping_casadi")(c)
+
+
+# --------------------------------------------------------------------------
+# U3a references: forceSurgeDamping.m, XuuITTC.m, Dmtrx.m surface branch
+# (MATLAB direct calls at MSS ac77394, generate_u3_surge_floating_mss.m)
+# --------------------------------------------------------------------------
+def _named_columns(csv):
+    header, values = _load_csv(csv)
+    return {name: values[:, i] for i, name in enumerate(header)}
+
+
+def _surge_parameters(set_id, model):
+    """Block parameters of one parameter set of the surge CSV (set 1 = osv.m)."""
+    ref = _named_columns(MSS_SURGE)
+    row = int(np.flatnonzero(ref["set"] == set_id)[0])
+    common = {"mass": ref["m"][row], "length": ref["L"][row], "water_density": ref["rho"][row],
+              "time_constant": ref["T1"][row], "crossover_speed": _value(FSD, 57)}
+    if model == "ittc":
+        return {"quadratic_model": "ittc", **common, "wetted_surface": ref["S"][row],
+                "form_factor": _value(FSD, 70)}
+    return {"quadratic_model": "max_thrust", **common, "max_speed": ref["u_max"][row],
+            "max_thrust": ref["thrust_max"][row]}
+
+
+def _surge_rows(set_id, model, probe=0):
+    ref = _named_columns(MSS_SURGE)
+    branch = 0 if model == "ittc" else 1
+    rows = np.flatnonzero((ref["set"] == set_id) & (ref["branch"] == branch) & (ref["probe"] == probe))
+    return {k: v[rows] for k, v in ref.items()}
+
+
+def _mss_added_mass_surge(m, length, rho):
+    """addedMassSurge.m 33-34 (Soding 1982): A11 = 2.7 rho nabla^(5/3) / L^2,
+    the exponent and the L^2 pinned by the line text."""
+    factor = _number_in(AMS, 34, r"A11 = ([0-9.]+) \*")
+    return factor * rho * (m / rho) ** (5 / 3) / length ** 2
+
+
+def _mss_force_surge_damping(u, m, s, length, t1, rho, u_max, thrust_max=None):
+    """forceSurgeDamping.m 57-82; returns (X, Xuu, Xu, A11)."""
+    a11 = _mss_added_mass_surge(m, length, rho)
+    xu = -(m - (-a11)) / t1                                            # lines 60-61
+    if thrust_max is not None:
+        xuu = -thrust_max / u_max ** 2                                 # line 66
+    else:
+        rn = (length / _value(FSD, 69)) * abs(u)                       # line 72
+        cf = 0.075 / (np.log10(rn + _value(FSD, 71)) - 2) ** 2         # line 73
+        xuu = -0.5 * rho * s * (1 + _value(FSD, 70)) * cf              # line 74
+    sigma = 1 - np.tanh(u / _value(FSD, 57))                           # line 79
+    return sigma * xu * u + (1 - sigma) * xuu * abs(u) * u, xuu, xu, a11   # line 82
+
+
+def _mss_xuu_ittc(u, rho, length, beam, draft, c_b):
+    """XuuITTC.m 32-39."""
+    re_number = max(length * abs(u) / _value(XITTC, 32), _value(XITTC, 34))
+    cf = 0.075 / (np.log10(re_number) - 2) ** 2
+    wetted = 1.025 * length * (c_b * beam + 1.7 * draft)            # Mumford, line 38
+    return -0.5 * rho * wetted * (1 + _value(XITTC, 33)) * cf
+
+
+def _floating_reference():
+    h, v = _load_csv(MSS_FLOATING)
+    ref = {p: _columns(h, v, p, 36).reshape(-1, 6, 6) for p in ("MRB", "MA", "G", "D")}
+    ref["T"] = v[:, [h.index(n) for n in ("T1", "T2", "T6")]]
+    ref["zeta"] = v[:, [h.index(n) for n in ("zeta4", "zeta5")]]
+    return ref
+
+
+def _floating_parameters(k, ref=None):
+    ref = _floating_reference() if ref is None else ref
+    return {"rigid_body_mass_matrix": ref["MRB"][k], "added_mass_matrix": ref["MA"][k],
+            "restoring_matrix": ref["G"][k], "time_constants": list(ref["T"][k]),
+            "damping_ratios": [_value(DMTRX, 57), *ref["zeta"][k]]}   # zeta3 = 0.2, Dmtrx.m 57
+
+
+def _mss_dmtrx_floating(p):
+    """Dmtrx.m 30, 51-63 (surface-craft branch)."""
+    m = p["rigid_body_mass_matrix"] + p["added_mass_matrix"]
+    g = p["restoring_matrix"]
+    t1, t2, t6 = p["time_constants"]
+    z3, z4, z5 = p["damping_ratios"]
+    w3, w4, w5 = (np.sqrt(g[i, i] / m[i, i]) for i in (2, 3, 4))
+    return np.diag([m[0, 0] / t1, m[1, 1] / t2, m[2, 2] * 2 * z3 * w3,
+                    m[3, 3] * 2 * z4 * w4, m[4, 4] * 2 * z5 * w5, m[5, 5] / t6])
+
+
 def _source():
+    """The numpy source, from MORE_GENERIC_MODELS_DIR only (agents-more rule 9)."""
+    root = str(_env_dir("MORE_GENERIC_MODELS_DIR"))
+    if root not in sys.path:
+        sys.path.insert(0, root)
     try:
         from more_generic_models.dynamics.plant.asv_catamaran.asv_catamaran import ASVCatamaran
         from more_generic_models.dynamics.plant.auv_spheroid.auv_spheroid import AUVSpheroid
         from more_generic_models.dynamics.plant.matrices.hydrodynamics import HydroForces
         from more_generic_models.dynamics.plant.matrices.linear_damping import DampingMatrix
     except ImportError as exc:
-        pytest.skip(
-            "numpy source not importable; install it into the venv with "
-            f"pip install -e <more>/more_generic_models (job A-4c) — {exc}"
-        )
+        pytest.skip(f"numpy source not importable from MORE_GENERIC_MODELS_DIR={root}: {exc}")
     return {"spheroid": AUVSpheroid, "catamaran": ASVCatamaran,
             "hydro": HydroForces, "damping": DampingMatrix}
 
@@ -624,14 +890,33 @@ def test_reference_shapes():
     np.testing.assert_allclose(sph["alpha"], np.arctan2(sph["nu_r"][:, 2], sph["nu_r"][:, 0]), atol=1e-12)
 
 
-def test_cited_lines_are_unchanged():
+def test_snapshot_holds_every_cited_line_and_table():
+    """Runs everywhere: the frozen snapshot carries each pinned line (starting
+    with its CITED_LINES text) and the four tables in their MSS shapes."""
     for (rel, number), text in CITED_LINES.items():
-        line = _line(rel, number)
-        assert line.startswith(text), (rel, number, line)
+        assert _line(rel, number).startswith(text), (rel, number)
     assert _table(CYL, "CD_DATA").shape == (28, 2)
     assert _table(CYL, "KAPPA_SUBCRITICAL_DATA").shape == (7, 2)
     assert _table(CYL, "KAPPA_SUPERCRITICAL_DATA").shape == (7, 2)
     assert _table(HOERNER, "CD_DATA").shape == (20, 2)
+
+
+@pytest.mark.parametrize("variable", ["MSS_DIR", "MORE_GENERIC_MODELS_DIR"])
+def test_cited_lines_are_unchanged(variable):
+    """With the variable set: every cited line and table of that checkout equals
+    the snapshot (a moved or edited line fails here, as cylinderDrag.m did at
+    ac77394). Without it: skips, naming the variable (agents-more rule 9)."""
+    _env_dir(variable)
+    snapshot = _snapshot()
+    for (rel, number), text in CITED_LINES.items():
+        if rel.startswith(f"${variable}/"):
+            live = _live_line(rel, number)
+            assert live.startswith(text), (rel, number, live)
+            assert live == snapshot["lines"][rel][str(number)], (rel, number)
+    if variable == "MSS_DIR":
+        for rel, name in TABLES:
+            live = _parse_table(_live_path(rel).read_text(), name)
+            assert np.array_equal(live, _table(rel, name)), (rel, name)
 
 
 def test_transcriptions_reproduce_the_stored_matlab_reference():
@@ -639,7 +924,7 @@ def test_transcriptions_reproduce_the_stored_matlab_reference():
     stored MATLAB numbers; so they are fit to serve as default-path references."""
     sph, cat = _spheroid_reference(), _catamaran_reference()
     p_d = _spheroid_damping(True)
-    p_cf = _cross_flow_spheroid("length", "endpoint")
+    p_cf = _cross_flow_spheroid("endpoint")
     p_ld = _lift_drag_spheroid(_value(GEN_SPH, 467))
     p_cat = _surface_damping_catamaran(_matlab_gravity_catamaran())
     p_cat_cf = _cross_flow_catamaran("endpoint")
@@ -647,7 +932,8 @@ def test_transcriptions_reproduce_the_stored_matlab_reference():
         d = _mss_dmtrx(p_d, sph["nu_r"][k])
         d[1, 1] *= np.exp(-3 * sph["U_r"][k])   # generator line 268 (sway fade)
         assert _max_diff(d, sph["D"][k]) <= G1_TOLERANCE, k
-        assert _max_diff(_mss_cross_flow(p_cf, sph["nu_r"][k]), sph["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        tau_cf = _mss_cross_flow(p_cf, sph["nu_r"][k], history_reynolds_on_length=True)  # pre-ac77394 Re
+        assert _max_diff(tau_cf, sph["tau_crossflow"][k]) <= G1_TOLERANCE, k
         assert _max_diff(_mss_lift_drag(p_ld, sph["nu_r"][k]), sph["tau_lift_drag"][k]) <= G1_TOLERANCE, k
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
         assert _max_diff(np.diag(deriv), cat["D"][k]) <= G1_TOLERANCE, k
@@ -720,12 +1006,11 @@ def test_G1_block_spheroid_damping_with_sway_fade_flag():
         assert _max_diff(out["tau"].reshape(-1), -ref["D"][k] @ ref["nu_r"][k]) <= G1_TOLERANCE, k
 
 
-def test_G1_block_spheroid_cross_flow_legacy_settings():
-    function = _build_cross_flow(_cross_flow_spheroid("length", "endpoint"))
-    ref = _spheroid_reference()
-    for k in range(50):
-        out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
-        assert _max_diff(out, ref["tau_crossflow"][k]) <= G1_TOLERANCE, k
+# U3a: ``test_G1_block_spheroid_cross_flow_legacy_settings`` is removed with the
+# ``cross_flow_reynolds_length`` flag (owner 2026-10-06): the legacy spheroid file
+# mixes the old Re-on-length line with the endpoint grid, so no flag-free block
+# reproduces it. The endpoint grid keeps its G1 on the catamaran (Hoerner, no
+# Reynolds number) below and its G2 on both vehicles.
 
 
 def test_G1_block_spheroid_lift_drag_template_density():
@@ -759,8 +1044,11 @@ def test_G2_function_signatures():
     for function, outs in (
         (_build_submerged(_spheroid_damping(False))[1], ["D", "tau"]),
         (_build_surface(_surface_damping_catamaran(_matlab_gravity_catamaran()))[1], ["D", "tau"]),
-        (_build_cross_flow(_cross_flow_spheroid("diameter", "midpoint")), ["tau"]),
+        (_build_cross_flow(_cross_flow_spheroid("midpoint")), ["tau"]),
         (_build_lift_drag(_lift_drag_spheroid(_value(FLD, 26))), ["tau"]),
+        (_build_floating(_floating_parameters(0))[1], ["D", "tau"]),
+        (_build_surge(_surge_parameters(1, "ittc"))[1], ["tau"]),
+        (_build_surge(_surge_parameters(1, "max_thrust"))[1], ["tau"]),
     ):
         assert function.name_in() == ["nu_r"]
         assert function.size_in(0) == (6, 1)
@@ -813,10 +1101,28 @@ def test_G2_surface_damping_matches_source(scale):
         assert _max_diff(out["tau"].reshape(-1), damping.get_tau_damping(d_src, nu_r)) <= G2_TOLERANCE, k
 
 
-@pytest.mark.parametrize("vehicle", ["spheroid", "spheroid_scaled", "catamaran", "catamaran_scaled"])
-def test_G2_cross_flow_legacy_settings_match_source(vehicle, full_table_source):
+@pytest.fixture
+def diameter_reynolds_source(full_table_source, monkeypatch):
+    """The numpy source with the full table and its cylinder Reynolds number on
+    the diameter (MSS ``ac77394``), in memory only and by argument mapping
+    alone: ``_cylinder_drag(L, B, nu_r)`` puts Re on its first argument and
+    kappa on the ratio of the two, so calling the source's own function with
+    ``(B, B^2/L)`` gives ``Re = U B 1e6`` and ``kappa(L/B)`` (no equation of the
+    source is rewritten)."""
     hydro = full_table_source["hydro"]
-    p = (_cross_flow_spheroid("length", "endpoint") if vehicle.startswith("spheroid")
+    original = hydro._cylinder_drag
+    monkeypatch.setattr(hydro, "_cylinder_drag",
+                        staticmethod(lambda L, B, nu_r: original(B, B * B / L, nu_r)))
+    return full_table_source
+
+
+@pytest.mark.parametrize("vehicle", ["spheroid", "spheroid_scaled", "catamaran", "catamaran_scaled"])
+def test_G2_cross_flow_legacy_settings_match_source(vehicle, diameter_reynolds_source):
+    """The endpoint-grid flag vs the numpy source (21 end points); the spheroid
+    runs the source with Re on the diameter (fixture), the catamaran needs no
+    Reynolds number (Hoerner)."""
+    hydro = diameter_reynolds_source["hydro"]
+    p = (_cross_flow_spheroid("endpoint") if vehicle.startswith("spheroid")
          else _cross_flow_catamaran("endpoint"))
     if vehicle.endswith("scaled"):
         p = _scaled_cross_flow(p)
@@ -868,8 +1174,9 @@ def test_G4_surface_damping_heave_ratio_times_zero_is_detected():
 
 
 def test_G4_cross_flow_draft_plus_1_percent_is_detected():
-    ref = _spheroid_reference()
-    p = _cross_flow_spheroid("length", "endpoint")
+    """Default path against MATLAB at ac77394 (U3a; was the legacy file + flag)."""
+    ref = _spheroid_reference(MSS_AC_SPHEROID)
+    p = {k: v for k, v in _cross_flow_spheroid("midpoint").items() if k != "strip_grid"}
     assert _worst(_build_cross_flow(p), ref["nu_r"], ref["tau_crossflow"], "tau") <= G1_TOLERANCE
     broken = {**p, "draft": 1.01 * p["draft"]}
     assert _worst(_build_cross_flow(broken), ref["nu_r"], ref["tau_crossflow"], "tau") > G4_FACTOR * G1_TOLERANCE
@@ -911,43 +1218,33 @@ def test_MSS_surface_damping_equals_otter():
 
 
 @pytest.mark.parametrize("model", ["cylinder", "hoerner"])
-def test_MSS_cross_flow_length_flag_equals_current_mss(model):
-    """``cross_flow_reynolds_length="length"`` + default grid = crossFlowDrag.m
-    (6a2a064) and cylinderDrag.m line 77 exactly (E-20 Q3 b, comparison path)."""
-    p = (_cross_flow_spheroid("length", "midpoint") if model == "cylinder"
-         else _cross_flow_catamaran("midpoint"))
-    if model == "hoerner":
-        p = {**p, "cross_flow_reynolds_length": "length"}
-    function = _build_cross_flow(p)
+def test_MSS_cross_flow_default_equals_current_mss(model):
+    """Default (no flags) = crossFlowDrag.m (6a2a064) with cylinderDrag.m at
+    ac77394 (Re on the diameter, lines 78-80) on 1050 states (U3a; replaces
+    the length-flag test)."""
+    p = _cross_flow_spheroid("midpoint") if model == "cylinder" else _cross_flow_catamaran("midpoint")
+    function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
     for k, nu_r in enumerate(_states()):
         out = _evaluate(function, nu_r)["tau"].reshape(-1)
         assert _max_diff(out, _mss_cross_flow(p, nu_r)) <= G1_TOLERANCE, ("crossFlowDrag.m 24-54", k)
 
 
-def test_E20_Q3b_default_reynolds_number_uses_the_diameter():
-    """Default flags (diameter, midpoint) = crossFlowDrag.m with line 77's L
-    replaced by B; and the two settings really differ in the drag crisis."""
-    block = _contract(CROSS_FLOW)
-    signature = inspect.signature(block.preprocess_cross_flow_drag)
-    assert signature.parameters["cross_flow_reynolds_length"].default == "diameter"
+def test_D_MSS_1_flag_is_gone():
+    """Owner 2026-10-06 (E-20, "a"): with MSS on the diameter since ac77394 the
+    ``cross_flow_reynolds_length`` flag is dropped; ``strip_grid`` stays with
+    default "midpoint". Fails until the porter (U3b) removes the flag."""
+    signature = inspect.signature(_contract(CROSS_FLOW).preprocess_cross_flow_drag)
+    assert "cross_flow_reynolds_length" not in signature.parameters, list(signature.parameters)
     assert signature.parameters["strip_grid"].default == "midpoint"
-    p = _cross_flow_spheroid("diameter", "midpoint")
-    defaults = {k: v for k, v in p.items() if k not in ("cross_flow_reynolds_length", "strip_grid")}
-    function = _build_cross_flow(defaults)
-    for k, nu_r in enumerate(_states()):
-        out = _evaluate(function, nu_r)["tau"].reshape(-1)
-        assert _max_diff(out, _mss_cross_flow(p, nu_r)) <= G1_TOLERANCE, k
-    sway = np.array([0.0, 0.3, 0.0, 0.0, 0.0, 0.0])   # A-18's example speed
-    on_length = _mss_cross_flow({**p, "cross_flow_reynolds_length": "length"}, sway)
-    assert _max_diff(_mss_cross_flow(p, sway), on_length) > G4_FACTOR * G1_TOLERANCE
 
 
 def test_E10_endpoint_grid_flag_reproduces_the_template():
-    """strip_grid="endpoint" equals the pre-2026-08-26 grid (the stored
-    reference); the default grid does not."""
-    ref = _spheroid_reference()
-    legacy = _build_cross_flow(_cross_flow_spheroid("length", "endpoint"))
-    current = _build_cross_flow(_cross_flow_spheroid("length", "midpoint"))
+    """strip_grid="endpoint" equals the pre-2026-08-26 grid of the stored
+    catamaran reference (Hoerner: no Reynolds number); the default grid does
+    not (U3a: was the spheroid file, which needs the dropped length flag)."""
+    ref = _catamaran_reference()
+    legacy = _build_cross_flow(_cross_flow_catamaran("endpoint"))
+    current = _build_cross_flow(_cross_flow_catamaran("midpoint"))
     worst_legacy = max(_max_diff(_evaluate(legacy, n)["tau"].reshape(-1), ref["tau_crossflow"][k])
                        for k, n in enumerate(ref["nu_r"]))
     worst_current = max(_max_diff(_evaluate(current, n)["tau"].reshape(-1), ref["tau_crossflow"][k])
@@ -970,16 +1267,21 @@ def test_MSS_lift_drag_equals_force_lift_drag():
 # --------------------------------------------------------------------------
 def test_transcriptions_reproduce_the_current_mss_matlab_reference():
     """The second check: the test-side transcriptions, on current-MSS settings,
-    land on the A-26 files (A-26 ledger step 4 c, now a test)."""
+    land on the A-26 files (A-26 ledger step 4 c, now a test) and, for the
+    spheroid cross-flow, on the ac77394 file (U3a). The A-26 spheroid
+    cross-flow is MSS 99bf0b3 (Re on the length): history."""
     sph, cat = _spheroid_reference(MSS_SPHEROID), _catamaran_reference(MSS_CATAMARAN)
+    sph_ac = _spheroid_reference(MSS_AC_SPHEROID)
     p_d = _spheroid_damping(False, MSS_SPHEROID)
-    p_cf = _cross_flow_spheroid("length", "midpoint")
+    p_cf = _cross_flow_spheroid("midpoint")
     p_ld = _lift_drag_spheroid(_value(FLD, 26))
     p_cat = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN)
     p_cat_cf = _cross_flow_catamaran("midpoint")
     for k in range(50):
         assert _max_diff(_mss_dmtrx(p_d, sph["nu_r"][k]), sph["D"][k]) <= G1_TOLERANCE, k
-        assert _max_diff(_mss_cross_flow(p_cf, sph["nu_r"][k]), sph["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        history = _mss_cross_flow(p_cf, sph["nu_r"][k], history_reynolds_on_length=True)
+        assert _max_diff(history, sph["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        assert _max_diff(_mss_cross_flow(p_cf, sph_ac["nu_r"][k]), sph_ac["tau_crossflow"][k]) <= G1_TOLERANCE, k
         assert _max_diff(_mss_lift_drag(p_ld, sph["nu_r"][k]), sph["tau_lift_drag"][k]) <= G1_TOLERANCE, k
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
         assert _max_diff(np.diag(deriv), cat["D"][k]) <= G1_TOLERANCE, k
@@ -1000,39 +1302,49 @@ def test_G1_MSS_submerged_damping_default_equals_matlab():
         assert _max_diff(out["tau"].reshape(-1), -ref["D"][k] @ ref["nu_r"][k]) <= G1_TOLERANCE, ("tau", k)
 
 
-def test_G1_MSS_cross_flow_length_flag_equals_matlab():
-    """D-MSS-1: MSS's behaviour (Re on the length, cylinderDrag.m:77) is the
-    flag ``cross_flow_reynolds_length="length"``; with the default grid it
-    equals MATLAB's ``crossFlowDrag.m`` (6a2a064)."""
-    ref = _spheroid_reference(MSS_SPHEROID)
-    p = {k: v for k, v in _cross_flow_spheroid("length", "midpoint").items() if k != "strip_grid"}
+# U3a: ``test_G1_MSS_cross_flow_length_flag_equals_matlab`` is removed with the flag
+# (owner 2026-10-06); its MATLAB file (MSS 99bf0b3) stays, read by the history
+# checks above and below.
+
+
+def test_G1_MSS_cross_flow_default_equals_matlab_ac77394():
+    """D-MSS-1 resolved: the default (Re on the diameter) equals MATLAB running
+    MSS ac77394 (the A-26 generator re-run unchanged, SOURCE.md)."""
+    ref = _spheroid_reference(MSS_AC_SPHEROID)
+    p = {k: v for k, v in _cross_flow_spheroid("midpoint").items() if k != "strip_grid"}
     function = _build_cross_flow(p)
     for k in range(50):
         out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
         assert _max_diff(out, ref["tau_crossflow"][k]) <= G1_TOLERANCE, k
 
 
-def test_D_MSS_1_default_cross_flow_equals_transcription_and_register_effect():
-    """D-MSS-1 (30_checks/README.md): the default (Re on the diameter) equals
-    the transcription with line 77's L replaced by D, departs from MATLAB on
-    the reference cases, and has the register's stated effect: REMUS
-    Y_v|v| = -125 vs -66 N/(m/s)^2 at 0.3 m/s sideways (diameter vs length;
-    the two numbers are typed from the register row, whole-number precision)."""
+def test_ac77394_reference_differs_from_99bf0b3_only_in_cross_flow():
+    """The re-run at ac77394 changes exactly the four non-zero tau_crossflow
+    columns (the issue #81 fix); every other column is byte-equal as text."""
+    header = (DATA_DIR / MSS_AC_SPHEROID).read_text().splitlines()[0].split(",")
+    assert header == (DATA_DIR / MSS_SPHEROID).read_text().splitlines()[0].split(",")
+    new = [row.split(",") for row in (DATA_DIR / MSS_AC_SPHEROID).read_text().splitlines()[1:]]
+    old = [row.split(",") for row in (DATA_DIR / MSS_SPHEROID).read_text().splitlines()[1:]]
+    changed = {header[i] for i in range(len(header)) if any(a[i] != b[i] for a, b in zip(new, old))}
+    assert changed == {f"tau_crossflow_0{i}" for i in (2, 3, 5, 6)}, changed
+
+
+def test_D_MSS_1_resolved_register_effect_vs_pre_fix_mss():
+    """D-MSS-1 history (30_checks/README.md): the default departs from MATLAB
+    at 99bf0b3 (Re on the length) on the reference cases, and the register's
+    stated effect holds: REMUS Y_v|v| = -125 (diameter, the default) vs -66
+    N/(m/s)^2 (length, pre-fix MSS, now a transcription only) at 0.3 m/s
+    sideways (whole numbers typed from the register row)."""
     ref = _spheroid_reference(MSS_SPHEROID)
-    p = _cross_flow_spheroid("diameter", "midpoint")
-    default = _build_cross_flow({k: v for k, v in p.items()
-                                 if k not in ("cross_flow_reynolds_length", "strip_grid")})
-    worst_vs_matlab = 0.0
-    for k in range(50):
-        out = _evaluate(default, ref["nu_r"][k])["tau"].reshape(-1)
-        assert _max_diff(out, _mss_cross_flow(p, ref["nu_r"][k])) <= G1_TOLERANCE, k
-        worst_vs_matlab = max(worst_vs_matlab, _max_diff(out, ref["tau_crossflow"][k]))
-    assert worst_vs_matlab > G4_FACTOR * G1_TOLERANCE   # the deviation is live
+    p = _cross_flow_spheroid("midpoint")
+    default = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
+    worst_vs_pre_fix = max(_max_diff(_evaluate(default, ref["nu_r"][k])["tau"].reshape(-1),
+                                     ref["tau_crossflow"][k]) for k in range(50))
+    assert worst_vs_pre_fix > G4_FACTOR * G1_TOLERANCE
     v = 0.3
     sway = np.array([0.0, v, 0.0, 0.0, 0.0, 0.0])
-    length_flag = _build_cross_flow({**p, "cross_flow_reynolds_length": "length"})
     y_v_diameter = _evaluate(default, sway)["tau"].reshape(-1)[1] / (v * abs(v))
-    y_v_length = _evaluate(length_flag, sway)["tau"].reshape(-1)[1] / (v * abs(v))
+    y_v_length = _mss_cross_flow(p, sway, history_reynolds_on_length=True)[1] / (v * abs(v))
     assert round(y_v_diameter) == -125, y_v_diameter
     assert round(y_v_length) == -66, y_v_length
 
@@ -1085,6 +1397,361 @@ def test_D_MSS_2_hoerner_below_its_table_raises_naming_the_ratio():
 
 
 # --------------------------------------------------------------------------
+# U3a — floating linear damping: Dmtrx.m surface-craft branch
+# (map row get_D_linear_surface_vessel)
+# --------------------------------------------------------------------------
+def test_floating_transcription_equals_matlab():
+    """Second check, no block: the Dmtrx.m 51-63 transcription lands on MATLAB."""
+    ref = _floating_reference()
+    for k in range(len(ref["D"])):
+        assert _max_diff(_mss_dmtrx_floating(_floating_parameters(k, ref)), ref["D"][k]) <= G1_TOLERANCE, k
+
+
+def test_G1_numpy_source_floating_damping_equals_matlab():
+    """get_D_linear_surface_vessel with coeff = 1 and zeta3 = 0.2 = Dmtrx.m."""
+    damping = _source()["damping"]
+    ref = _floating_reference()
+    for k in range(len(ref["D"])):
+        p = _floating_parameters(k, ref)
+        src = damping.get_D_linear_surface_vessel(p["restoring_matrix"], p["rigid_body_mass_matrix"],
+                                                  p["added_mass_matrix"], p["time_constants"],
+                                                  p["damping_ratios"], np.ones(6))
+        assert _max_diff(src, ref["D"][k]) <= G1_TOLERANCE, k
+
+
+def test_G1_MSS_floating_damping_equals_matlab():
+    """Block D and tau = -D nu_r vs MATLAB Dmtrx.m on 20 seeded craft."""
+    ref = _floating_reference()
+    states = _random_nu_r()[:50]
+    for k in range(len(ref["D"])):
+        constants, function = _build_floating(_floating_parameters(k, ref))
+        assert _max_diff(constants.damping_coefficients, np.diag(ref["D"][k])) <= G1_TOLERANCE, k
+        for nu_r in states:
+            out = _evaluate(function, nu_r)
+            assert _max_diff(out["D"], ref["D"][k]) <= G1_TOLERANCE, k
+            assert _max_diff(out["tau"].reshape(-1), -ref["D"][k] @ nu_r) <= G1_TOLERANCE, k
+
+
+@pytest.mark.parametrize("scaled_coeff", [False, True], ids=["coeff_ones", "coeff_mapped"])
+def test_G2_floating_damping_matches_source(scaled_coeff):
+    """The source's ``coeff_i`` multiplies D_ii; the contract has no coeff, so
+    a coeff set is mapped onto T_i / coeff_i (DOF 1, 2, 6) and coeff_i zeta_i
+    (DOF 3, 4, 5); both must give the source's D."""
+    damping = _source()["damping"]
+    ref = _floating_reference()
+    rng = np.random.default_rng(SEED)
+    for k in range(len(ref["D"])):
+        p = _floating_parameters(k, ref)
+        coeff = rng.uniform(0.2, 3.0, 6) if scaled_coeff else np.ones(6)
+        src = damping.get_D_linear_surface_vessel(p["restoring_matrix"], p["rigid_body_mass_matrix"],
+                                                  p["added_mass_matrix"], p["time_constants"],
+                                                  p["damping_ratios"], coeff)
+        t1, t2, t6 = p["time_constants"]
+        z3, z4, z5 = p["damping_ratios"]
+        mapped = {**p, "time_constants": [t1 / coeff[0], t2 / coeff[1], t6 / coeff[5]],
+                  "damping_ratios": [z3 * coeff[2], z4 * coeff[3], z5 * coeff[4]]}
+        _, function = _build_floating(mapped)
+        for nu_r in 0.1 * _random_nu_r()[:20]:   # |tau| < 1e5 N: see G2_SCALE_NOTE
+            out = _evaluate(function, nu_r)
+            assert _max_diff(out["D"], src) <= G2_TOLERANCE, k
+            assert _max_diff(out["tau"].reshape(-1), -src @ nu_r) <= G2_TOLERANCE, k
+
+
+def test_G4_floating_roll_ratio_times_zero_is_detected():
+    ref = _floating_reference()
+    p = _floating_parameters(0, ref)
+    assert _max_diff(_build_floating(p)[0].damping_coefficients, np.diag(ref["D"][0])) <= G1_TOLERANCE
+    broken = {**p, "damping_ratios": [p["damping_ratios"][0], 0.0, p["damping_ratios"][2]]}
+    assert _max_diff(_build_floating(broken)[0].damping_coefficients,
+                     np.diag(ref["D"][0])) > G4_FACTOR * G1_TOLERANCE
+
+
+# --------------------------------------------------------------------------
+# U3a — surge damping: forceSurgeDamping.m (map row force_surge_damping)
+# --------------------------------------------------------------------------
+SURGE_MODELS = ("ittc", "max_thrust")
+# G2_SCALE_NOTE: G2's 1e-10 is absolute; one ulp of a 7.5e5 N force is 1.2e-10,
+# so two correct implementations can miss it at ship scale (U3a probe: 1.2e-10
+# and 2.3e-10). The new G2 tests stay below 1e5 N; ship scale (osv.m) is held
+# by G1 at 1e-9. A relative G2 for large craft needs an ADR (ledger, open item).
+
+
+def test_surge_reference_set_1_is_osv():
+    """Parameter set 1 of the surge CSV is osv.m's vessel (lines 62-80, 129),
+    the only MSS vehicle that calls forceSurgeDamping (osv.m 180-181)."""
+    ref = _named_columns(MSS_SURGE)
+    row = int(np.flatnonzero(ref["set"] == 1)[0])
+    length, beam, draft = _value(OSV, 62), _value(OSV, 63), _value(OSV, 64)
+    rho, cb = _value(OSV, 65), _value(OSV, 66)
+    k_max = _value(OSV, 70)
+    assert ref["L"][row] == length and ref["rho"][row] == rho
+    assert ref["m"][row] == rho * cb * length * beam * draft                  # lines 79-80
+    assert ref["S"][row] == length * beam + 2 * draft * beam                  # line 67
+    assert ref["T1"][row] == _value(OSV, 129) and ref["u_max"][row] == _value(OSV, 77)
+    assert ref["thrust_max"][row] == k_max[2] + k_max[3]                      # line 76
+
+
+def test_surge_transcription_reproduces_matlab():
+    """Second check, no block: the forceSurgeDamping.m transcription lands on
+    every non-probe MATLAB row (X, Xuu, Xu, A11), both branches, five sets."""
+    for set_id in range(1, 6):
+        for model in SURGE_MODELS:
+            rows = _surge_rows(set_id, model)
+            for k in range(len(rows["u_r"])):
+                x, xuu, xu, a11 = _mss_force_surge_damping(
+                    rows["u_r"][k], rows["m"][k], rows["S"][k], rows["L"][k], rows["T1"][k],
+                    rows["rho"][k], rows["u_max"][k],
+                    rows["thrust_max"][k] if model == "max_thrust" else None)
+                got = np.array([x, xuu, xu, a11])
+                want = np.array([rows["X"][k], rows["Xuu"][k], rows["Xu"][k], rows["A11"][k]])
+                assert _max_diff(got, want) <= G1_TOLERANCE, (set_id, model, k)
+
+
+def test_xuu_ittc_transcription_reproduces_matlab():
+    """Second check for XuuITTC.m (MSS 97fae93, not called by forceSurgeDamping
+    or any MSS vehicle): the reference for the bounded-Reynolds option the
+    ledger puts to the owner (proposed D-MSS-5)."""
+    ref = _named_columns(MSS_XUU_ITTC)
+    for k in range(len(ref["u_r"])):
+        got = _mss_xuu_ittc(ref["u_r"][k], ref["rho"][k], ref["L"][k], ref["B"][k], ref["T"][k], ref["C_B"][k])
+        assert abs(got - ref["Xuu"][k]) <= G1_TOLERANCE, k
+
+
+@pytest.mark.parametrize("model", SURGE_MODELS)
+def test_G1_MSS_surge_damping_equals_matlab(model):
+    """Block vs MATLAB forceSurgeDamping.m on five sets (osv.m + four seeded),
+    40 speeds each in -8..8 m/s; constants A11, Xu (and Xuu for max_thrust)."""
+    for set_id in range(1, 6):
+        constants, function = _build_surge(_surge_parameters(set_id, model))
+        rows = _surge_rows(set_id, model)
+        assert abs(constants.added_mass - rows["A11"][0]) <= G1_TOLERANCE, set_id
+        assert abs(constants.linear_coefficient - rows["Xu"][0]) <= G1_TOLERANCE, set_id
+        if model == "max_thrust":
+            assert abs(constants.quadratic_coefficient - rows["Xuu"][0]) <= G1_TOLERANCE, set_id
+        for k, u in enumerate(rows["u_r"]):
+            nu_r = np.array([u, 0.3, -0.2, 0.1, 0.05, -0.1])   # other DOFs must not enter
+            tau = _evaluate(function, nu_r)["tau"].reshape(-1)
+            assert _max_diff(tau, [rows["X"][k], 0, 0, 0, 0, 0]) <= G1_TOLERANCE, (set_id, k)
+
+
+@pytest.fixture
+def corrected_surge_source(monkeypatch):
+    """The numpy source with its one sign error corrected in memory:
+    ``added_mass_surge_static`` returns A11, and the source uses it as
+    ``Xudot``; MSS (forceSurgeDamping.m 60) uses ``Xudot = -A11``."""
+    damping = _source()["damping"]
+    from more_generic_models.dynamics.plant.matrices import added_mass
+    original = added_mass.AddedMass.added_mass_surge_static
+    monkeypatch.setattr(added_mass.AddedMass, "added_mass_surge_static",
+                        staticmethod(lambda m, L, rho: (-original(m, L, rho)[0], original(m, L, rho)[1])))
+    return damping
+
+
+@pytest.mark.parametrize("model", SURGE_MODELS)
+def test_G2_surge_damping_matches_corrected_source(model, corrected_surge_source):
+    """Sets 2-5 (|X| < 1e5 N); set 1 (osv.m, |X| ~ 1e6 N) is G1-only: see G2_SCALE_NOTE."""
+    rng = np.random.default_rng(SEED)
+    for set_id in range(2, 6):
+        p = _surge_parameters(set_id, model)
+        _, function = _build_surge(p)
+        rows = _surge_rows(set_id, model)
+        for u in np.concatenate([rows["u_r"], rng.uniform(-8.0, 8.0, 200)]):
+            x_src = corrected_surge_source.force_surge_damping(
+                u, rows["m"][0], rows["S"][0], rows["L"][0], rows["T1"][0], rows["rho"][0],
+                rows["u_max"][0], rows["thrust_max"][0] if model == "max_thrust" else None)[0]
+            tau = _evaluate(function, np.array([u, 0, 0, 0, 0, 0.0]))["tau"].reshape(-1)
+            assert abs(tau[0] - x_src) <= G2_TOLERANCE, (set_id, u)
+
+
+def test_G4_surge_time_constant_plus_1_percent_is_detected():
+    rows = _surge_rows(2, "max_thrust")
+    p = _surge_parameters(2, "max_thrust")
+    worst = lambda q: max(abs(_evaluate(_build_surge(q)[1], np.array([u, 0, 0, 0, 0, 0.0]))["tau"][0, 0] - x)
+                          for u, x in zip(rows["u_r"], rows["X"]))
+    assert worst(p) <= G1_TOLERANCE
+    assert worst({**p, "time_constant": 1.01 * p["time_constant"]}) > G4_FACTOR * G1_TOLERANCE
+
+
+def test_numpy_source_surge_linear_coefficient_sign_is_documented():
+    """Documents a source sign error (not fixed here: more_generic_models
+    physics is read-only for this job): the source's Xu is -(m - A11)/T1,
+    MSS's and Fossen (2011) eq. 6.76's is -(m + A11)/T1. When the source is
+    fixed this test fails and is replaced by plain G2."""
+    damping = _source()["damping"]
+    for set_id in range(1, 6):
+        rows = _surge_rows(set_id, "ittc")
+        m, a11, t1 = rows["m"][0], rows["A11"][0], rows["T1"][0]
+        xu_src = damping.force_surge_damping(1.0, m, rows["S"][0], rows["L"][0], t1, rows["rho"][0],
+                                             rows["u_max"][0])[2]
+        assert abs(xu_src - (-(m - a11) / t1)) <= G2_TOLERANCE * abs(xu_src), set_id
+        assert abs(rows["Xu"][0] - (-(m + a11) / t1)) <= G2_TOLERANCE * abs(xu_src), set_id
+
+
+# Physical-sign tests (owner E-23: MSS is the reference, not the truth)
+def test_physical_linear_surge_coefficient_gives_the_time_constant():
+    """Fossen (2011) eqs. 6.71 and 6.76 (pp. 124-125, read in full): the
+    linearised surge mode (m + A11) du/dt = Xu u decays with time constant
+    T1 = (m + A11) / (-Xu). Model-free on the MATLAB rows (MSS satisfies it),
+    then on the block's own derivative dX/du at u = 0 (sigma(0) = 1)."""
+    import casadi as ca
+    for set_id in range(1, 6):
+        rows = _surge_rows(set_id, "ittc")
+        m, a11, t1 = rows["m"][0], rows["A11"][0], rows["T1"][0]
+        assert abs((m + a11) / -rows["Xu"][0] - t1) <= 1e-12 * t1, set_id
+        for model in SURGE_MODELS:
+            _, function = _build_surge(_surge_parameters(set_id, model))
+            x = ca.SX.sym("x", 6)
+            slope = float(ca.Function("j", [x], [ca.jacobian(function(nu_r=x)["tau"][0], x)])(np.zeros(6))[0])
+            assert abs((m + a11) / -slope - t1) <= 1e-12 * t1, (set_id, model, slope)
+
+
+def test_physical_surge_damping_dissipation_mss_blend_is_documented():
+    """Fossen (2011) Property 6.3 (p. 123): damping is dissipative, X u_r <= 0.
+    MATLAB's own rows: true for every u_r >= 0; false in reverse, because
+    sigma = 1 - tanh(u_r/u_cross) (forceSurgeDamping.m 79) exceeds 1 for
+    u_r < 0 and flips the quadratic term. Example pinned: osv.m with its
+    thrust calibration at u_r = -8 m/s gives X < 0 (pushes it further astern).
+    Owner decision pending (ledger, proposed D-MSS-4)."""
+    ref = _named_columns(MSS_SURGE)
+    real = ref["probe"] == 0
+    power = ref["X"] * ref["u_r"]
+    assert np.all(power[real & (ref["u_r"] >= 0)] <= 0.0)
+    assert np.any(power[real & (ref["u_r"] < 0)] > 0.0)
+    osv_reverse = real & (ref["set"] == 1) & (ref["branch"] == 1) & (ref["u_r"] == -8.0)
+    assert osv_reverse.sum() == 1 and ref["X"][osv_reverse][0] < 0.0
+
+
+def test_physical_surge_ittc_branch_singularity_is_documented():
+    """Fossen (2011) p. 125 below eq. 6.85: a minimum Rn must be used or C_F
+    blows up at low speed. forceSurgeDamping.m 72-73 has none (eps only), so at
+    Rn = 100 (u_r = 1e-4/L) MATLAB returns |X| > 1e9 N on osv.m; the
+    max_thrust branch at the same speeds stays below 1 N. XuuITTC.m bounds
+    Re at 1e5 (line 34). Owner decision pending (ledger, proposed D-MSS-5)."""
+    ittc = _surge_rows(1, "ittc", probe=1)
+    thrust = _surge_rows(1, "max_thrust", probe=1)
+    assert np.max(np.abs(ittc["X"])) > 1e9
+    assert np.max(np.abs(thrust["X"])) < 1.0
+
+
+def test_physical_cross_flow_equals_first_principles_strip_integral():
+    """The strip at x (from the CO, z down) moves with v + x r sideways and
+    w - x q vertically (omega x r for r = [x 0 0]); its moments are
+    N = +x Y_i and M = -x Z_i. Fossen (2011) eqs. 6.91-6.92 (p. 127) state the
+    sway/yaw half; heave/pitch is this ledger's derivation. crossFlowDrag.m
+    47 and 50 use w + x q and +x Z: two sign flips that cancel on a grid
+    symmetric about the CO (A-22 finding 6), so the default block must equal
+    the first-principles form; a pure pitch or yaw rate must be opposed."""
+    for p in (_cross_flow_spheroid("midpoint"), _cross_flow_catamaran("midpoint")):
+        function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
+        n_strips = int(_value(CFD, 25))
+        dx = p["length"] / n_strips
+        xs = -p["length"] / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx
+        for k, nu_r in enumerate(_states()):
+            cd = (_mss_cylinder_cd(p["length"], p["beam"], nu_r) if p["drag_model"] == "cylinder"
+                  else _mss_hoerner(p["beam"], p["draft"]))
+            v_pt, w_pt = nu_r[1] + xs * nu_r[5], nu_r[2] - xs * nu_r[4]
+            per_strip = -0.5 * p["water_density"] * p["draft"] * cd * dx
+            y_i, z_i = per_strip * np.abs(v_pt) * v_pt, per_strip * np.abs(w_pt) * w_pt
+            physical = np.array([0, y_i.sum(), z_i.sum(), 0, -(xs * z_i).sum(), (xs * y_i).sum()])
+            out = _evaluate(function, nu_r)["tau"].reshape(-1)
+            assert _max_diff(out, physical) <= G1_TOLERANCE, (p["drag_model"], k)
+        pitch = _evaluate(function, np.array([0, 0, 0, 0, 0.2, 0.0]))["tau"].reshape(-1)
+        yaw = _evaluate(function, np.array([0, 0, 0, 0, 0, 0.2]))["tau"].reshape(-1)
+        assert pitch[4] < 0 and abs(pitch[2]) <= G1_TOLERANCE
+        assert yaw[5] < 0 and abs(yaw[1]) <= G1_TOLERANCE
+
+
+# --------------------------------------------------------------------------
+# A-27 finding 4: Jacobians at and near rest (documents today; owner decides)
+# --------------------------------------------------------------------------
+JACOBIAN_STATES = {
+    "rest": [0, 0, 0, 0, 0, 0],
+    "pure_sway": [0, 0.3, 0, 0, 0, 0],             # sideways current, no way on
+    "pure_rotation": [0, 0, 0, 0.1, 0.1, 0.1],     # turning on the spot
+}
+# (block, output, state) -> non-finite Jacobian entries (row of the output,
+# column of nu_r), probed 2026-10-06. Submerged damping: U_r = |nu_r[0:3]|
+# (remus100.m 128) inside exp(-3 U_r) has d/dnu = nu/U_r = 0/0 when u=v=w=0.
+# Lift/drag: atan2(w_r, u_r) (remus100.m 127) has 0/0 derivatives when
+# u_r = w_r = 0, which includes pure sway.
+JACOBIAN_NONFINITE_TODAY = {
+    ("submerged", "tau", "rest"): {(0, 0), (0, 1), (0, 2)},
+    ("submerged", "tau", "pure_rotation"): {(0, 0), (0, 1), (0, 2)},
+    ("lift_drag", "tau", "rest"): {(0, 0), (0, 2), (2, 0), (2, 2)},
+    ("lift_drag", "tau", "pure_sway"): {(0, 0), (0, 2), (2, 0), (2, 2)},
+    ("lift_drag", "tau", "pure_rotation"): {(0, 0), (0, 2), (2, 0), (2, 2)},
+}
+
+
+def _jacobian_blocks():
+    return {
+        "submerged": _build_submerged({k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items()
+                                       if k != "sway_damping_fade"})[1],
+        "surface": _build_surface(_surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN))[1],
+        "cross_flow_cylinder": _build_cross_flow({k: v for k, v in _cross_flow_spheroid("midpoint").items()
+                                                  if k != "strip_grid"}),
+        "cross_flow_hoerner": _build_cross_flow({k: v for k, v in _cross_flow_catamaran("midpoint").items()
+                                                 if k != "strip_grid"}),
+        "lift_drag": _build_lift_drag(_lift_drag_spheroid(_value(FLD, 26))),
+    }
+
+
+def _nonfinite_jacobian(function, output, state):
+    import casadi as ca
+    x = ca.SX.sym("x", 6)
+    jac = np.array(ca.Function("j", [x], [ca.jacobian(function(nu_r=x)[output], x)])(np.asarray(state, float)))
+    return {(int(i), int(j)) for i, j in zip(*np.nonzero(~np.isfinite(jac)))}
+
+
+@pytest.mark.parametrize("state", sorted(JACOBIAN_STATES))
+def test_A27_finding4_nonfinite_jacobian_entries_are_documented(state):
+    """Documents today's behaviour for the owner's decision (ledger, options
+    a/b/c): exactly the listed entries are non-finite; cross-flow and surface
+    damping are finite; 1e-12 off the singular set every Jacobian is finite."""
+    for name, function in _jacobian_blocks().items():
+        expected = JACOBIAN_NONFINITE_TODAY.get((name, "tau", state), set())
+        assert _nonfinite_jacobian(function, "tau", JACOBIAN_STATES[state]) == expected, (name, state)
+        assert not _nonfinite_jacobian(function, "tau", np.full(6, 1e-12)), name
+
+
+@pytest.mark.parametrize("model", SURGE_MODELS)
+def test_surge_damping_jacobian_is_finite_at_rest(model):
+    """|u_r| u_r and tanh are smooth at 0; the ITTC log10(Rn + eps) enters
+    multiplied by |u_r| u_r (zero slope), so the Jacobian must be finite at
+    rest and on the other two singular sets of finding 4."""
+    _, function = _build_surge(_surge_parameters(2, model))
+    for state in JACOBIAN_STATES.values():
+        assert not _nonfinite_jacobian(function, "tau", state), (model, state)
+
+
+# --------------------------------------------------------------------------
+# E-25: transforms only from L0 (more_transformations)
+# --------------------------------------------------------------------------
+OUR_HYDRODYNAMICS_MODULES = (LINEAR_DAMPING, CROSS_FLOW, LIFT_DRAG, SURGE_DAMPING)  # not Luka's linear_surface (E-28)
+ALLOWED_IMPORT_ROOTS = {"casadi", "numpy", "dataclasses", "typing", "math", "__future__",
+                        "more_transformations", "more_dynamics"}
+TRANSFORM_NAME = re.compile(r"(skew|smtrx|rzyx|rotation|rot_|hmtrx|euler|quat|gravity|jacobian_|tzyx)")
+
+
+@pytest.mark.parametrize("module_name", OUR_HYDRODYNAMICS_MODULES)
+def test_E25_no_local_transform_in_hydrodynamics(module_name):
+    """No function defined here looks like a rotation, skew, H, T, J or
+    gravity, and nothing is imported from outside the allowed roots; any
+    transform a block needs comes from ``more_transformations`` (numpy) or
+    ``more_transformations.more_casadi_transformations`` (CasADi)."""
+    tree = ast.parse(Path(_contract(module_name).__file__).read_text())
+    defined = [n.name for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
+    assert not [n for n in defined if TRANSFORM_NAME.search(n.lower())], defined
+    roots = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots |= {a.name.split(".")[0] for a in node.names}
+        elif isinstance(node, ast.ImportFrom) and node.level == 0:
+            roots.add(node.module.split(".")[0])
+    assert roots <= ALLOWED_IMPORT_ROOTS, roots - ALLOWED_IMPORT_ROOTS
+
+
+# --------------------------------------------------------------------------
 # Generic by construction (owner E-16)
 # --------------------------------------------------------------------------
 def _code_without_docstrings(module):
@@ -1101,9 +1768,12 @@ def _code_without_docstrings(module):
 GENERIC = {
     LINEAR_DAMPING: {"preprocess_submerged_linear_damping": {"sway_damping_fade"},
                      "preprocess_surface_linear_damping": set()},
-    CROSS_FLOW: {"preprocess_cross_flow_drag": {"cross_flow_reynolds_length", "strip_grid"}},
+    CROSS_FLOW: {"preprocess_cross_flow_drag": {"strip_grid"}},   # U3a: length flag gone
     LIFT_DRAG: {"preprocess_lift_drag": set()},
+    SURGE_DAMPING: {"preprocess_surge_damping_ittc": set(),
+                    "preprocess_surge_damping_max_thrust": set()},
 }
+GENERIC[LINEAR_DAMPING]["preprocess_floating_linear_damping"] = set()
 
 
 @pytest.mark.parametrize("module_name", sorted(GENERIC))
@@ -1112,6 +1782,6 @@ def test_generic_block_reads_no_vehicle_name_and_has_no_vehicle_defaults(module_
     code = _code_without_docstrings(block)
     assert not [n for n in VEHICLE_NAMES if n in code]
     for function_name, flags in GENERIC[module_name].items():
-        signature = inspect.signature(getattr(block, function_name))
+        signature = inspect.signature(_attribute(module_name, function_name))
         defaults = {n for n, p in signature.parameters.items() if p.default is not inspect.Parameter.empty}
         assert defaults == flags, (function_name, defaults)

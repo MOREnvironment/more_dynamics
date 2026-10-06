@@ -61,3 +61,23 @@ Inputs: the same `inputs.csv` (the generators read their own byte-identical copy
 ## Readers (job A-30, 2026-10-05) — appended
 
 - `tests/hydrodynamics/test_hydrodynamics_block.py`: the `*_mss_current.csv` files for the default paths (section "G1-MSS"; spheroid cross-flow on the MSS flag `cross_flow_reynolds_length="length"`, register row D-MSS-1), the legacy `*_matlab_reference.csv` files for the template flags, the numpy source's G1, G2 and G4.
+
+## Job U3a (verifier, 2026-10-06) — appended, nothing above changed
+
+**MSS** `source-sim/MSS` HEAD `ac77394b74a2184317e92c6b73d8deca97b48359` (clean), which carries issue #81's fix: `HYDRO/cylinderDrag.m` 79-80, `Re = U_crossflow * B / nu_water`. Between `99bf0b3` and `ac77394`, the only other file these tests use that changed is `LIBRARY/modeling/Dmtrx.m`, in a comment only (line 4, `98506da`). New: `LIBRARY/modeling/XuuITTC.m` (`97fae93`). **MATLAB** `26.1.0.3312084 (R2026a) Update 4`. Ledger: `agents-more/30_checks/2026-10-06_U3_hydrodynamics_gates.md`.
+
+| File | Origin | How it was made | sha256 |
+|---|---|---|---|
+| `spheroid_matlab_reference_mss_ac77394.csv` | the A-26 generator `test/plant/auv_spheroid/test_mss_matlab/test_dynamics_consistency_mss_current.m` (sha256 `51ca4117…c33e`, unchanged) run from a scratch copy with its input CSV, `MSS_DIR` = the checkout above; full output sha256 `1fba1e7f…896a` | same 128 columns and `cut_cols` regex as above | `5303cdc0a205d2d8fb06bd861718a8f0243a33def8c99e78951436516de63041` |
+| `surge_damping_mss_ac77394.csv` | `generate_u3_surge_floating_mss.m` (this folder) | MSS `forceSurgeDamping.m` (both branches) and `addedMassSurge.m` called directly; set 1 = `osv.m` 62-80, 129; sets 2-5 seeded (`rng(20261006,'twister')`); 40 speeds per set and branch + 4 probe rows at Rn = 100 (`probe = 1`, physical tests only) | `752fbc4d90b38e32db0943b7603ffcdfa2f81ccfee26801aabd86311543ebe80` |
+| `xuu_ittc_mss_ac77394.csv` | same generator | MSS `XuuITTC.m` called directly, same five sets, 40 speeds | `3ccbe4b4cbd5b0349c6abe05adc5ff04dbd3f90f6294ac30bd2aecba20539721` |
+| `floating_damping_mss_ac77394.csv` | same generator | MSS `Dmtrx.m` surface branch (G a matrix) on 20 seeded craft; matrices row-major | `6cf64656315ebf354996980445670b0e453474ac85804358796ca437ccee8bc4` |
+| `generate_u3_surge_floating_mss.m` | written by U3a | needs `MSS_DIR` (errors without it); run with `MSS_DIR=<MSS> "$MATLAB_BIN" -batch "run('generate_u3_surge_floating_mss.m')"` from this folder; writes `%.17g` (exact doubles) | `1268d96827d666cbab9b07ba3ba2055c80f987f4feb4a5b01388725572f60e3a` |
+| `cited_lines_snapshot.json` | `snapshot_cited_lines.py` (this folder) with `MSS_DIR` = the checkout above and `MORE_GENERIC_MODELS_DIR` = `more_generic_models` at `524e336` | the stripped text of all 134 cited lines and the 4 MSS tables the tests read; the gates read this file, so they run without either checkout (agents-more rule 9) | `785a29b6116644ff6d116edb181e4576df933fa2fcce73af66bea4b9230d3b21` |
+| `snapshot_cited_lines.py` | written by U3a | needs both variables; refuses a cited line that no longer starts with its pinned text | `f580674b414db24d4c30063edaf99699f95f27e518a52110355967e259f3aee6` |
+
+Checks on the new spheroid file: the header equals that of `spheroid_matlab_reference_mss_current.csv`, and only `tau_crossflow_02/03/05/06` differ, by up to 175.5 N (test `test_ac77394_reference_differs_from_99bf0b3_only_in_cross_flow`). Byte-unchanged, re-checked: `inputs.csv`, both legacy files, both A-26 files (sha256 as in the tables above).
+
+**Readers (U3a):** `tests/hydrodynamics/test_hydrodynamics_block.py`. The ac77394 file is the default-path G1 of the cross-flow block. `spheroid_matlab_reference_mss_current.csv` (99bf0b3) remains the G1 file for damping and lift/drag, and the history file for cross-flow (pre-fix Re on the length, transcription only). The block test on the dropped `cross_flow_reynolds_length` flag was removed (owner, 2026-10-06).
+
+**Paths (agents-more rule 9):** nothing here or in the test is relative to a workspace. MSS and `more_generic_models` are reached only through `MSS_DIR` and `MORE_GENERIC_MODELS_DIR`, and MATLAB through `MATLAB_BIN`. The A-26 generators in `more_generic_models` still default to a sibling-folder path when `MSS_DIR` is unset; U3a set it explicitly (their owner's edit, listed in the ledger).

@@ -67,6 +67,8 @@ Frozen reference: ``tests/data/rigid_body/matlab_reference_mss_current.csv``
 
 import importlib
 import inspect
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -175,16 +177,22 @@ def _random_states():
 
 
 def _numpy_source():
+    # agents-more rule 9 (job U1a): the source repo is named by an environment
+    # variable, never found relative to this checkout.
+    root = os.environ.get("MORE_GENERIC_MODELS_DIR")
+    if not root:
+        pytest.skip(
+            "MORE_GENERIC_MODELS_DIR is not set (repository root of "
+            "more_generic_models); numpy-source gates skipped"
+        )
+    if root not in sys.path:
+        sys.path.insert(0, root)
     try:
         from more_generic_models.dynamics.plant.asv_catamaran.asv_catamaran import (
             ASVCatamaran,
         )
     except ImportError as exc:
-        pytest.skip(
-            "numpy source not importable; install it into the venv with "
-            "pip install -e <more>/more_generic_models (job A-4c)"
-            f" — {exc}"
-        )
+        pytest.skip(f"numpy source not importable from MORE_GENERIC_MODELS_DIR={root}: {exc}")
     return ASVCatamaran()
 
 
@@ -366,9 +374,9 @@ def test_E24_contract_has_no_legacy_otter_inertia_flag():
 
 # --------------------------------------------------------------------------
 # G5 — Otter constants, MSS otter.m
-# (source-sim/MSS/CRAFT/USV/models/otter.m, MSS 99bf0b3, file e1dff2a)
+# (<MSS_DIR>/CRAFT/USV/models/otter.m, MSS 99bf0b3, file e1dff2a)
 # --------------------------------------------------------------------------
-OTTER_M = Path(__file__).resolve().parents[4] / "source-sim/MSS/CRAFT/USV/models/otter.m"
+OTTER_M_RELATIVE = "CRAFT/USV/models/otter.m"  # under MSS_DIR (agents-more rule 9)
 OTTER_LINES = {  # line number -> text the constants below were taken from
     91: "rho = 1025;",
     92: "L = 2.0;",
@@ -404,9 +412,13 @@ OTTER_MP, OTTER_RP = 25.0, [0.05, 0.0, -0.35]
 
 
 def test_G5_cited_otter_lines_are_unchanged():
-    if not OTTER_M.exists():
-        pytest.skip(f"MSS checkout not found at {OTTER_M}")
-    lines = OTTER_M.read_text().splitlines()
+    mss = os.environ.get("MSS_DIR")
+    if not mss:
+        pytest.skip("MSS_DIR is not set (path to the MSS checkout); otter.m line check skipped")
+    otter_m = Path(mss) / OTTER_M_RELATIVE
+    if not otter_m.exists():
+        pytest.fail(f"MSS_DIR={mss}: {OTTER_M_RELATIVE} not found")
+    lines = otter_m.read_text().splitlines()
     for number, text in OTTER_LINES.items():
         assert lines[number - 1].strip().startswith(text), (number, lines[number - 1])
 

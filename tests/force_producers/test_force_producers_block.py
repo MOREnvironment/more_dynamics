@@ -18,6 +18,28 @@ Rewired by job A-30 (2026-10-05): the differential thruster's default (otter.m
 keeps the numpy source's G1 and the block's G1/G4 on the source's settings.
 Fins and the propeller have no current-MSS MATLAB file (A-26 scope).
 
+Extended by job U4a (2026-10-06; ledger
+``agents-more/30_checks/2026-10-06_U4_force_producers_gates.md``), section 7
+at the end of this file:
+
+* MATLAB R2026a running current MSS now backs the fins and the propeller
+  (``remus100_actuators_mss_current.csv``: ``remus100.m``'s own ``X_prop``,
+  ``K_prop``, ``X_r``, ``X_s``, ``Y_r``, ``Z_s`` and ``tau`` on 1036 seeded
+  cases) and the Wageningen polynomial (``wageningen_kt_kq_mss_current.csv``:
+  ``wageningen.m`` on three geometries, J = -0.5 ... 2.0). Equality needs the
+  parameter set to supply ``remus100.m``'s values: fin limit 20 deg, rho 1026,
+  fin x = -a, and the printed K_T/K_Q (tests ``test_U4_*_depart_*``).
+* Outboard: the reverse-sign fix is pinned; throttle mode gets its G4; the
+  default path's reverse branch (signed J, reverse factors) gets a test.
+* L0 (owner E-25): no local rotation or cross product in
+  ``models/force_producers``; rotations and skews come from
+  ``more_transformations`` (numpy) and ``more_casadi_transformations``
+  (graph). Fails until the porter (U4b) moves them.
+* Two **proposed** ports from the U4 classification (owner decision pending):
+  ``differential_thruster_speed_from_thrust_casadi`` and the constants field
+  ``propeller_matrix``. Their tests fail with "not ported yet"; delete them if
+  the owner drops the rows.
+
 Producers and their references
 ------------------------------
 =====================  ==========================================  =======================================
@@ -124,6 +146,7 @@ Frozen reference: ``tests/data/force_producers/`` (``SOURCE.md``).
 import ast
 import importlib
 import inspect
+import os
 import re
 from pathlib import Path
 
@@ -131,7 +154,13 @@ import numpy as np
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "force_producers"
-MORE = Path(__file__).resolve().parents[4]
+# agents-more rule 9 (owner, 2026-10-06): nothing relative to one machine.
+# Files outside this repo are found through environment variables, default
+# unset: MSS_DIR (the MSS checkout root) and MORE_GENERIC_MODELS_DIR (the
+# more_generic_models repository root). A cited path below starts with the
+# key of EXTERNAL_ROOTS; the rest is relative to that root.
+EXTERNAL_ROOTS = {"source-sim/MSS/": "MSS_DIR",
+                  "more_generic_models/": "MORE_GENERIC_MODELS_DIR"}
 PACKAGE = "more_dynamics.models.force_producers"
 
 G1_TOLERANCE = 1e-9   # 30_checks/README.md, gate G1
@@ -145,6 +174,7 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
 
 REMUS = "source-sim/MSS/CRAFT/AUV/models/remus100.m"
 OTTER = "source-sim/MSS/CRAFT/USV/models/otter.m"
+SIMOTTER = "source-sim/MSS/CRAFT/USV/SIMotter.m"
 GRAVITY = "source-sim/MSS/INS/functions/gravity.m"
 WAG_MAT = "source-sim/MSS/LIBRARY/modeling/utiles/WageningData.mat"
 WAG_TXT = "source-sim/MSS/LIBRARY/modeling/utiles/WageningData.txt"
@@ -238,16 +268,54 @@ CITED_LINES = {
     (SRC_OUTBOARD, 382): "Va = self.Va_factor * nu[0] * (1.0 - self.w_prop)",
     (SRC_OUTBOARD, 385): "T_prop = (1.0 - self.t_prop) * T_prop",
     (SRC_OUTBOARD, 391): "P_shaft_limit = self.max_power * max(self.eta, 1e-3)",
+    # job U4a
+    (OTTER, 212): "B_prop = k_pos * [...",
+    (OTTER, 213): "1 1",
+    (OTTER, 214): "y_pont -y_pont ];",
+    (SIMOTTER, 183): "u = Binv * [tau_X; tau_N];",
+    (SIMOTTER, 184): "n_c = sign(u) .* sqrt(abs(u));",
+    (WAG_M, 24): "%   Barnitsas, M.M., Ray, D. and Kinley, P. (1981).",
+    (WAG_M, 25): "%   KT, KQ and Efficiency Curves for the Wageningen B-Series Propellers",
+    (WAG_M, 26): "%   http://deepblue.lib.umich.edu/handle/2027.42/3557",
+    (SRC_WAG, 6): "following polynomial regression (Barnitsas et al. 1981).",
+    (SRC_OUTBOARD, 317): "if n_rps < 0.0:",
+    (SRC_OUTBOARD, 320): "KT *= self.reverse_KT_factor",
+    (SRC_OUTBOARD, 321): "KQ *= self.reverse_KQ_factor",
 }
 
 
 # --------------------------------------------------------------------------
 # Helpers: pinned text, contract, data
 # --------------------------------------------------------------------------
+def _external(rel):
+    """Path of a cited file outside this repo, or (None, reason) when the
+    environment variable for its root is unset or the file is missing."""
+    for prefix, variable in EXTERNAL_ROOTS.items():
+        if rel.startswith(prefix):
+            root = os.environ.get(variable)
+            if not root:
+                return None, f"{variable} is not set (agents-more rule 9); needed for {rel}"
+            path = Path(root) / rel[len(prefix):]
+            return (path, None) if path.exists() else (None, f"{variable}: cited file not found: {path}")
+    raise KeyError(rel)
+
+
+def _external_or_skip(rel):
+    path, reason = _external(rel)
+    if path is None:
+        pytest.skip(reason)
+    return path
+
+
 def _line(rel, number):
-    path = MORE / rel
-    if not path.exists():
-        pytest.skip(f"cited file not found: {path}")
+    """The cited line, checked against its pinned text. Without the external
+    checkout the pinned text itself is used (frozen in CITED_LINES), so the
+    gates still run; only the unchanged-line check is skipped."""
+    path, reason = _external(rel)
+    if path is None:
+        if (rel, number) in CITED_LINES:
+            return CITED_LINES[(rel, number)]
+        pytest.skip(reason)
     line = path.read_text().splitlines()[number - 1].strip()
     if (rel, number) in CITED_LINES:
         assert line.startswith(CITED_LINES[(rel, number)]), (rel, number, line)
@@ -345,7 +413,10 @@ def _source(kind):
 # --------------------------------------------------------------------------
 def test_cited_lines_are_unchanged():
     for (rel, number), text in CITED_LINES.items():
-        line = _line(rel, number)
+        path, reason = _external(rel)
+        if path is None:
+            pytest.skip(reason)
+        line = path.read_text().splitlines()[number - 1].strip()
         assert line.startswith(text), (rel, number, line)
 
 
@@ -721,9 +792,7 @@ def test_G5_block_polynomial_coefficients_round_to_remus100_printed_values():
 def _mss_wageningen_tables():
     """WageningData.mat, loaded as wageningen.m line 33 does."""
     import scipy.io
-    path = MORE / WAG_MAT
-    if not path.exists():
-        pytest.skip(f"MSS checkout not found at {path}")
+    path = _external_or_skip(WAG_MAT)
     _line(WAG_M, 33)
     d = scipy.io.loadmat(path)
     thrust = np.hstack([d["WagCThrust_stuv"], d["WagThrust_s"], d["WagThrust_t"],
@@ -747,9 +816,7 @@ def test_G5_mss_table_equals_its_printed_text():
     """WageningData.mat equals WageningData.txt ("Re = 2 x 10^6" table). The
     paper both transcribe (Barnitsas, Ray and Kinley 1981, as MSS spells it) is
     not on disk: the published-table check proper is owed (needs access)."""
-    path = MORE / WAG_TXT
-    if not path.exists():
-        pytest.skip(f"MSS checkout not found at {path}")
+    path = _external_or_skip(WAG_TXT)
     text = path.read_text()
     rows = lambda s: np.array([[float(x) for x in ln.split()] for ln in s.splitlines()
                                if re.match(r"\s*[-+][0-9]", ln)])
@@ -1211,3 +1278,422 @@ def test_generic_block_reads_no_vehicle_name_and_has_no_vehicle_defaults(module_
         signature = inspect.signature(getattr(block, function_name))
         defaults = {n for n, p in signature.parameters.items() if p.default is not inspect.Parameter.empty}
         assert defaults == allowed, (function_name, defaults)
+
+
+# ==========================================================================
+# 7. Job U4a (2026-10-06): current-MSS MATLAB for fins, propeller and the
+#    Wageningen polynomial; outboard pins; L0 imports; proposed ports
+# ==========================================================================
+def _actuators_csv():
+    """remus100_actuators_mss_current.csv: MATLAB R2026a running remus100.m
+    (MSS ac77394) on 1036 seeded cases; columns are remus100.m's own
+    workspace variables (SOURCE.md, job U4a)."""
+    h, v = _load_csv("remus100_actuators_mss_current.csv")
+    get = lambda *names: v[:, [h.index(n) for n in names]]
+    one = lambda name: v[:, h.index(name)]
+    return {"ui": get("ui1", "ui2", "ui3"),
+            "nu_r": get(*[f"nu_r_{i:02d}" for i in range(1, 7)]),
+            "n_p": one("n_p"), "delta": get("delta_r", "delta_s"),
+            "X_prop": one("X_prop"), "K_prop": one("K_prop"), "X_r": one("X_r"),
+            "X_s": one("X_s"), "Y_r": one("Y_r"), "Z_s": one("Z_s"),
+            "tau": get(*[f"tau_{i:02d}" for i in range(1, 7)])}
+
+
+def _matlab_propeller_part(ref):
+    """remus100.m 247 (propeller term) and 250, from the MATLAB columns."""
+    t_prop = _value(REMUS, 150)
+    scale = _number_in(REMUS, 250, r"K_prop / ([0-9.]+);")
+    part = np.zeros((len(ref["X_prop"]), 6))
+    part[:, 0] = (1.0 - t_prop) * ref["X_prop"]
+    part[:, 3] = ref["K_prop"] / scale
+    return part
+
+
+def _matlab_fins_part(ref):
+    """remus100.m 247 (fin terms), 248, 249, 251, 252, from the MATLAB columns."""
+    p = _remus_fins()
+    part = np.zeros((len(ref["X_r"]), 6))
+    part[:, 0] = ref["X_r"] + ref["X_s"]
+    part[:, 1] = ref["Y_r"]
+    part[:, 2] = ref["Z_s"]
+    part[:, 4] = -p["stern_plane_position"] * ref["Z_s"]
+    part[:, 5] = p["rudder_position"] * ref["Y_r"]
+    return part
+
+
+def _block_parts(propeller_params, fin_params, ref):
+    _, propeller = _build("propeller", propeller_params)
+    _, fins = _build("fins", fin_params)
+    prop = np.array([_tau(propeller, n=[u[2]], nu_r=nu) for u, nu in zip(ref["ui"], ref["nu_r"])])
+    fin = np.array([_tau(fins, delta=u[:2], nu_r=nu) for u, nu in zip(ref["ui"], ref["nu_r"])])
+    return prop, fin
+
+
+def test_U4_remus100_actuator_reference_is_consistent():
+    """The CSV holds 1036 cases, reaches beyond both saturation limits, and its
+    tau is the sum of its own propeller and fin terms (lines 247-252)."""
+    ref = _actuators_csv()
+    assert ref["tau"].shape == (1036, 6)
+    assert np.any(np.abs(ref["ui"][:, 2]) > _value(REMUS, 111))
+    assert np.any(np.abs(ref["ui"][:, :2]) > _value(REMUS, 110))
+    total = _matlab_propeller_part(ref) + _matlab_fins_part(ref)
+    assert _max_diff(total, ref["tau"]) <= G1_TOLERANCE
+
+
+def test_U4_transcriptions_reproduce_remus100_actuator_matlab():
+    """The A-22 transcriptions (_mss_remus_propeller, _mss_fins) equal MATLAB."""
+    ref = _actuators_csv()
+    pp, fp = _remus_propeller(), _remus_fins()
+    for k, (u, nu) in enumerate(zip(ref["ui"], ref["nu_r"])):
+        expected = _mss_remus_propeller(pp, u[2], nu) + _mss_fins(fp, u[:2], nu)
+        assert _max_diff(expected, ref["tau"][k]) <= G1_TOLERANCE, k
+
+
+def test_G1_MSS_propeller_block_equals_matlab():
+    """Block "linearized" on remus100.m's parameters (rho 1026, printed K_T/K_Q
+    as the exact override) vs MATLAB's (1 - t_prop) X_prop and K_prop / 10;
+    the saturated speed equals MATLAB's n_p."""
+    ref = _actuators_csv()
+    p = _remus_propeller()
+    constants, _ = _build("propeller", p)
+    np.testing.assert_allclose(np.clip(ref["ui"][:, 2], -constants.max_speed, constants.max_speed) / 60.0,
+                               ref["n_p"], atol=G1_TOLERANCE, rtol=0)
+    prop, _ = _block_parts(p, _remus_fins(), ref)
+    expected = _matlab_propeller_part(ref)
+    for k in range(len(prop)):
+        assert _max_diff(prop[k], expected[k]) <= G1_TOLERANCE, k
+
+
+def test_G1_MSS_fins_block_equals_matlab():
+    """Block fins on remus100.m's parameters (20 deg, rho 1026, x = -a),
+    default convention, vs MATLAB's X_r, X_s, Y_r, Z_s; the saturated angles
+    equal MATLAB's delta_r, delta_s."""
+    ref = _actuators_csv()
+    p = _remus_fins()
+    np.testing.assert_allclose(np.clip(ref["ui"][:, :2], -p["max_deflection"], p["max_deflection"]),
+                               ref["delta"], atol=G1_TOLERANCE, rtol=0)
+    _, fin = _block_parts(_remus_propeller(), p, ref)
+    expected = _matlab_fins_part(ref)
+    for k in range(len(fin)):
+        assert _max_diff(fin[k], expected[k]) <= G1_TOLERANCE, k
+
+
+def test_G1_MSS_propeller_plus_fins_equals_matlab_tau():
+    """No transcription at all: block propeller + block fins = remus100.m's tau."""
+    ref = _actuators_csv()
+    prop, fin = _block_parts(_remus_propeller(), _remus_fins(), ref)
+    for k in range(len(prop)):
+        assert _max_diff(prop[k] + fin[k], ref["tau"][k]) <= G1_TOLERANCE, k
+
+
+def _worst_against_matlab(propeller_params, fin_params):
+    ref = _actuators_csv()
+    prop, fin = _block_parts(propeller_params, fin_params, ref)
+    return (_max_diff(prop, _matlab_propeller_part(ref)), _max_diff(fin, _matlab_fins_part(ref)))
+
+
+def test_G4_MSS_matlab_detects_propeller_and_fin_perturbations():
+    pp, fp = _remus_propeller(), _remus_fins()
+    assert max(_worst_against_matlab(pp, fp)) <= G1_TOLERANCE
+    assert _worst_against_matlab({**pp, "diameter": 1.01 * pp["diameter"]}, fp)[0] > G4_FACTOR * G1_TOLERANCE
+    fp_bad = {**fp, "stern_plane_lift_coefficient": 1.01 * fp["stern_plane_lift_coefficient"]}
+    assert _worst_against_matlab(pp, fp_bad)[1] > G4_FACTOR * G1_TOLERANCE
+
+
+@pytest.mark.parametrize("key", ["max_deflection", "water_density", "rudder_position", "stern_plane_position"])
+def test_U4_template_fin_defaults_depart_from_matlab(key):
+    """Finding (A-22, step 2 of U4a): the numpy source's defaults (25 deg,
+    rho 1025, x = -0.8 m) each break equality with MATLAB; the parameter set
+    must supply remus100.m 99, 110, 185, 190 (20 deg, 1026, x = -a)."""
+    fp, template = _remus_fins(), _template_fins()
+    assert template[key] != fp[key], key
+    worst = _worst_against_matlab(_remus_propeller(), {**fp, key: template[key]})[1]
+    assert worst > G4_FACTOR * G1_TOLERANCE, (key, worst)
+
+
+def test_U4_polynomial_coefficients_depart_from_matlab_by_the_printed_rounding_only():
+    """Finding: without the override the block computes K_T/K_Q at J = 0 and
+    J = Ja_max from the polynomial; remus100.m 158-162 prints them to 4
+    decimals. The block then departs from MATLAB by more than G1 but never by
+    more than a 5e-5 error in each coefficient can cause."""
+    ref = _actuators_csv()
+    p = _remus_propeller()
+    prop, _ = _block_parts({**p, "thrust_torque_coefficients": None}, _remus_fins(), ref)
+    diff = np.abs(prop - _matlab_propeller_part(ref))
+    half_unit = 0.5e-4   # half a unit in the 4th decimal of the printed values
+    rho, d, j_max, t = p["water_density"], p["diameter"], p["max_advance_number"], p["thrust_deduction"]
+    n_p, va = ref["n_p"], (1.0 - p["wake_fraction"]) * np.linalg.norm(ref["nu_r"][:, :3], axis=1)
+    forward = n_p > 0
+    shape = half_unit * n_p ** 2 + forward * (2.0 * half_unit / j_max) * (va / d) * np.abs(n_p)
+    assert np.all(diff[:, 0] <= (1.0 - t) * rho * d ** 4 * shape + G1_TOLERANCE)
+    assert np.all(diff[:, 3] <= p["roll_moment_scale"] * rho * d ** 5 * shape + G1_TOLERANCE)
+    assert diff.max() > G4_FACTOR * G1_TOLERANCE
+
+
+def _wageningen_csv():
+    h, v = _load_csv("wageningen_kt_kq_mss_current.csv")
+    return {name: v[:, h.index(name)] for name in h}
+
+
+def _wageningen_csv_sets():
+    """remus_like / four_blade as WAGENINGEN_SETS; outboard = the numpy
+    outboard parameter set's geometry (electrical_outboard_motor_params.py)."""
+    p = _outboard_rpm_parameters(False)
+    return {**WAGENINGEN_SETS,
+            "outboard": (p["pitch_diameter_ratio"], p["blade_area_ratio"], int(p["blade_count"]))}
+
+
+def _wageningen_rows(name):
+    w = _wageningen_csv()
+    pd, aeao, z = _wageningen_csv_sets()[name]
+    rows = (w["PD"] == pd) & (w["AEAO"] == aeao) & (w["z"] == z)
+    assert rows.sum() == 1252, (name, rows.sum())
+    return w["J"][rows], w["KT"][rows], w["KQ"][rows]
+
+
+@pytest.mark.parametrize("name", ["four_blade", "outboard", "remus_like"])
+def test_G1_MSS_wageningen_block_default_equals_matlab(name):
+    """MATLAB running wageningen.m, J = -0.5 ... 2.0 (E-22 Q1 a: any J)."""
+    pd, aeao, z = _wageningen_csv_sets()[name]
+    _, function = _build_wageningen(pd, aeao, z)
+    for j, kt, kq in zip(*_wageningen_rows(name)):
+        assert _max_diff(_kt_kq(function, j), (kt, kq)) <= G1_TOLERANCE, j
+
+
+@pytest.mark.parametrize("name", ["four_blade", "outboard", "remus_like"])
+def test_U4_mss_table_transcription_and_source_reproduce_matlab_wageningen(name):
+    """_mss_wageningen (WageningData.mat, used by the A-22/A-28 tests) equals
+    MATLAB at every J; the numpy source equals it on 0 <= J <= 1.3 (G1)."""
+    pd, aeao, z = _wageningen_csv_sets()[name]
+    source = _source("wageningen")
+    for j, kt, kq in zip(*_wageningen_rows(name)):
+        assert _max_diff(_mss_wageningen(j, pd, aeao, z), (kt, kq)) <= G1_TOLERANCE, j
+        if 0.0 <= j <= 1.3:
+            assert _max_diff(source(j, pd, aeao, z), (kt, kq)) <= G1_TOLERANCE, j
+
+
+def test_G4_MSS_wageningen_blade_area_plus_1_percent_is_detected_by_matlab():
+    pd, aeao, z = _wageningen_csv_sets()["remus_like"]
+    rows = list(zip(*_wageningen_rows("remus_like")))
+    worst = lambda f: max(_max_diff(_kt_kq(f, j), (kt, kq)) for j, kt, kq in rows)
+    assert worst(_build_wageningen(pd, aeao, z)[1]) <= G1_TOLERANCE
+    assert worst(_build_wageningen(pd, 1.01 * aeao, z)[1]) > G4_FACTOR * G1_TOLERANCE
+
+
+@pytest.mark.parametrize("rpm", [300.0, -300.0], ids=["ahead", "astern"])
+def test_G1_MSS_outboard_rpm_default_with_matlab_kt_kq(rpm):
+    """Default path (MSS polynomial, signed J) of the outboard rpm block on the
+    outboard geometry's MATLAB rows: the surge speed is set so that
+    J = Va / (n D) (lines 315, 382) hits each MATLAB J, steering 0.1 rad;
+    expected = source lines 315-325, 380-414 with MATLAB's K_T, K_Q, times the
+    reverse factors for n < 0 (lines 317-321, E-20 Q5 a). Closes A-28 hidden
+    assumption 2 (the default path's reverse branch was untested)."""
+    p = _outboard_rpm_parameters(False)
+    _, function = _build("outboard_motor_rpm", p)
+    n_rps, delta = rpm / 60.0, 0.1
+    gain = p["advance_speed_factor"] * (1.0 - p["propwash_factor"])
+    reverse = (p["reverse_thrust_factor"], p["reverse_torque_factor"]) if rpm < 0 else (1.0, 1.0)
+    for j, kt, kq in zip(*_wageningen_rows("outboard")):
+        nu_r = np.array([j * n_rps * p["propeller_diameter"] / gain, 0, 0, 0, 0, 0])
+        expected = _outboard_rpm_force(p, rpm, delta, nu_r, reverse[0] * kt, reverse[1] * kq)
+        got = _tau(function, n=[rpm], delta=[delta], nu_r=nu_r)
+        assert _max_diff(got, expected) <= G1_TOLERANCE, (j, got, expected)
+
+
+@pytest.mark.parametrize("scaled", [False, True], ids=["grethe_like", "scaled"])
+def test_E20_Q5a_fix_is_in_the_source_so_the_reference_is_the_source_as_is(scaled):
+    """The fixed source (lines 317-321, pinned) gives a negative surge force at
+    full reverse, so _fixed_reference never flips: every outboard G2 compares
+    with the numpy source unchanged."""
+    p = _outboard_rpm_parameters(scaled)
+    for number in (317, 320, 321):
+        _line(SRC_OUTBOARD, number)
+    assert not _source_reverse_sign_is_wrong(p)
+
+
+def test_G4_outboard_throttle_max_propulsive_power_plus_1_percent_is_detected():
+    """Throttle mode G4 (A-22 gave it G2 only). Cases above the power-cap
+    speed P / T_max, where the cap is what sets the force."""
+    p = _outboard_throttle_parameters(False)
+    cls = _source("outboard_throttle")
+    rng = _rng()
+    cap_speed = p["max_propulsive_power"] / p["max_thrust"]
+    cases = []
+    for _ in range(100):
+        nu_r = rng.uniform(-3.0, 3.0, 6)
+        nu_r[0] = rng.uniform(cap_speed + 0.2, cap_speed + 2.0)
+        cases.append((rng.uniform(0.5, 1.0) * p["max_thrust"], rng.uniform(-0.6, 0.6), nu_r))
+
+    def expected(thrust, delta, nu_r):
+        src = cls(max_thrust=p["max_thrust"], max_propulsive_power=p["max_propulsive_power"], r_body=p["position"])
+        src.thrust, src.delta = float(thrust), float(delta)
+        return src.step(thrust / p["max_thrust"], delta / src.delta_max * src._steer_input_sign, nu_r, 0.1)
+
+    references = [expected(*c) for c in cases]
+    worst = lambda params: max(_max_diff(_tau(_build("outboard_motor_throttle", params)[1], thrust=[t], delta=[d], nu_r=n), e)
+                               for (t, d, n), e in zip(cases, references))
+    assert worst(p) <= G2_TOLERANCE
+    assert worst({**p, "max_propulsive_power": 1.01 * p["max_propulsive_power"]}) > G4_FACTOR * G2_TOLERANCE
+
+
+# --- L0 (owner E-25): transforms only from more_transformations -------------
+L0_FUNCTION_NAMES = {"rotation_zyx", "rzyx", "rzyx_explicit", "rx", "ry", "rz", "r_fossen", "r_bn", "r_nb",
+                     "skew", "smtrx", "h_matrix", "hmtrx", "t_euler", "j_body_to_eta", "gravity"}
+L0_NUMPY = "more_transformations"
+L0_CASADI = "more_transformations.more_casadi_transformations"
+
+
+def _force_producer_modules():
+    package = Path(_contract("differential_thruster").__file__).resolve().parent
+    return {path.stem: ast.parse(path.read_text()) for path in sorted(package.glob("*.py"))}
+
+
+def test_L0_no_local_rotation_or_skew_in_force_producers():
+    """E-25: no module of models/force_producers defines a rotation, skew,
+    H, T, J or gravity of its own (today: _common.rotation_zyx)."""
+    local = {(name, node.name) for name, tree in _force_producer_modules().items()
+             for node in ast.walk(tree)
+             if isinstance(node, ast.FunctionDef) and node.name.lower() in L0_FUNCTION_NAMES}
+    assert not local, sorted(local)
+
+
+def test_L0_no_local_cross_product_in_force_producers():
+    """E-25 ("every skew"), read by job U4a: a moment r x F is S(r) F with the
+    L0 skew (MatrixTransforms.skew, numpy in preprocess, CasADi in the graph),
+    not np.cross / ca.cross (today: _common.wrench, propeller, differential)."""
+    calls = {(name, node.lineno) for name, tree in _force_producer_modules().items()
+             for node in ast.walk(tree)
+             if isinstance(node, ast.Call) and getattr(node.func, "attr", getattr(node.func, "id", "")) == "cross"}
+    assert not calls, sorted(calls)
+
+
+def test_L0_force_producers_import_both_transform_packages():
+    """The rotation (propeller shaft, preprocess) comes from the numpy L0 and
+    the graph skew from its CasADi counterpart."""
+    modules = set()
+    for tree in _force_producer_modules().values():
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                modules.add(node.module)
+            elif isinstance(node, ast.Import):
+                modules.update(alias.name for alias in node.names)
+    assert any(m == L0_NUMPY or (m.startswith(L0_NUMPY + ".") and not m.startswith(L0_CASADI)) for m in modules), modules
+    assert any(m == L0_CASADI or m.startswith(L0_CASADI + ".") for m in modules), modules
+
+
+def test_L0_shaft_axis_and_moment_arms_equal_more_transformations():
+    """Numerical twin of the three L0 tests (passes before and after the
+    move): the shaft axis is Rzyx(orientation)[:, 0] of the numpy L0, and
+    every moment arm equals the CasADi L0 skew, S(r) F."""
+    from more_transformations.matrix_transforms import MatrixTransforms as numpy_l0
+    from more_transformations.more_casadi_transformations.matrix_transforms import MatrixTransforms as casadi_l0
+    rng = _rng()
+    base = _scaled_propeller()
+    for _ in range(200):
+        orientation = rng.uniform(-np.pi, np.pi, 3)
+        constants, _ = _build("propeller", {**base, "orientation": orientation})
+        np.testing.assert_allclose(constants.shaft_axis, numpy_l0.Rzyx(orientation)[:, 0], atol=G2_TOLERANCE, rtol=0)
+
+    p = _outboard_rpm_parameters(True)
+    skew = np.array(casadi_l0.skew(p["position"]), dtype=float)
+    _, function = _build("outboard_motor_rpm", p)
+    for rpm, delta, nu_r in list(zip(*_outboard_cases(p)))[:200]:
+        tau = _tau(function, n=[rpm], delta=[delta], nu_r=nu_r)
+        np.testing.assert_allclose(tau[3:], skew @ tau[:3], atol=G2_TOLERANCE, rtol=0)
+
+    d = _scaled_differential()
+    constants, _ = _build("differential_thruster", d)
+    for i in range(2):
+        direction = np.asarray(d["thruster_directions"][i]) / np.linalg.norm(d["thruster_directions"][i])
+        arm = np.array(casadi_l0.skew(d["thruster_positions"][i]), dtype=float) @ direction
+        np.testing.assert_allclose(constants.allocation_matrix[3:, i], arm, atol=G2_TOLERANCE, rtol=0)
+
+
+# --- U4 classification: drops justified by a test, proposed ports -----------
+@pytest.mark.parametrize("parameter_set", ["otter_like", "scaled"])
+def test_U4_drop_get_thrust_limits_equals_the_force_parameters(parameter_set):
+    """Row DifferentialThruster.get_thrust_limits (lines 198-205) is dropped:
+    k n|n| at the speed limits is exactly the force parameters the block
+    takes (max_forward_thrust, -max_reverse_thrust), and equals the source."""
+    p = _otter_differential(9.81) if parameter_set == "otter_like" else _scaled_differential()
+    constants, _ = _build("differential_thruster", p)
+    t_max = constants.positive_thrust_coefficients * constants.max_speed * np.abs(constants.max_speed)
+    t_min = constants.negative_thrust_coefficients * constants.min_speed * np.abs(constants.min_speed)
+    np.testing.assert_allclose(t_max, p["max_forward_thrust"], atol=G2_TOLERANCE, rtol=0)
+    np.testing.assert_allclose(t_min, -np.asarray(p["max_reverse_thrust"]), atol=G2_TOLERANCE, rtol=0)
+    source_min, source_max = _differential_source(p).get_thrust_limits()
+    np.testing.assert_allclose([t_min, t_max], [source_min, source_max], atol=G2_TOLERANCE, rtol=0)
+
+
+def _proposed(module_name, attribute):
+    block = _contract(module_name)
+    if not hasattr(block, attribute):
+        pytest.fail(f"proposed port not ported yet (U4 classification, owner decision pending): {attribute}")
+    return getattr(block, attribute)
+
+
+@pytest.mark.parametrize("parameter_set", ["otter_like", "scaled"])
+def test_U4_proposed_port_speed_from_thrust_matches_source(parameter_set):
+    """PROPOSED (row DifferentialThruster.speed_from_thrust, lines 173-192).
+    Contract: ``differential_thruster_speed_from_thrust_casadi(constants)``,
+    input ``["thrust"]`` (2x1, N), output ``["n"]`` (2x1, rad/s):
+    ``sqrt(T / k_pos)`` for T >= 0, else ``-sqrt(-T / k_neg)``; no saturation
+    (as the source). Equals the source on 1000 seeded thrusts, and inside the
+    limits the block's thrust law maps it back to T."""
+    p = _otter_differential(9.81) if parameter_set == "otter_like" else _scaled_differential()
+    constants, thrust_law = _build("differential_thruster", p)
+    inverse = _proposed("differential_thruster", "differential_thruster_speed_from_thrust_casadi")(constants)
+    assert inverse.name_in() == ["thrust"] and inverse.name_out() == ["n"]
+    source = _differential_source(p)
+    rng = _rng()
+    lower, upper = -np.asarray(p["max_reverse_thrust"]), np.asarray(p["max_forward_thrust"])
+    for k, thrust in enumerate(rng.uniform(1.2 * lower, 1.2 * upper, size=(N_RANDOM_STATES, 2))):
+        n = np.array(inverse(thrust=thrust)["n"], dtype=float).reshape(-1)
+        assert _max_diff(n, source.speed_from_thrust(thrust)) <= G2_TOLERANCE, k
+        if np.all((thrust > lower) & (thrust < upper)):
+            tau = _tau(thrust_law, n=n, nu_r=np.zeros(6))
+            assert _max_diff(tau, constants.allocation_matrix @ thrust) <= G2_TOLERANCE, k
+
+
+def test_U4_proposed_port_propeller_matrix_equals_otter_and_source():
+    """PROPOSED (row DifferentialThruster.get_B_prop, lines 266-267, 281-295).
+    Contract: constants field ``propeller_matrix`` (2x2) =
+    ``allocation_matrix[[0, 5], :] diag(positive_thrust_coefficients)``, the
+    map from u = n|n| to (tau_X, tau_N) (job U4a's generic form). On the
+    Otter set it equals otter.m 212-214, k_pos [1 1; y_pont -y_pont], and the
+    source's get_B_prop."""
+    p = _otter_differential(_value(OTTER, 90))
+    constants, _ = _build("differential_thruster", p)
+    if not hasattr(constants, "propeller_matrix"):
+        pytest.fail("proposed port not ported yet (U4 classification, owner decision pending): propeller_matrix")
+    _line(OTTER, 212)
+    k_pos, y_pont = _value(OTTER, 134), _value(OTTER, 105)
+    otter = k_pos * np.array([[1.0, 1.0], [y_pont, -y_pont]])
+    np.testing.assert_allclose(constants.propeller_matrix, otter, atol=G1_TOLERANCE, rtol=0)
+    np.testing.assert_allclose(constants.propeller_matrix, _differential_source(p).get_B_prop(),
+                               atol=G2_TOLERANCE, rtol=0)
+    for q in (_scaled_differential(),):
+        c, _ = _build("differential_thruster", q)
+        np.testing.assert_allclose(c.propeller_matrix,
+                                   c.allocation_matrix[[0, 5], :] @ np.diag(c.positive_thrust_coefficients),
+                                   atol=G2_TOLERANCE, rtol=0)
+
+
+@pytest.mark.parametrize("convention", CONVENTIONS)
+def test_U4_physical_fins_only_drag_and_moments_are_r_cross_f(convention):
+    """E-23 addendum, no model needed: a deflected fin never pushes the
+    vehicle forward (tau_X <= 0), produces no roll moment, and its moments
+    are r x F at the fin positions (rudder at x_r: N = x_r Y; stern planes at
+    x_s: M = -x_s Z), computed with the numpy L0 skew. Holds for all four
+    conventions, so the convention only chooses the sign of the deflection."""
+    from more_transformations.matrix_transforms import MatrixTransforms as numpy_l0
+    p = _remus_fins()
+    _, function = _build("fins", {**p, "convention": convention})
+    r_rudder = np.array([p["rudder_position"], 0.0, 0.0])
+    r_stern = np.array([p["stern_plane_position"], 0.0, 0.0])
+    for k, (delta, nu_r) in enumerate(zip(*_fin_cases())):
+        tau = _tau(function, delta=delta, nu_r=nu_r)
+        assert tau[0] <= 0.0, (k, tau)
+        moment = numpy_l0.skew(r_rudder) @ np.array([0.0, tau[1], 0.0]) \
+            + numpy_l0.skew(r_stern) @ np.array([0.0, 0.0, tau[2]])
+        assert _max_diff(tau[3:], moment) <= G2_TOLERANCE, (k, tau)

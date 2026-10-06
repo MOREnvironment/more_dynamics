@@ -10,6 +10,13 @@ file, which the numpy source's G1 keeps reading). Added for A-27 pass A
 finding 3: ``g`` is the left-hand-side restoring vector; the force on the
 vehicle is ``-g`` (``test_restoring_sign_positive_buoyancy_lifts_the_vehicle``).
 
+Completed by job U2a (2026-10-06), additions only: G5 against the printed
+``gvect`` example of Fossen (2011) p. 61; the rotation comes from L0
+``more_casadi_transformations`` (owner E-25, ADR 0003 §4.4), no local trig;
+the block's docstring states the ``-g`` step (ADR 0003 U2 done-criterion,
+A-27 pass A finding 3). The last two fail until the porter (U2b) changes
+``submerged.py``.
+
 Contract the porter must provide
 --------------------------------
 ``more_dynamics.models.hydrostatics.submerged`` exports:
@@ -60,14 +67,19 @@ Frozen reference: ``tests/data/hydrostatics/`` (``SOURCE.md``).
 import ast
 import importlib
 import inspect
+import os
+import re
+import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "hydrostatics"
-MORE = Path(__file__).resolve().parents[4]
-MSS = MORE / "source-sim" / "MSS"
+# Outside this repo only through environment variables (agents-more rule 9):
+# MSS_DIR = an MSS checkout, MORE_GENERIC_MODELS_DIR = the more_generic_models
+# repo root. Unset -> the tests that need them skip; the gates on the frozen
+# CSVs in tests/data run everywhere.
 CONTRACT_MODULE = "more_dynamics.models.hydrostatics.submerged"
 # Current-MSS MATLAB reference (job A-26) for the block; legacy for the source.
 REFERENCE_CSV = "spheroid_matlab_reference_mss_current.csv"
@@ -119,10 +131,20 @@ CITED_LINES = {
 # --------------------------------------------------------------------------
 # Helpers: MSS text, contract, data
 # --------------------------------------------------------------------------
+def _env_dir(variable):
+    value = os.environ.get(variable)
+    if not value:
+        pytest.skip(f"{variable} is not set (agents-more rule 9); set it to run this check")
+    path = Path(value).expanduser()
+    if not path.is_dir():
+        pytest.skip(f"{variable}={value} is not a directory")
+    return path
+
+
 def _mss_line(rel, number):
-    path = MSS / rel
+    path = _env_dir("MSS_DIR") / rel
     if not path.exists():
-        pytest.skip(f"MSS checkout not found at {path}")
+        pytest.skip(f"{rel} not found under MSS_DIR")
     return path.read_text().splitlines()[number - 1].strip()
 
 
@@ -198,24 +220,39 @@ def _max_diff(a, b):
     return float(np.max(np.abs(np.asarray(a, float) - np.asarray(b, float))))
 
 
+def _gravity_l0(mu_deg):
+    """L0 gravity (owner E-22, E-25): the WGS-84 formula of gravity.m."""
+    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
+    return ECEFNEDtransform.gravity(mu_deg)
+
+
 # --------------------------------------------------------------------------
 # Parameter sets
 # --------------------------------------------------------------------------
+# MSS remus100.m / spheroid.m constants, typed with their lines so the gates
+# run without an MSS checkout; test_typed_constants_equal_the_cited_mss_lines
+# reads them back when MSS_DIR is set.
+REMUS_CONSTANTS = {
+    "mu_deg": 63.446827,          # remus100.m line 97
+    "L_auv": 1.6,                 # remus100.m line 132
+    "D_auv": 0.19,                # remus100.m line 133
+    "r_bG": [0.0, 0.0, 0.02],     # remus100.m line 138
+    "r_bB": [0.0, 0.0, 0.0],      # remus100.m line 139
+    "rho": 1025.0,                # spheroid.m line 35
+}
 def _remus_like_parameters():
     """MSS remus100.m: m from spheroid.m 35-36 with a, b from lines 132-136;
     W = B = m g(mu) (line 212, mu line 97); centres lines 138-139."""
-    l_auv = _mss_value(REMUS, 132)
-    d_auv = _mss_value(REMUS, 133)
-    a = _mss_value(REMUS, 135, {"L_auv": l_auv})
-    b = _mss_value(REMUS, 136, {"D_auv": d_auv})
-    rho = _mss_value("LIBRARY/modeling/spheroid.m", 35)
-    m = _mss_value("LIBRARY/modeling/spheroid.m", 36, {"rho": rho, "a": a, "b": b})
-    weight = m * _gravity(_mss_value(REMUS, 97))
+    c = REMUS_CONSTANTS
+    a = 1.0096 * c["L_auv"] / 2   # remus100.m line 135
+    b = 1.0096 * c["D_auv"] / 2   # remus100.m line 136
+    m = 4 / 3 * np.pi * c["rho"] * a * b ** 2   # spheroid.m line 36
+    weight = m * _gravity_l0(c["mu_deg"])
     return {
         "weight": weight,
         "buoyancy": weight,
-        "center_of_gravity": _mss_value(REMUS, 138),
-        "center_of_buoyancy": _mss_value(REMUS, 139),
+        "center_of_gravity": np.array(c["r_bG"]),
+        "center_of_buoyancy": np.array(c["r_bB"]),
     }
 
 
@@ -239,7 +276,7 @@ def _matlab_parameters():
     ref = _reference_cases()
     assert np.ptp(ref["mass"]) == 0.0
     params = _remus_like_parameters()
-    weight = ref["mass"][0] * _gravity(_mss_value(REMUS, 97))
+    weight = ref["mass"][0] * _gravity_l0(REMUS_CONSTANTS["mu_deg"])
     return {**params, "weight": weight, "buoyancy": weight}
 
 
@@ -285,14 +322,14 @@ def _g_vect(p, eta):
 # Numpy source
 # --------------------------------------------------------------------------
 def _numpy_source():
+    root = str(_env_dir("MORE_GENERIC_MODELS_DIR"))
+    if root not in sys.path:
+        sys.path.insert(0, root)
     try:
         from more_generic_models.dynamics.plant.auv_spheroid.auv_spheroid import AUVSpheroid
         from more_generic_models.dynamics.plant.matrices.restoring_forces import RestoringForces
     except ImportError as exc:
-        pytest.skip(
-            "numpy source not importable; install it into the venv with "
-            f"pip install -e <more>/more_generic_models (job A-4c) — {exc}"
-        )
+        pytest.skip(f"numpy source not importable from MORE_GENERIC_MODELS_DIR={root}: {exc}")
     return AUVSpheroid(), RestoringForces
 
 
@@ -309,6 +346,21 @@ def test_reference_shapes_and_neutral_buoyancy():
 def test_current_mss_reference_is_byte_identical_to_legacy():
     """SOURCE.md (A-26): current MSS changed nothing on this path."""
     assert (DATA_DIR / REFERENCE_CSV).read_bytes() == (DATA_DIR / LEGACY_CSV).read_bytes()
+
+
+def test_typed_constants_equal_the_cited_mss_lines():
+    """REMUS_CONSTANTS are typed with their lines (agents-more rules 4, 9);
+    with MSS_DIR set they are read back from MSS, and the L0 gravity equals the
+    transcription of gravity.m lines 11-12."""
+    c = REMUS_CONSTANTS
+    assert _mss_value(REMUS, 132) == c["L_auv"] and _mss_value(REMUS, 133) == c["D_auv"]
+    assert _mss_value("LIBRARY/modeling/spheroid.m", 35) == c["rho"]
+    assert abs(_mss_value(REMUS, 97) - np.deg2rad(c["mu_deg"])) == 0.0
+    assert list(_mss_value(REMUS, 138)) == c["r_bG"] and list(_mss_value(REMUS, 139)) == c["r_bB"]
+    for prefix, key in (("a = 1.0096", 135), ("b = 1.0096", 136)):
+        assert _mss_line(REMUS, key).startswith(prefix)
+    mu = np.deg2rad(c["mu_deg"])
+    assert abs(_gravity(mu) - _gravity_l0(c["mu_deg"])) <= 1e-12
 
 
 def test_cited_mss_lines_are_unchanged():
@@ -432,6 +484,74 @@ def test_restoring_sign_positive_buoyancy_lifts_the_vehicle():
         applied_force_z = -g[2]
         assert applied_force_z < 0.0, (k, "upward in NED is negative z")
         assert _max_diff(g[:2], 0.0) <= G1_TOLERANCE, (k, g)
+
+
+# --------------------------------------------------------------------------
+# G5 — published number (Fossen 2011, Section 4.1.1, p. 61; read in full)
+# --------------------------------------------------------------------------
+def test_G5_fossen_2011_page_61_gvect_example():
+    """The book's MSS example: m = 1000, g = 9.81, W = B, r_g = [0 0 0],
+    r_b = [0 0 -10], phi = 30 deg; printed g = 1e4 [0, 0, 0, 1.8324,
+    9.0997, 0]. The book's script sets ``theta = 10*(180/pi)`` (a unit slip:
+    572.96 rad, not 10 deg); the printed numbers are that input's, so the
+    test enters theta exactly as printed. It checks the formula, not the
+    angle (with 10 deg the moments would be 4.8305e4 and 1.7035e4)."""
+    weight = 1000 * 9.81
+    params = {"weight": weight, "buoyancy": weight,
+              "center_of_gravity": np.array([0.0, 0.0, 0.0]),
+              "center_of_buoyancy": np.array([0.0, 0.0, -10.0])}
+    _, function = _build(params)
+    eta = np.array([0.0, 0.0, 0.0, 30 * (np.pi / 180), 10 * (180 / np.pi), 0.0])
+    printed = 1e4 * np.array([0.0, 0.0, 0.0, 1.8324, 9.0997, 0.0])
+    half_last_digit = 0.5e-4 * 1e4
+    assert _max_diff(_evaluate(function, eta), printed) <= half_last_digit
+
+
+# --------------------------------------------------------------------------
+# Transforms from L0 (owner E-25, ADR 0003 §4.4) and the -g statement
+# --------------------------------------------------------------------------
+L0_ROTATIONS = {
+    "more_transformations.more_casadi_transformations.matrix_transforms.MatrixTransforms":
+        ("Rzyx_explicit", "Rzyx", "Rzyx_row3"),
+    "more_transformations.more_casadi_transformations.euler_ned_body_transforms.EulerNEDBodyTransforms":
+        ("R_fossen", "R_bn", "R_nb"),
+}
+
+
+def test_L0_rotation_is_taken_from_more_casadi_transformations(monkeypatch):
+    """The graph's ``R(3,:)`` comes from the CasADi L0 (``Rzyx_row3``, ``Rzyx``
+    or ``R_bn``), counted by wrapping those functions while the block is built."""
+    calls = []
+    for path, names in L0_ROTATIONS.items():
+        module_name, cls_name = path.rsplit(".", 1)
+        cls = getattr(importlib.import_module(module_name), cls_name)
+        for name in names:
+            original = getattr(cls, name)
+
+            def spy(*args, _original=original, _name=name, **kwargs):
+                calls.append(_name)
+                return _original(*args, **kwargs)
+            monkeypatch.setattr(cls, name, staticmethod(spy))
+    _build(_remus_like_parameters())
+    assert calls, "no L0 rotation was called; R(3,:) is computed locally"
+
+
+def test_L0_no_local_trigonometry_in_the_block():
+    block = _contract()
+    tree = ast.parse(_code_without_docstrings(block))
+    trig = [ast.unparse(n.func) for n in ast.walk(tree) if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Attribute) and n.func.attr in {"sin", "cos", "tan"}]
+    assert not trig, f"local rotation terms: {trig}"
+
+
+def test_docstring_states_the_minus_g_step():
+    """ADR 0003 U2: "the -g step documented" (A-27 pass A finding 3). The
+    module or ``submerged_hydrostatics_casadi`` docstring must say that the
+    applied force is ``-g`` (equation of motion ``... + g = tau``)."""
+    block = _contract()
+    text = " ".join(filter(None, [block.__doc__, block.submerged_hydrostatics_casadi.__doc__]))
+    text = re.sub(r"-\s+g\b", "-g", text.replace("−", "-"))
+    assert re.search(r"(?<![\w-])-g(?![\w(])", text), "the docstring does not state the -g step"
 
 
 # --------------------------------------------------------------------------
