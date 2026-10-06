@@ -9,6 +9,7 @@ class HullMassProperties:
     """Constant rigid-body and added-mass properties for ``HullVessel``."""
 
     mass: float
+    center_of_gravity: np.ndarray
     inertia_at_center_of_gravity: np.ndarray
     inertia_at_center_of_origin: np.ndarray
     rigid_body_mass_matrix: np.ndarray
@@ -84,6 +85,7 @@ def preprocess_hull_mass_properties(
 
     return HullMassProperties(
         mass=mass,
+        center_of_gravity=r_cg,
         inertia_at_center_of_gravity=inertia_cg_matrix,
         inertia_at_center_of_origin=inertia_co,
         rigid_body_mass_matrix=rigid_body_mass,

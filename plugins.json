@@ -17,6 +17,11 @@
             "Type": "file"
         },
         {
+            "Name": "CrossflowSurfaceHydrodynamics",
+            "Path": "more_dynamics/plugins/hydrodynamics/crossflow_surface_hydrodynamics.py",
+            "Type": "file"
+        },
+        {
             "Name": "HullVessel",
             "Path": "more_dynamics/plugins/vehicle_models/hull_vessel.py",
             "Type": "file"

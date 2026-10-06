@@ -1,5 +1,6 @@
 import casadi as ca
 
+from .coriolis import coriolis_matrices_casadi
 from .mass_properties import HullMassProperties
 
 
@@ -48,18 +49,13 @@ def vessel_model_casadi(
             body_linear_velocity,
             body_angular_rate,
         )
-        momentum = total_mass_matrix @ body_velocity
-        linear_momentum = momentum[:3]
-        angular_momentum = momentum[3:]
-
-        # The body-frame momentum balance includes both rigid-body and
-        # added-mass Coriolis/centripetal terms. Deriving this from the
-        # complete mass matrix preserves their centre-of-gravity coupling.
-        coriolis_wrench = ca.vertcat(
-            ca.cross(body_angular_rate, linear_momentum),
-            ca.cross(body_linear_velocity, linear_momentum)
-            + ca.cross(body_angular_rate, angular_momentum),
+        rigid_body_coriolis, added_mass_coriolis = coriolis_matrices_casadi(
+            mass_properties,
+            body_velocity,
         )
+        coriolis_wrench = (
+            rigid_body_coriolis + added_mass_coriolis
+        ) @ body_velocity
     else:
         coriolis_wrench = ca.SX.zeros(6)
     acceleration = ca.solve(total_mass_matrix, tau - coriolis_wrench)

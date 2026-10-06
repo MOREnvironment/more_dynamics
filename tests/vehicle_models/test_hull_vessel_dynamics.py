@@ -5,6 +5,7 @@ from rpp_py.data_manager import DataManager
 _DATA_MANAGER = DataManager()
 
 from more_dynamics.models.hull_vessel import (
+    coriolis_matrices_casadi,
     preprocess_hull_mass_properties,
     vessel_model_casadi,
 )
@@ -141,6 +142,64 @@ def test_casadi_graph_coriolis_force_does_not_create_kinetic_energy():
     kinetic_energy_rate = velocity @ properties.total_mass_matrix @ state_dot[6:]
 
     np.testing.assert_allclose(kinetic_energy_rate, 0.0, atol=1e-12)
+
+
+def test_coriolis_decomposition_matches_fossen_rigid_and_added_mass_terms():
+    properties = preprocess_hull_mass_properties(**DEFAULT_PARAMETERS)
+    velocity = np.array([4.0, -1.0, 0.2, 0.3, -0.1, 0.7])
+    velocity_symbol = ca.SX.sym("velocity", 6)
+    rigid_body, added_mass = coriolis_matrices_casadi(
+        properties,
+        velocity_symbol,
+    )
+    model = ca.Function("coriolis", [velocity_symbol], [rigid_body, added_mass])
+
+    rigid_body_value, added_mass_value = model(ca.DM(velocity))
+    rigid_body_value = np.asarray(rigid_body_value)
+    added_mass_value = np.asarray(added_mass_value)
+
+    def skew(vector):
+        x, y, z = vector
+        return np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+
+    center_of_gravity = properties.center_of_gravity
+    transform = np.block(
+        [
+            [np.eye(3), skew(center_of_gravity).T],
+            [np.zeros((3, 3)), np.eye(3)],
+        ]
+    )
+    angular_velocity = velocity[3:]
+    rigid_body_at_cg = np.block(
+        [
+            [
+                properties.mass * skew(angular_velocity),
+                np.zeros((3, 3)),
+            ],
+            [
+                np.zeros((3, 3)),
+                -skew(properties.inertia_at_center_of_gravity @ angular_velocity),
+            ],
+        ]
+    )
+    expected_rigid_body = transform.T @ rigid_body_at_cg @ transform
+    added_linear_momentum = properties.added_mass_matrix[:3] @ velocity
+    added_angular_momentum = properties.added_mass_matrix[3:] @ velocity
+    expected_added_mass = np.block(
+        [
+            [np.zeros((3, 3)), -skew(added_linear_momentum)],
+            [-skew(added_linear_momentum), -skew(added_angular_momentum)],
+        ]
+    )
+
+    np.testing.assert_allclose(rigid_body_value, expected_rigid_body)
+    np.testing.assert_allclose(added_mass_value, expected_added_mass)
+    np.testing.assert_allclose(
+        (rigid_body_value + added_mass_value)
+        + (rigid_body_value + added_mass_value).T,
+        np.zeros((6, 6)),
+        atol=1e-12,
+    )
 
 
 def test_high_speed_turn_couples_into_roll_for_an_elevated_centre_of_gravity():
