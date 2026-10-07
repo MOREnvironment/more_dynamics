@@ -166,8 +166,14 @@ class HullVessel(VehicleModel3D):
 
         dyn_function = ca.Function("dynamics", [states, inputs], [ca.vertcat(*actuators_dot, state_dot)])
         vessel_state = states[-12:]
+        vessel_acceleration = state_dot[6:12]
         sensor_outputs = [
-            sensor.output(ca.SX.zeros(0, 1), vessel_state)
+            sensor.output(
+                ca.SX.zeros(0, 1),
+                ca.vertcat(vessel_state, vessel_acceleration)
+                if sensor.num_inputs == 18
+                else vessel_state,
+            )
             for sensor in self._sensor_graphs
         ]
         output_function = ca.Function(
@@ -227,8 +233,11 @@ class HullVessel(VehicleModel3D):
     @staticmethod
     def _get_sensor_graph(sensor):
         graph = RppCasadiGraph(sensor.graph())
-        if graph.num_inputs != 12:
-            raise ValueError("sensor graph must accept the 12-value vessel state")
+        if graph.num_inputs not in (12, 18):
+            raise ValueError(
+                "sensor graph must accept the 12-value vessel state, "
+                "optionally followed by the 6-value body acceleration"
+            )
         if graph.num_states != 0:
             raise ValueError("sensor graph must not declare states")
         if graph.step is not None:
