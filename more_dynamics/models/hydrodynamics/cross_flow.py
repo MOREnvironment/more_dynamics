@@ -1,28 +1,76 @@
 """Cross-flow drag by strip theory (numpy constants, CasADi algebra).
 
-Ported from ``more_generic_models`` ``dynamics/plant/matrices/hydrodynamics.py``:
-``HydroForces._hoerner`` (lines 95-100), ``_cylinder_drag`` (103-120),
-``cross_flow_drag`` (127-178) and ``_get_strips`` (181-190); the same tables sit
-in ``drag_models.py::DragModels.hoerner`` (16-64) and ``cylinder_drag``
-(68-162). Translated against MSS (MIT, T. I. Fossen)
-``LIBRARY/modeling/crossFlowDrag.m`` lines 24-54, ``HYDRO/cylinderDrag.m``
-lines 23-107 and ``HYDRO/Hoerner.m`` lines 25-51; the tables below are copied
-from those two files at MSS ``99bf0b3`` (the full-precision Re column, not the
-source's 4-digit one, owner decision E-10 a).
+Equations (keys in References):
 
-Options (owner decisions E-10 a, E-20 Q2 a and Q3 b), explicit arguments of
-the preprocess:
+* Strip theory, 20 strips of width ``dx = L / 20`` at ``x_i``::
+
+      Y = -1/2 rho T Cd_2D sum |v_r + x_i r| (v_r + x_i r) dx
+      Z = -1/2 rho T Cd_2D sum |w_r + x_i q| (w_r + x_i q) dx
+      M = -1/2 rho T Cd_2D sum x_i |w_r + x_i q| (w_r + x_i q) dx
+      N = -1/2 rho T Cd_2D sum x_i |v_r + x_i r| (v_r + x_i r) dx
+
+  (Fossen 2011, eqs. 6.91-6.92, p. 127, sway and yaw as integrals; MSS
+  ``crossFlowDrag.m`` 36-38, 54-69, which adds heave and pitch).
+* Hoerner: ``Cd_2D`` interpolated in ``B / (2T)`` from the table of MSS
+  ``Hoerner.m`` 25-45 (Fossen 2011, Fig. 6.5, p. 128), the last value beyond
+  it (``Hoerner.m`` 47-51).
+* Cylinder: ``Re = U_cf B / nu``, ``U_cf = sqrt(v_r^2 + w_r^2)``,
+  ``nu = 1e-6 m^2/s`` (DNV-RP-C205 2017, §6.6.1.1, p. 113; MSS
+  ``cylinderDrag.m`` 78-80); ``C_D(Re)`` interpolated in the smooth-cylinder
+  table of ``cylinderDrag.m`` 25-53 (digitised by MSS from the DNV-RP-C205
+  curves, 2017 edition Figure 6-6, p. 118), end values outside it
+  (``cylinderDrag.m`` 83-89); ``Cd_2D = C_D kappa(L/B)`` with the finite-
+  length factor ``kappa`` of DNV-RP-C205 2017, Table 6-2, p. 120 (sub-
+  critical row A below ``Re = 2e5``, super-critical row B from there;
+  ``cylinderDrag.m`` 59-76, 92-110).
+
+The tables below are copied from those MSS files (the full-precision Re
+column, not the numpy source's 4-digit one) and are unchanged at MSS
+``72656d1``, whose line numbers the comments cite; the kappa rows equal
+DNV-RP-C205 2017 Table 6-2 entry by entry.
+
+Options and deviations:
 
 * ``strip_grid="midpoint"`` (default): 20 strips evaluated at their midpoints
-  (``crossFlowDrag.m`` since 2026-08-26). ``"endpoint"``: the 21 points
-  ``-L/2 : dx : L/2`` of the earlier MSS and of the numpy source.
-* ``cross_flow_reynolds_length="diameter"`` (default): ``Re = U_cf B / nu``.
-  ``"length"``: ``Re = U_cf L / nu`` as ``cylinderDrag.m`` line 77.
+  ``x_i = -L/2 + (i - 1/2) dx`` (``crossFlowDrag.m`` 56, MSS since
+  2026-08-26). ``"endpoint"``: the 21 points ``-L/2 : dx : L/2`` of the
+  earlier MSS and of the numpy source.
+* The cylinder Reynolds number is on the diameter, ``Re = U_cf B / nu``
+  (``cylinderDrag.m`` 80, MSS since ``ac77394``, DNV-RP-C205 2017 §6.6.1.1).
+  The numpy source and MSS before that revision put it on the length; that
+  form is not kept (owner's decision of 2026-10-06).
+* Inputs outside their domain (a non-positive length, beam, draft or density,
+  a beam-to-draft ratio below Hoerner's data) raise ``ValueError`` naming the
+  input, where MSS returns inf or NaN (``Hoerner.m`` 48 extrapolates with
+  ``interp1`` to NaN below the table).
 
 Conventions: ``nu_r = [u v w p q r]`` relative to the water, body axes z down;
-the cylinder coefficient is one number per call, set by the cross-flow speed
-``sqrt(v_r^2 + w_r^2)``; kinematic viscosity 1e-6 m^2/s; strip height =
-``draft``; ``x`` along the body from the CO, strips centred on it.
+the cylinder coefficient is one number per call, set by the cross-flow speed;
+strip height = ``draft``; ``x`` along the body from the CO, strips centred on
+it.
+
+Ported from the numpy source [MGM] ``dynamics/plant/matrices/hydrodynamics.py``:
+``HydroForces._hoerner`` (95-100), ``_cylinder_drag`` (103-120),
+``cross_flow_drag`` (127-178) and ``_get_strips`` (181-190); the same tables
+sit in ``drag_models.py::DragModels.hoerner`` (16-64) and ``cylinder_drag``
+(68-162).
+
+References
+----------
+[Fossen 2011] Fossen, T. I. (2011). *Handbook of Marine Craft Hydrodynamics
+    and Motion Control*, 1st ed. John Wiley & Sons, Chichester. Ch. 6,
+    §6.4.3, eqs. 6.91-6.92 and Fig. 6.5, pp. 127-128.
+[DNV-RP-C205 2017] DNV GL (2017). *DNVGL-RP-C205: Environmental conditions and
+    environmental loads*, Recommended practice, edition August 2017. §6.6.1.1,
+    p. 113; §6.7.1, Figure 6-6, pp. 116-118; §6.8, Table 6-2, p. 120.
+[MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2.
+    https://github.com/cybergalactic/MSS, MIT licence, revision ``72656d1``:
+    ``LIBRARY/modeling/crossFlowDrag.m`` 36-69; ``HYDRO/cylinderDrag.m``
+    25-110 (M. Seidl); ``HYDRO/Hoerner.m`` 25-51.
+[MGM] Krizman, E. *more_generic_models*.
+    https://github.com/MOREnvironment/more_generic_models (no licence file),
+    revision ``524e336``: ``more_generic_models/dynamics/plant/matrices/``
+    files and lines listed above.
 """
 
 from dataclasses import dataclass
@@ -30,7 +78,8 @@ from dataclasses import dataclass
 import casadi as ca
 import numpy as np
 
-# HYDRO/cylinderDrag.m lines 23-51: [Re, C_D] of a circular cylinder.
+# HYDRO/cylinderDrag.m 25-53: [Re, C_D] of a smooth circular cylinder
+# (digitised from DNV-RP-C205 2017, Figure 6-6, p. 118).
 CYLINDER_DRAG_DATA = np.array(
     [
         [10211.0405297256, 1.20769],
@@ -64,7 +113,8 @@ CYLINDER_DRAG_DATA = np.array(
     ]
 )
 
-# HYDRO/cylinderDrag.m lines 57-74: [L/B, kappa], finite-length reduction.
+# HYDRO/cylinderDrag.m 59-76: [L/B, kappa], finite-length reduction
+# (DNV-RP-C205 2017, Table 6-2 rows A and B, p. 120).
 KAPPA_SUBCRITICAL_DATA = np.array(
     [[2, 0.58], [5, 0.62], [10, 0.68], [20, 0.74], [40, 0.82], [50, 0.87], [100, 0.98]],
     dtype=float,
@@ -74,13 +124,14 @@ KAPPA_SUPERCRITICAL_DATA = np.array(
     dtype=float,
 )
 
-# HYDRO/cylinderDrag.m line 89: sub-critical below, super-critical from here on.
+# HYDRO/cylinderDrag.m 92: sub-critical below, super-critical from here on.
 CRITICAL_REYNOLDS_NUMBER = 2e5
 
-# HYDRO/cylinderDrag.m line 77: 1 / nu with nu = 1e-6 m^2/s.
+# HYDRO/cylinderDrag.m 79: 1 / nu_water with nu_water = 1e-6 m^2/s.
 INVERSE_KINEMATIC_VISCOSITY = 1e6
 
-# HYDRO/Hoerner.m lines 25-45: [B/(2T), C_D]; the last value holds beyond.
+# HYDRO/Hoerner.m 25-45: [B/(2T), C_D] (Fossen 2011, Fig. 6.5, p. 128);
+# the last value holds beyond (Hoerner.m 49-50).
 HOERNER_DRAG_DATA = np.array(
     [
         [0.0108623, 1.96608],
@@ -106,11 +157,10 @@ HOERNER_DRAG_DATA = np.array(
     ]
 )
 
-# crossFlowDrag.m line 25.
+# crossFlowDrag.m 37.
 NUMBER_OF_STRIPS = 20
 
 DRAG_MODELS = ("cylinder", "hoerner")
-REYNOLDS_LENGTHS = ("diameter", "length")
 STRIP_GRIDS = ("midpoint", "endpoint")
 
 
@@ -124,13 +174,13 @@ class CrossFlowDragConstants:
     strip_positions: np.ndarray
     drag_model: str
     drag_coefficient: float
-    reynolds_length: float
+    diameter: float
     kappa_subcritical: float
     kappa_supercritical: float
 
 
 def _clamped_interp(x: float, table: np.ndarray) -> float:
-    """``interp1`` inside the table, end values outside (``cylinderDrag.m`` 90-104)."""
+    """``interp1`` inside the table, end values outside (``cylinderDrag.m`` 83-108)."""
     return float(np.interp(x, table[:, 0], table[:, 1]))
 
 
@@ -149,7 +199,9 @@ def _clamped_interp_casadi(x: ca.SX, table: np.ndarray) -> ca.SX:
 
 
 def _hoerner_drag(beam: float, draft: float) -> float:
-    """``Hoerner.m`` 47-51 (``_hoerner``): 2-D coefficient of B/(2T)."""
+    """``Hoerner.m`` 47-51 (``_hoerner``): 2-D coefficient of B/(2T).
+    Deviation from ``Hoerner.m`` 48: below the table this raises, where MSS
+    returns NaN."""
     ratio = beam / (2.0 * draft)
     if ratio < HOERNER_DRAG_DATA[0, 0]:
         raise ValueError(
@@ -160,10 +212,10 @@ def _hoerner_drag(beam: float, draft: float) -> float:
 
 
 def _strip_positions(length: float, strip_grid: str) -> tuple:
-    dx = length / NUMBER_OF_STRIPS
+    dx = length / NUMBER_OF_STRIPS  # (crossFlowDrag.m 38)
     if strip_grid == "midpoint":
         index = np.arange(1, NUMBER_OF_STRIPS + 1, dtype=float)
-        return -length / 2 + (index - 0.5) * dx, dx           # crossFlowDrag.m 41
+        return -length / 2 + (index - 0.5) * dx, dx           # crossFlowDrag.m 56
     return dx * (np.arange(NUMBER_OF_STRIPS + 1) - NUMBER_OF_STRIPS / 2), dx  # _get_strips
 
 
@@ -173,15 +225,16 @@ def preprocess_cross_flow_drag(
     draft: float,
     water_density: float,
     drag_model: str,
-    cross_flow_reynolds_length: str = "diameter",
     strip_grid: str = "midpoint",
 ) -> CrossFlowDragConstants:
     """Strip grid and coefficient data of ``crossFlowDrag(L, B, T, nu_r, model)``.
 
     Source names: ``L``, ``B``, ``T``, ``rho``, ``drag_model``. For
     ``"cylinder"`` the beam is the diameter (MSS calls ``crossFlowDrag(L, D, D,
-    ...)``) and ``kappa(L/B)`` is fixed here for both flow regimes; for
-    ``"hoerner"`` the whole coefficient is fixed here.
+    ...)``), the beam/diameter the Reynolds number is built on; the length sets
+    the strip positions and the aspect ratio, and ``kappa(L/B)`` is fixed here
+    for both flow regimes; for ``"hoerner"`` the whole coefficient is fixed
+    here.
     """
     values = {"length": length, "beam": beam, "draft": draft, "water_density": water_density}
     for name, value in values.items():
@@ -190,8 +243,6 @@ def preprocess_cross_flow_drag(
     model = str(drag_model).lower()
     if model not in DRAG_MODELS:
         raise ValueError(f"drag_model must be one of {DRAG_MODELS}, got {drag_model!r}")
-    if cross_flow_reynolds_length not in REYNOLDS_LENGTHS:
-        raise ValueError(f"cross_flow_reynolds_length must be one of {REYNOLDS_LENGTHS}")
     if strip_grid not in STRIP_GRIDS:
         raise ValueError(f"strip_grid must be one of {STRIP_GRIDS}")
 
@@ -204,42 +255,45 @@ def preprocess_cross_flow_drag(
         strip_positions=positions,
         drag_model=model,
         drag_coefficient=_hoerner_drag(beam, draft) if model == "hoerner" else float("nan"),
-        reynolds_length=float(beam if cross_flow_reynolds_length == "diameter" else length),
-        kappa_subcritical=_clamped_interp(aspect_ratio, KAPPA_SUBCRITICAL_DATA),
-        kappa_supercritical=_clamped_interp(aspect_ratio, KAPPA_SUPERCRITICAL_DATA),
+        diameter=float(beam),
+        kappa_subcritical=_clamped_interp(aspect_ratio, KAPPA_SUBCRITICAL_DATA),  # (cylinderDrag.m 93-99)
+        kappa_supercritical=_clamped_interp(aspect_ratio, KAPPA_SUPERCRITICAL_DATA),  # (cylinderDrag.m 101-107)
     )
 
 
 def _cylinder_drag_casadi(constants: CrossFlowDragConstants, nu_r: ca.SX) -> ca.SX:
-    """``C_D(Re) kappa`` (``cylinderDrag.m`` 76-107, ``_cylinder_drag``)."""
-    cross_flow_speed = ca.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2)
-    reynolds = cross_flow_speed * constants.reynolds_length * INVERSE_KINEMATIC_VISCOSITY
-    kappa = ca.if_else(
+    """``C_D(Re) kappa`` (``cylinderDrag.m`` 78-110, ``_cylinder_drag``)."""
+    cross_flow_speed = ca.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2)  # (cylinderDrag.m 78)
+    # Re = v D / nu (DNV-RP-C205 2017, §6.6.1.1, p. 113; cylinderDrag.m 79-80)
+    reynolds = cross_flow_speed * constants.diameter * INVERSE_KINEMATIC_VISCOSITY
+    kappa = ca.if_else(  # (DNV-RP-C205 2017, Table 6-2, p. 120; cylinderDrag.m 92)
         reynolds < CRITICAL_REYNOLDS_NUMBER,
         constants.kappa_subcritical,
         constants.kappa_supercritical,
     )
-    return _clamped_interp_casadi(reynolds, CYLINDER_DRAG_DATA) * kappa
+    return _clamped_interp_casadi(reynolds, CYLINDER_DRAG_DATA) * kappa  # (cylinderDrag.m 83-89, 110)
 
 
 def cross_flow_drag_casadi(constants: CrossFlowDragConstants) -> ca.Function:
-    """``nu_r -> tau = [0 Yh Zh 0 Mh Nh]`` (``crossFlowDrag.m`` 39-54)."""
+    """``nu_r -> tau = [0 Yh Zh 0 Mh Nh]`` (Fossen 2011, eqs. 6.91-6.92, p. 127;
+    MSS ``crossFlowDrag.m`` 54-69)."""
     nu_r = ca.SX.sym("nu_r", 6)
     if constants.drag_model == "cylinder":
         drag_coefficient = _cylinder_drag_casadi(constants, nu_r)
     else:
         drag_coefficient = ca.SX(constants.drag_coefficient)
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
+    # -1/2 rho T Cd_2D dx (Fossen 2011, eqs. 6.91-6.92, p. 127; crossFlowDrag.m 63-66)
     factor = -0.5 * constants.water_density * constants.draft * drag_coefficient * constants.strip_width
     y_sum = z_sum = m_sum = n_sum = ca.SX(0.0)
     for x in constants.strip_positions:
         horizontal = v_r + x * r
         vertical = w_r + x * q
-        u_h = ca.fabs(horizontal) * horizontal
-        u_v = ca.fabs(vertical) * vertical
-        y_sum += u_h
-        z_sum += u_v
-        m_sum += x * u_v
-        n_sum += x * u_h
-    tau = ca.vertcat(0.0, factor * y_sum, factor * z_sum, 0.0, factor * m_sum, factor * n_sum)
+        u_h = ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 61)
+        u_v = ca.fabs(vertical) * vertical  # (crossFlowDrag.m 62)
+        y_sum += u_h  # (crossFlowDrag.m 63)
+        z_sum += u_v  # (crossFlowDrag.m 64)
+        m_sum += x * u_v  # (crossFlowDrag.m 65)
+        n_sum += x * u_h  # (crossFlowDrag.m 66)
+    tau = ca.vertcat(0.0, factor * y_sum, factor * z_sum, 0.0, factor * m_sum, factor * n_sum)  # (crossFlowDrag.m 69)
     return ca.Function("cross_flow_drag", [nu_r], [tau], ["nu_r"], ["tau"])

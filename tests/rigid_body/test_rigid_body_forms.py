@@ -1,17 +1,23 @@
-"""Gate tests for the rigid-body + added-mass block, **all forms** (unit U1).
+"""Gate tests for the rigid-body + added-mass block, **all forms**.
 
-Written by job U1a (verifier, 2026-10-06) before the forms are ported (U1b).
-ADR 0003 unit U1; owner rulings E-16 (generic, no vehicle name or number),
-E-23 (newest MSS is the reference, not the truth; deviations registered),
-E-24 (no ``legacy_otter_inertia``; the red test stays in
-``test_rigid_body_block.py``), E-25 (transforms only from ``more_transformations``),
-E-28 (Luka's files are not touched). The catamaran path (``hull_with_payload``)
-keeps its gates in ``test_rigid_body_block.py``; this file adds the other forms,
-the cross-form and physical-sign tests, the L0 import test and the generic test.
-Ledger: ``agents-more/30_checks/2026-10-06_U1_rigid_body_all_forms_gates.md``.
+Written 2026-10-06, before the forms were ported. The rules they encode
+(the owner's decisions of 2026-10-05/06): the block is generic, with no
+vehicle name or number in its code; the newest MSS is the reference, not the
+truth, and every deviation from it is stated; there is no
+``legacy_otter_inertia`` flag (its test is in ``test_rigid_body_block.py``);
+skew and H come only from ``more_transformations``. The catamaran path
+(``hull_with_payload``) keeps its gates in ``test_rigid_body_block.py``; this
+file adds the other forms, the cross-form and physical-sign tests, the
+transforms-import test and the generic test.
 
-Contract the porter must provide (extends A-4a; nothing renamed)
-------------------------------------------------------------------
+Gates (the test names carry them): G1 the block against MATLAB running MSS
+(frozen CSVs), 1e-9 absolute; G2 the block against the numpy source or an
+independent transcription, 1e-10 absolute; G4 a perturbed model must differ
+from the reference by more than 10x the G1 tolerance; G5 a printed number
+reproduced at its printed precision.
+
+Contract of the block (nothing renamed since the first version)
+---------------------------------------------------------------
 ``more_dynamics.models.rigid_body`` exports:
 
 * ``preprocess_rigid_body(*, mass_properties="hull_with_payload", coriolis="co",
@@ -30,7 +36,7 @@ Contract the porter must provide (extends A-4a; nothing renamed)
     length, beam, draft, block_coefficient, radii_of_gyration,
     center_of_gravity, added_mass_coefficients``. ``m = rho Cb L B T``,
     ``I = m diag((R_s * [B, L, L])^2)`` about the CG, M_A by scaled derivatives
-    ``c * [A11(m, L, rho), m, m, I11, I22, I33]`` (the ``otter.m`` 153-158
+    ``c * [A11(m, L, rho), m, m, I11, I22, I33]`` (the ``otter.m`` 152-157
     pattern: the rotational terms scale the inertia **about the CG**).
   - ``"spheroid"`` (source ``get_I_gb`` + ``get_added_mass_derivates`` +
     ``M_A_lamb_6dof``; MSS ``spheroid.m`` + ``imlay61.m``):
@@ -54,7 +60,8 @@ Contract the porter must provide (extends A-4a; nothing renamed)
   - ``"co"`` (default; MSS ``rbody.m`` / ``spheroid.m``, source ``get_C_RB_co``,
     ``C_RB``, ``C_RB_``, ``C_RB_explicit``, ``C_RB_runtime``):
     ``H^T diag(m S(w), -S(I w)) H``. Source ``get_C_RB_book_corrected`` equals
-    it algebraically (drop candidate, mapped here).
+    it algebraically (dropped as a separate form by the owner's decision of
+    2026-10-06; the source function maps here).
   - ``"book"`` (source ``get_C_RB_book``): ``[[m S(w), -m S(w) S(r_g)],
     [m S(r_g) S(w), -S(I_O w)]]``, ``I_O = I - m S(r_g)^2``. Differs from
     ``"co"`` only in the moment block, by ``-m |r_g|^2 S(w)``.
@@ -64,7 +71,7 @@ Contract the porter must provide (extends A-4a; nothing renamed)
   ``C_A(nu_r)`` is always ``m2c(M_A, nu_r)`` (MSS ``m2c.m`` with its
   symmetrisation; source ``C_A_6dof``, ``C_A_6dof_lagrangian``,
   ``AddedMass.get_C_RB_lagrangian``). ``stabilize_added_mass_coriolis=True``
-  zeroes the eight entries of MSS ``remus100.m`` lines 205-208 (source
+  zeroes the eight entries of MSS ``remus100.m`` lines 207-210 (source
   ``stabilize_C_A``).
 * ``RigidBodyConstants`` (frozen dataclass), at least: ``mass_properties``,
   ``coriolis``, ``stabilize_added_mass_coriolis``, ``mass``,
@@ -72,17 +79,22 @@ Contract the porter must provide (extends A-4a; nothing renamed)
   ``rigid_body_mass_matrix``, ``added_mass_matrix``, ``total_mass_matrix``
   (6x6), ``added_mass_derivatives`` (6,) ``= -diag(M_A)``; ``lamb_k_factors``
   (3,) for ``"spheroid"``; ``displaced_volume`` and ``wetted_surface``
-  (``L B + 2 T B``, used by the surge damping of unit U3) for
+  (``L B + 2 T B``, used by the surge damping block) for
   ``"displacement_hull"``.
 * ``rigid_body_casadi(constants) -> ca.Function`` unchanged: inputs
   ``["nu", "nu_r"]`` (6x1), outputs ``["M", "C_RB", "C_A"]`` (6x6).
-* 3-DOF forms (**drop candidates**, ledger; delete this section with the rows
-  if the owner drops them): ``planar_added_mass_matrix(X_du, Y_dv, Y_dr,
-  N_dr) -> np.ndarray`` (3x3, ``-[[X_du,0,0],[0,Y_dv,Y_dr],[0,Y_dr,N_dr]]``) and
+* 3-DOF forms (kept as a **reduction of the 6-DOF block**, owner's decision
+  of 2026-10-06; ``planar.py``): ``PLANAR_DOFS == (0, 1, 5)``;
+  ``planar_reduction(matrix) -> np.ndarray`` (rows and columns ``PLANAR_DOFS``
+  of a 6x6 matrix); ``planar_added_mass_matrix(X_du, Y_dv, Y_dr, N_dr) ->
+  np.ndarray`` (3x3, ``-[[X_du,0,0],[0,Y_dv,Y_dr],[0,Y_dr,N_dr]]``);
   ``planar_coriolis_casadi(mass_matrix) -> ca.Function`` named
   ``"planar_coriolis"``, input ``["nu"]`` (3x1 ``[u, v, r]``), output ``["C"]``
-  (3x3), MSS ``m2c.m`` lines 50-54.
-* Transforms from L0 only (E-25): ``skew``/``H_matrix`` from
+  (3x3), MSS ``m2c.m`` lines 50-54; ``planar_casadi(constants) ->
+  ca.Function``, inputs ``["nu", "nu_r"]`` (3x1), outputs ``["M", "C_RB",
+  "C_A"]`` (3x3), the surge, sway, yaw reduction of
+  ``rigid_body_casadi(constants)`` at ``[u, v, 0, 0, 0, r]``.
+* Transforms from ``more_transformations`` only: ``skew``/``H_matrix`` from
   ``more_transformations.matrix_transforms`` (numpy) and
   ``more_transformations.more_casadi_transformations`` (graph).
 
@@ -115,23 +127,25 @@ Numpy source read in full (``more_generic_models/more_generic_models/``,
   ``Ig_cg`` but ``C_RB_runtime`` and the rotational added mass with
   ``Ig_co``), ``plant/asv_catamaran/asv_catamaran.py`` (hull_with_payload).
 
-MSS (the checkout named by ``MSS_DIR``; read at HEAD ``ac77394``; every file below last changed at or
-before ``99bf0b3``): ``LIBRARY/modeling/rbody.m`` 31-45, ``m2c.m`` 33-56,
-``spheroid.m`` 32-52, ``imlay61.m`` 30-62, ``addedMassSurge.m`` 33-35,
-``LIBRARY/kinematics/Hmtrx.m`` 16-18, ``CRAFT/AUV/models/remus100.m`` 132-138,
-200-208, ``CRAFT/USV/models/otter.m`` 153-160.
+MSS (the checkout named by ``MSS_DIR``; read at ``72656d1``, release 2.0.2;
+the code of every file below is unchanged since ``99bf0b3``): ``LIBRARY/modeling/rbody.m`` 31-45, ``m2c.m`` 33-56,
+``spheroid.m`` 32-52, ``imlay61.m`` 30-62, ``addedMassSurge.m`` 32-34,
+``LIBRARY/kinematics/Hmtrx.m`` 16-18, ``CRAFT/AUV/models/remus100.m`` 131-137,
+199-210, ``CRAFT/USV/models/otter.m`` 152-159.
 
-Frozen references (``tests/data/rigid_body/SOURCE.md``, section U1a):
+Frozen references (``tests/data/rigid_body/SOURCE.md``, section of 2026-10-06):
 ``rigid_body_rbody_mss_current.csv``, ``rigid_body_spheroid_mss_current.csv``,
 ``rigid_body_hull_mss_current.csv``, ``rigid_body_m2c_3dof_mss_current.csv``
 (MATLAB R2026a running MSS), ``spheroid_matlab_reference_mss_current.csv``
-(columns of the A-26 ``remus100.m`` CSV).
+(columns of the 2026-10-05 ``remus100.m`` CSV).
 
-Fossen (2021) is not on disk (needs-access list in the ledger): the physical
-tests below are written from Newton-Euler mechanics in the test itself, not
-from the book.
+The physical tests below are written from Newton-Euler mechanics in the test
+itself (CG velocity, force and moment about the CG moved to the CO: Fossen,
+T. I. (2011), *Handbook of Marine Craft Hydrodynamics and Motion Control*,
+Wiley, eqs. 3.14-3.18, pp. 47-48, and 3.33-3.40, pp. 50-51), not from model
+code.
 
-Outside this repo (agents-more rule 9): ``MSS_DIR`` (MSS checkout) for the
+Outside this repo (nothing relative to one machine): ``MSS_DIR`` (MSS checkout) for the
 pinned-line test, ``MORE_GENERIC_MODELS_DIR`` (repository root of
 ``more_generic_models``) for the G2 tests; unset -> those tests skip and name
 the variable. Every other test needs only ``tests/data/rigid_body/``.
@@ -151,49 +165,49 @@ import numpy as np
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "rigid_body"
-# Outside this repo (agents-more rule 9): found only through these variables,
+# Outside this repo (nothing relative to one machine): found only through these variables,
 # default not set; a test that needs one skips with a message naming it. The
 # frozen CSVs in tests/data/ are the only hard dependency.
 MSS_DIR_VARIABLE = "MSS_DIR"                                  # MSS checkout root
 MORE_GENERIC_MODELS_DIR_VARIABLE = "MORE_GENERIC_MODELS_DIR"  # repo root of more_generic_models
 CONTRACT_MODULE = "more_dynamics.models.rigid_body"
 
-G1_TOLERANCE = 1e-9   # 30_checks/README.md, gate G1
-G2_TOLERANCE = 1e-10  # 30_checks/README.md, gate G2
-G4_FACTOR = 10.0      # 30_checks/README.md, gate G4
+G1_TOLERANCE = 1e-9   # gate G1 (module docstring)
+G2_TOLERANCE = 1e-10  # gate G2
+G4_FACTOR = 10.0      # gate G4
 SEED = 20261006
 N_RANDOM_STATES = 1000
-N_FROZEN = 50         # cases 1-50 of every U1a CSV = nu of inputs.csv
+N_FROZEN = 50         # cases 1-50 of every reference CSV = nu of inputs.csv
 
 # MSS lines whose constants are typed below (pinned by test_mss_cited_lines_are_unchanged).
 MSS_LINES = {
     "CRAFT/AUV/models/remus100.m": {
-        132: "L_auv = 1.6;",
-        133: "D_auv = 0.19;",
-        135: "a = 1.0096 * L_auv/2;    % Scaled spheroid semi-axes a and b to obtain m = 31.9 kg",
-        136: "b = 1.0096 * D_auv/2;",
-        137: "r44 = 0.3;",
-        138: "r_bG = [ 0 0 0.02 ]';",
-        200: "[MRB,CRB] = spheroid(a,b,nu(4:6),r_bG);",
-        201: "[MA,CA] = imlay61(a, b, nu_r, r44);",
-        205: "CA(5,3) = 0; CA(3,5) = 0;",
-        206: "CA(5,1) = 0; CA(1,5) = 0;",
-        207: "CA(6,1) = 0; CA(1,6) = 0;",
-        208: "CA(6,2) = 0; CA(2,6) = 0;",
+        131: "L_auv = 1.6;",
+        132: "D_auv = 0.19;",
+        134: "a = 1.0096 * L_auv/2;    % Scaled spheroid semi-axes a and b to obtain m = 31.9 kg",
+        135: "b = 1.0096 * D_auv/2;",
+        136: "r44 = 0.3;",
+        137: "r_bG = [ 0 0 0.02 ]';",
+        199: "[MRB,CRB] = spheroid(a,b,nu(4:6),r_bG);",
+        200: "[MA,CA] = imlay61(a, b, nu_r, r44);",
+        207: "CA(5,3) = 0; CA(3,5) = 0;",
+        208: "CA(5,1) = 0; CA(1,5) = 0;",
+        209: "CA(6,1) = 0; CA(1,6) = 0;",
+        210: "CA(6,2) = 0; CA(2,6) = 0;",
     },
     "LIBRARY/modeling/spheroid.m": {35: "rho = 1025;", 36: "m = 4/3 * pi * rho * a * b^2;"},
     "LIBRARY/modeling/imlay61.m": {31: "rho = 1026;", 59: "MA = diag([m*k1 m*k2 m*k2 MA_44 k_prime*Iy k_prime*Iy]);"},
     "LIBRARY/modeling/rbody.m": {35: "I_G   = m * diag([R44^2, R55^2, R66^2]);"},
     "LIBRARY/modeling/m2c.m": {33: "M = 0.5 * (M + M');"},
 }
-REMUS = {  # remus100.m lines 132-138
+REMUS = {  # remus100.m lines 131-137
     "L_auv": 1.6, "D_auv": 0.19, "scale": 1.0096, "r44": 0.3, "r_bG": [0.0, 0.0, 0.02],
 }
 SPHEROID_M_DENSITY = 1025.0  # spheroid.m line 35
 IMLAY61_DENSITY = 1026.0     # imlay61.m line 31
-REMUS_PRINTED_MASS = 31.9    # remus100.m line 135 comment ("to obtain m = 31.9 kg")
+REMUS_PRINTED_MASS = 31.9    # remus100.m line 134 comment ("to obtain m = 31.9 kg")
 
-# remus100.m 205-208 (source stabilize_C_A 160-169), 0-based (row, col) pairs.
+# remus100.m 207-210 (source stabilize_C_A 160-169), 0-based (row, col) pairs.
 STABILIZED_PAIRS = ((4, 2), (4, 0), (5, 0), (5, 1))
 
 VEHICLE_NAMES = ("otter", "remus", "catamaran", "grethe", "marie", "lauv", "hugin",
@@ -208,7 +222,7 @@ def _contract():
         return importlib.import_module(CONTRACT_MODULE)
     except ModuleNotFoundError as exc:
         if exc.name == "casadi":
-            pytest.fail(f"casadi is not installed (owner decision E-7): {exc}")
+            pytest.fail(f"casadi is not installed: {exc}")
         pytest.fail(f"block not ported yet: {exc}")
 
 
@@ -238,7 +252,7 @@ def _skew(v):
 
 
 class _Csv:
-    """One U1a reference CSV: echoed inputs, states and row-major matrices."""
+    """One reference CSV: echoed inputs, states and row-major matrices."""
 
     def __init__(self, name):
         path = DATA_DIR / name
@@ -312,7 +326,7 @@ def _hull_keywords(csv, row):
 
 
 def _remus_keywords():
-    """remus100.m lines 132-138, densities spheroid.m 35 / imlay61.m 31."""
+    """remus100.m lines 131-137, densities spheroid.m 35 / imlay61.m 31."""
     return {
         "semi_major_axis": REMUS["scale"] * REMUS["L_auv"] / 2,
         "semi_minor_axis": REMUS["scale"] * REMUS["D_auv"] / 2,
@@ -403,7 +417,7 @@ def test_reference_csv_shapes_and_states():
 
 def test_reference_internal_consistency():
     """MATLAB columns agree with each other: m2c(MRB) and rbody's CRB give the
-    same C nu; CA_stab is CA with exactly the remus100.m 205-208 entries zeroed."""
+    same C nu; CA_stab is CA with exactly the remus100.m 207-210 entries zeroed."""
     rb = _rbody()
     nu = rb.vector("nu", 6)
     lhs = np.einsum("kij,kj->ki", rb.matrix("C_RB_m2c"), nu)
@@ -439,7 +453,7 @@ def test_contract_selection_keywords():
     assert parameters["mass_properties"].default == "hull_with_payload"
     assert parameters["coriolis"].default == "co"
     assert parameters["stabilize_added_mass_coriolis"].default is False
-    assert "legacy_otter_inertia" not in parameters  # E-24
+    assert "legacy_otter_inertia" not in parameters  # flag dropped (owner, 2026-10-05)
 
 
 def test_contract_rejects_unknown_forms_and_keywords():
@@ -513,7 +527,7 @@ def test_G1_explicit_matches_rbody_and_m2c(set_id, coriolis):
 @pytest.mark.parametrize("set_id", [1, 2, 3])
 def test_G1_book_form_equals_rbody_plus_documented_term(set_id):
     """No MSS function holds the book form: it equals rbody's CRB minus
-    m |r_g|^2 S(w) in the moment block (identity of the source forms, ledger)."""
+    m |r_g|^2 S(w) in the moment block (identity of the source forms; Fossen 2011, eq. 3.30, p. 50)."""
     rb = _rbody()
     rows = rb.rows(set_id)
     keywords = _explicit_keywords(rb, rows[0])
@@ -530,7 +544,7 @@ def test_G1_book_form_equals_rbody_plus_documented_term(set_id):
 @pytest.mark.parametrize("stabilize", [False, True])
 def test_G1_spheroid_matches_spheroid_and_imlay61(set_id, stabilize):
     """spheroid.m (rho 1025) + imlay61.m (rho 1026); set 2 calls imlay61 with
-    nargin 3 (r44 = 0); stabilised C_A = remus100.m 205-208."""
+    nargin 3 (r44 = 0); stabilised C_A = remus100.m 207-210."""
     sph = _spheroid()
     rows = sph.rows(set_id)
     constants, function = _build("spheroid", "co", stabilize, **_spheroid_keywords(sph, rows[0]))
@@ -546,8 +560,8 @@ def test_G1_spheroid_matches_spheroid_and_imlay61(set_id, stabilize):
 
 
 def test_G1_spheroid_matches_remus100_path():
-    """A-26 CSV (remus100.m as written, 50 cases): MRB, MA, CRB at nu, CA at nu_r
-    stabilised (remus100.m 200-208)."""
+    """The 2026-10-05 CSV (remus100.m as written, 50 cases): MRB, MA, CRB at nu, CA at nu_r
+    stabilised (remus100.m 199-210)."""
     ref = _Csv("spheroid_matlab_reference_mss_current.csv")
     nu = _states()[:N_FROZEN]
     nu_r = ref.values[:, [ref.header.index(f"nu_r_{i:02d}") for i in range(1, 7)]]
@@ -563,7 +577,7 @@ def test_G1_spheroid_matches_remus100_path():
 @pytest.mark.parametrize("set_id", [1, 2])
 @pytest.mark.parametrize("stabilize", [False, True])
 def test_G1_displacement_hull_matches_rbody_and_added_mass(set_id, stabilize):
-    """m = rho Cb L B T; rbody.m; addedMassSurge.m; otter.m 153-160 pattern; m2c.m."""
+    """m = rho Cb L B T; rbody.m; addedMassSurge.m; otter.m 152-159 pattern; m2c.m."""
     hull = _hull()
     rows = hull.rows(set_id)
     constants, function = _build("displacement_hull", "co", stabilize, **_hull_keywords(hull, rows[0]))
@@ -594,7 +608,7 @@ def test_G1_explicit_added_mass_matches_m2c(set_id):
 
 @pytest.mark.parametrize("set_id", [1, 2])
 def test_G1_planar_forms_match_m2c_3dof(set_id):
-    """3-DOF (drop candidate): m2c.m lines 50-54 on M = -[[Xu,0,0],[0,Yv,Yr],[0,Yr,Nr]]."""
+    """3-DOF (reduction of the 6-DOF block): m2c.m lines 50-54 on M = -[[Xu,0,0],[0,Yv,Yr],[0,Yr,Nr]]."""
     block = _contract()
     dof3 = _dof3()
     rows = dof3.rows(set_id)
@@ -635,7 +649,7 @@ def test_G2_explicit_matches_RigidBody6DOF_all_modes(set_id):
             assert _max_diff(out["C_RB"], _quiet(source.get_C_RB, nu, mode)) <= G2_TOLERANCE, (coriolis, k)
             assert _max_diff(out["C_A"], AddedMass.C_A_6dof(nu, *derivatives)) <= G2_TOLERANCE, (coriolis, k)
             assert _max_diff(out["C_A"], AddedMass.C_A_6dof_lagrangian(nu, AddedMass.M_A_6dof(derivatives))) <= G2_TOLERANCE
-        # book_corrected (drop candidate) is the "co" matrix
+        # book_corrected (dropped as a form, owner 2026-10-06) is the "co" matrix
         assert _max_diff(_evaluate(functions["co"], nu, nu)["C_RB"],
                          _quiet(source.get_C_RB, nu, "book_corrected")) <= G2_TOLERANCE, k
         expected = AddedMass.stabilize_C_A(AddedMass.C_A_6dof_lagrangian(nu, AddedMass.M_A_6dof(derivatives)))
@@ -770,7 +784,7 @@ def test_G2_displacement_hull_source_wiring_double_shift_is_asserted():
 
 
 def test_G2_planar_forms_match_source():
-    """3-DOF (drop candidate): M_A_3dof, C_A_3dof, RigidBody6DOF m2c 3-DOF branch."""
+    """3-DOF (reduction of the 6-DOF block): M_A_3dof, C_A_3dof, RigidBody6DOF m2c 3-DOF branch."""
     RigidBody6DOF = _source("matrices.rigid_body_kinetics", "RigidBody6DOF")
     AddedMass = _source("matrices.added_mass", "AddedMass")
     block = _contract()
@@ -853,10 +867,128 @@ def test_G4_planar_perturbation_is_detected():
 
 
 # --------------------------------------------------------------------------
+# 3-DOF as a reduction of the 6-DOF block (owner, 2026-10-06): planar_casadi
+# --------------------------------------------------------------------------
+PLANAR_SEED = 20261007
+N_PLANAR_STATES = 300
+
+
+def _planar_forms():
+    """Two mass-property forms whose CG couples the planar rows: ``explicit``
+    on rbody set 1 (r_g = [0.12, -0.04, 0.21], so M_RB(1,6) = -m y_g != 0)
+    and ``displacement_hull`` on hull set 2 (r_g = [0.15, 0, -0.10], sway-yaw
+    coupling m x_g); each with the ``co`` and ``lagrangian`` C_RB, stabilised
+    C_A and not."""
+    rb, hull = _rbody(), _hull()
+    forms = []
+    for coriolis in ("co", "lagrangian"):
+        for stabilize in (False, True):
+            forms.append((f"explicit-1-{coriolis}-{'stab' if stabilize else 'full'}", "explicit", coriolis,
+                          stabilize, _explicit_keywords(rb, rb.rows(1)[0], -np.diag(hull.matrix("M_A")[0]))))
+            forms.append((f"hull-2-{coriolis}-{'stab' if stabilize else 'full'}", "displacement_hull", coriolis,
+                          stabilize, _hull_keywords(hull, hull.rows(2)[0])))
+    return forms
+
+
+def _planar_states():
+    """Seeded ``[u, v, r]`` and ``[u_r, v_r, r_r]``, uniform in [-3, 3]."""
+    rng = np.random.default_rng(PLANAR_SEED)
+    return rng.uniform(-3.0, 3.0, size=(N_PLANAR_STATES, 2, 3))
+
+
+def _embed3(nu3):
+    """``[u, v, r] -> [u, v, 0, 0, 0, r]``."""
+    return np.array([nu3[0], nu3[1], 0.0, 0.0, 0.0, nu3[2]])
+
+
+def _planar_worst(planar, full, index):
+    """Largest difference of M, C_RB nu3 and C_A nu_r3 of ``planar`` from the
+    surge, sway, yaw part of the 6-DOF ``full`` at the embedded states."""
+    worst = 0.0
+    for nu3, nu_r3 in _planar_states():
+        nu6, nu_r6 = _embed3(nu3), _embed3(nu_r3)
+        six = _evaluate(full, nu6, nu_r6)
+        out = planar(nu=nu3, nu_r=nu_r3)
+        three = {name: np.array(out[name], dtype=float) for name in ("M", "C_RB", "C_A")}
+        worst = max(
+            worst,
+            _max_diff(three["M"], six["M"][np.ix_(index, index)]),
+            _max_diff(three["C_RB"] @ nu3, (six["C_RB"] @ nu6)[index]),
+            _max_diff(three["C_A"] @ nu_r3, (six["C_A"] @ nu_r6)[index]),
+        )
+    return worst
+
+
+@pytest.mark.parametrize("label,form,coriolis,stabilize,keywords", _planar_forms(),
+                         ids=[f[0] for f in _planar_forms()])
+def test_G2_planar_casadi_is_the_reduction_of_the_6dof_block(label, form, coriolis, stabilize, keywords):
+    """``planar_casadi(constants)`` against ``rigid_body_casadi(constants)`` at
+    ``[u, v, 0, 0, 0, r]`` / ``[u_r, v_r, 0, 0, 0, r_r]``: M is rows and columns
+    ``PLANAR_DOFS`` of the 6-DOF M; C_RB nu3 and C_A nu_r3 are the surge, sway,
+    yaw rows of the 6-DOF forces (G2, absolute)."""
+    block = _contract()
+    assert tuple(block.PLANAR_DOFS) == (0, 1, 5)
+    index = list(block.PLANAR_DOFS)
+    constants, full = _build(form, coriolis, stabilize, **keywords)
+    planar = block.planar_casadi(constants)
+    assert planar.name_in() == ["nu", "nu_r"] and planar.name_out() == ["M", "C_RB", "C_A"]
+    assert [planar.size_in(i) for i in range(2)] == [(3, 1)] * 2
+    assert [planar.size_out(i) for i in range(3)] == [(3, 3)] * 3
+    np.testing.assert_array_equal(block.planar_reduction(constants.total_mass_matrix),
+                                  np.asarray(constants.total_mass_matrix)[np.ix_(index, index)])
+    assert _planar_worst(planar, full, index) <= G2_TOLERANCE, label
+
+
+@pytest.mark.parametrize("form", ["explicit", "displacement_hull"])
+def test_G4_planar_casadi_perturbed_sway_coefficient_is_detected(form):
+    """One planar coefficient changed (sway added-mass derivative x1.01 for
+    ``explicit``, sway added-mass coefficient x1.01 for ``displacement_hull``):
+    the reduction of the perturbed constants is compared with the unperturbed
+    6-DOF block and must differ by more than G4_FACTOR x G1."""
+    block = _contract()
+    label, _, coriolis, stabilize, keywords = next(f for f in _planar_forms() if f[1] == form)
+    index = list(block.PLANAR_DOFS)
+    constants, full = _build(form, coriolis, stabilize, **keywords)
+    assert _planar_worst(block.planar_casadi(constants), full, index) <= G2_TOLERANCE, "control"
+    key = "added_mass_derivatives" if form == "explicit" else "added_mass_coefficients"
+    perturbed = {**keywords, key: np.asarray(keywords[key], float) * [1, 1.01, 1, 1, 1, 1]}
+    perturbed_constants, _ = _build(form, coriolis, stabilize, **perturbed)
+    worst = _planar_worst(block.planar_casadi(perturbed_constants), full, index)
+    assert worst > G4_FACTOR * G1_TOLERANCE, (label, worst)
+
+
+def test_physics_planar_coriolis_keeps_surge_coupling_of_a_general_mass_matrix():
+    """A generally coupled symmetric positive-definite M3 (seeded, every
+    off-diagonal entry non-zero): ``planar_coriolis_casadi(M3)`` equals the
+    Kirchhoff form written here from the planar momentum p = M3 [u, v, r]
+    (no model code), C3 = [[0, 0, -p_y], [0, 0, p_x], [p_y, -p_x, 0]]. The
+    3-DOF branch of MSS ``m2c.m`` (lines 52-54 at ``72656d1``) keeps only
+    M(1,1) u in p_x and M(2,2) v + M(2,3) r in p_y; it is transcribed below
+    and must differ, so the test cannot pass on that branch."""
+    block = _contract()
+    rng = np.random.default_rng(PLANAR_SEED)
+    for k in range(50):
+        factor = rng.uniform(-1.0, 1.0, size=(3, 3))
+        m3 = factor @ factor.T + 3.0 * np.eye(3)
+        assert np.all(np.abs(m3[np.triu_indices(3, 1)]) > 0.0)
+        function = block.planar_coriolis_casadi(m3)
+        for nu3 in rng.uniform(-3.0, 3.0, size=(20, 3)):
+            p_x, p_y, _ = m3 @ nu3
+            kirchhoff = np.array([[0.0, 0.0, -p_y], [0.0, 0.0, p_x], [p_y, -p_x, 0.0]])
+            got = np.array(function(nu=nu3)["C"], dtype=float)
+            assert _max_diff(got, kirchhoff) <= G2_TOLERANCE * max(1.0, np.abs(kirchhoff).max()), k
+            u, v, r = nu3
+            branch = np.array([[0.0, 0.0, -m3[1, 1] * v - m3[1, 2] * r],
+                               [0.0, 0.0, m3[0, 0] * u],
+                               [m3[1, 1] * v + m3[1, 2] * r, -m3[0, 0] * u, 0.0]])
+            assert _max_diff(branch, kirchhoff) > G4_FACTOR * G1_TOLERANCE, k
+
+
+# --------------------------------------------------------------------------
 # G5 — printed number
 # --------------------------------------------------------------------------
 def test_G5_remus_spheroid_mass_printed_in_remus100():
-    """remus100.m line 135: semi-axes scaled 'to obtain m = 31.9 kg' (rho 1025,
+    """remus100.m line 134: semi-axes scaled 'to obtain m = 31.9 kg' (rho 1025,
     spheroid.m line 35-36); printed precision 0.1 kg."""
     constants, _ = _build("spheroid", **_remus_keywords())
     assert round(float(constants.mass), 1) == REMUS_PRINTED_MASS
@@ -937,7 +1069,7 @@ def test_cross_form_stabilization_zeroes_exactly_eight_entries():
 
 
 # --------------------------------------------------------------------------
-# Physical-sign tests (no model; E-23 addendum)
+# Physical-sign tests (no model code; MSS is checked, not trusted)
 # --------------------------------------------------------------------------
 def _all_forms():
     rb, sph, hull = _rbody(), _spheroid(), _hull()
@@ -1033,7 +1165,7 @@ def test_physics_added_mass_is_positive_for_negative_derivatives():
 
 
 # --------------------------------------------------------------------------
-# E-16 — generic: two parameter sets per form (above), no vehicle in the code
+# Generic: two parameter sets per form (above), no vehicle in the code
 # --------------------------------------------------------------------------
 def _code_identifiers_and_strings(path):
     tree = ast.parse(path.read_text())
@@ -1059,7 +1191,7 @@ def _code_identifiers_and_strings(path):
     return found
 
 
-def test_E16_block_names_no_vehicle():
+def test_generic_block_names_no_vehicle():
     for path in _package_files():
         for token in _code_identifiers_and_strings(path):
             lowered = token.lower()
@@ -1068,12 +1200,12 @@ def test_E16_block_names_no_vehicle():
 
 
 # --------------------------------------------------------------------------
-# E-25 — transforms only from L0 (more_transformations)
+# Transforms only from more_transformations
 # --------------------------------------------------------------------------
 LOCAL_TRANSFORM_NAMES = {"skew", "_skew", "_skew_casadi", "H_matrix", "transform_matrix", "Smtrx", "Hmtrx"}
 
 
-def test_E25_no_local_transform_definitions_and_imports_from_L0():
+def test_transforms_no_local_definitions_and_imports_from_more_transformations():
     numpy_import = casadi_import = False
     for path in _package_files():
         tree = ast.parse(path.read_text())

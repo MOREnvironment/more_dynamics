@@ -4,10 +4,10 @@ Writes ``cited_lines_snapshot.json`` beside this file: the stripped text of
 each ``CITED_LINES`` entry and the parsed numbers of each ``TABLES`` entry of
 ``tests/hydrodynamics/test_hydrodynamics_block.py``, plus the git revisions
 the text came from. The tests read the snapshot, so their gates run without
-an MSS or ``more_generic_models`` checkout (agents-more rule 9); with the
+an MSS or ``more_generic_models`` checkout (nothing relative to a machine); with the
 variables set, ``test_cited_lines_are_unchanged`` compares it with the live files.
 
-Run from the repository root (job U3a, 2026-10-06):
+Run from the repository root (written 2026-10-06):
 
     MSS_DIR=<an MSS checkout> MORE_GENERIC_MODELS_DIR=<more_generic_models repo> \\
         python tests/data/hydrodynamics/snapshot_cited_lines.py
@@ -30,7 +30,7 @@ TEST_FILE = HERE.parents[1] / "hydrodynamics" / "test_hydrodynamics_block.py"
 def _root(variable):
     value = os.environ.get(variable)
     if not value:
-        sys.exit(f"{variable} is not set (agents-more rule 9)")
+        sys.exit(f"{variable} is not set")
     return Path(value).expanduser()
 
 
@@ -59,7 +59,7 @@ def main():
     for ref, name in tests.TABLES:
         tables.setdefault(ref, {})[name] = tests._parse_table(live(ref), name).tolist()
     snapshot = {
-        "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py (job U3a)",
+        "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py",
         "revisions": {v: _revision(p) for v, p in roots.items()},
         "lines": lines,
         "tables": tables,

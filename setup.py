@@ -10,5 +10,6 @@ setup(
         "casadi>=3.5.5",
         "more_common>=0.1.0",
         "numpy",
+        "more_transformations>=0.4.0",
     ],
 )

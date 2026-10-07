@@ -1,26 +1,25 @@
 """Gate tests for the rigid-body + added-mass block (Otter-based catamaran).
 
-Written before the block existed (job A-4a, 2026-10-05); the block was ported
-by job A-4b. Repaired by job A-4c (2026-10-05) for owner decision E-11 c (the
-corrected MSS inertia by default).
+Written 2026-10-05, before the block existed; changed the same day for the
+owner's decision to use the corrected MSS inertia by default.
 
-Rewired by job A-30 (2026-10-05), owner decision E-24: the temporary
+Since the owner's decision of 2026-10-05 the temporary
 ``legacy_otter_inertia`` flag is dropped. The block has one path, the inertia
 about the combined CG of current ``otter.m``. G1 and G4 read the MATLAB
-reference regenerated with current MSS (job A-26,
-``matlab_reference_mss_current.csv``); the legacy ``matlab_reference.csv`` stays
+reference recomputed by current MSS on 2026-10-05
+(``matlab_reference_mss_current.csv``); the legacy ``matlab_reference.csv`` stays
 on disk and no test reads it. The numpy source keeps the old inertia, so G2
 compares it with the block outside the rotational 3x3 block only (the inertia
 reaches no other entry); the ``otter.m`` transcriptions (G5) are the second
-check of the whole matrices. ``test_E24_contract_has_no_legacy_otter_inertia_flag``
-fails until job A-31 removes the flag from the block.
+check of the whole matrices. ``test_contract_has_no_legacy_otter_inertia_flag``
+passes since the flag was removed from the block (2026-10-07).
 
-Contract the porter must provide
---------------------------------
+Contract of the block
+---------------------
 ``more_dynamics.models.rigid_body`` exports:
 
 * ``preprocess_rigid_body(**PARAMETERS) -> RigidBodyConstants`` (numpy). The
-  keyword names are the keys of ``PARAMETERS`` below; no inertia flag (E-24).
+  keyword names are the keys of ``PARAMETERS`` below; no inertia flag.
 * ``RigidBodyConstants``: frozen dataclass with at least
   ``rigid_body_mass_matrix`` (M_RB), ``added_mass_matrix`` (M_A) and
   ``total_mass_matrix`` (M = M_RB + M_A), each a 6x6 ``np.ndarray``, and
@@ -30,7 +29,7 @@ Contract the porter must provide
   ``["nu", "nu_r"]`` (6x1 each) and outputs named ``["M", "C_RB", "C_A"]``
   (6x6 each): ``C_RB(nu)`` and ``C_A(nu_r)``.
 
-Map rows covered (``agents-more/MIGRATION_MAP.md``), numpy source read in full
+Source functions covered, numpy source read in full
 (paths relative to ``more_generic_models/more_generic_models/``):
 
 * ``dynamics/plant/asv_catamaran/asv_catamaran.py``: ``compute_constant_values``
@@ -45,15 +44,15 @@ Map rows covered (``agents-more/MIGRATION_MAP.md``), numpy source read in full
 * ``rigid_body_kinetics.py::RigidBody6DOF`` is not used by the catamaran
   (``added_mass.py`` imports it, line 3, but never calls it).
 
-Conventions found in the source (hidden assumptions, see the ledger)
----------------------------------------------------------------------
+Conventions found in the source (hidden assumptions)
+----------------------------------------------------
 * Body frame, z down; CO is the body origin; ``r_g`` is CO -> CG.
 * ``H(r) = [[I, S(r)^T], [0, I]]``; ``M_RB = H^T diag(m I, I_o) H`` with
   ``m = m_hull + m_payload`` and ``r_g = (m_hull r_hull + m_p r_p) / m``.
 * The numpy source (and the legacy generator) use ``I_o = I_CG - m_hull
   S(r_g)^2 - m_p S(r_p)^2``, already about the CO, and shift it a second time by
   ``H``. The block uses the inertia about the combined CG, as MSS ``otter.m``
-  lines 123-129 since its revision of 2026-04-20 (line 78).
+  lines 122-128 since its revision of 2026-04-20 (line 77).
 * ``C_RB = H^T diag(m S(w), -S(I_o w)) H`` depends only on ``w = nu[3:]``.
 * ``M_A = -diag(c * [A11, m_hull, m_hull, I_o[0,0], I_o[1,1], I_o[2,2]])``,
   ``A11 = 2.7 rho (m_hull/rho)^(5/3) / L^2``; added mass uses the hull mass
@@ -77,9 +76,9 @@ import pytest
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "rigid_body"
 CONTRACT_MODULE = "more_dynamics.models.rigid_body"
 
-G1_TOLERANCE = 1e-9   # 30_checks/README.md, gate G1
-G2_TOLERANCE = 1e-10  # 30_checks/README.md, gate G2
-G4_FACTOR = 10.0      # 30_checks/README.md, gate G4
+G1_TOLERANCE = 1e-9   # G1: block vs MATLAB running MSS, absolute
+G2_TOLERANCE = 1e-10  # G2: block vs the numpy source or a transcription, absolute
+G4_FACTOR = 10.0      # G4: a perturbed model must differ by more than 10 x G1
 SEED = 20261005
 N_RANDOM_STATES = 1000
 
@@ -97,11 +96,11 @@ PARAMETERS = {
     "radii_of_gyration": [0.4, 0.25, 0.25],          # R_456_scale, line 28
 }
 
-# MATLAB reference regenerated with current MSS (job A-26; SOURCE.md). The
-# legacy matlab_reference.csv is not read (owner decision E-24).
+# MATLAB reference recomputed by current MSS on 2026-10-05 (SOURCE.md). The
+# legacy matlab_reference.csv is not read (owner's decision of 2026-10-05).
 REFERENCE_CSV = "matlab_reference_mss_current.csv"
 
-# The corrected inertia (otter.m 123-129) reaches only the rotational 3x3 block
+# The corrected inertia (otter.m 122-128) reaches only the rotational 3x3 block
 # of M_RB, M_A, C_RB and C_A; every other entry is the same in the numpy source.
 OUTSIDE_ROTATIONAL_BLOCK = np.ones((6, 6), dtype=bool)
 OUTSIDE_ROTATIONAL_BLOCK[3:, 3:] = False
@@ -119,7 +118,7 @@ def _contract():
         return importlib.import_module(CONTRACT_MODULE)
     except ModuleNotFoundError as exc:
         if exc.name == "casadi":
-            pytest.fail(f"casadi is not installed (owner decision E-7): {exc}")
+            pytest.fail(f"casadi is not installed: {exc}")
         pytest.fail(f"block not ported yet: {exc}")
 
 
@@ -177,7 +176,7 @@ def _random_states():
 
 
 def _numpy_source():
-    # agents-more rule 9 (job U1a): the source repo is named by an environment
+    # Nothing relative to one machine: the source repo is named by an environment
     # variable, never found relative to this checkout.
     root = os.environ.get("MORE_GENERIC_MODELS_DIR")
     if not root:
@@ -223,7 +222,7 @@ def _outside_rotational_block(a):
 def test_G1_numpy_source_matches_current_mss_outside_the_rotational_block():
     """The numpy source keeps the pre-2026-04-20 inertia: it equals current MSS
     everywhere the inertia does not reach, and differs inside the rotational
-    block (E-11, the reason for E-24)."""
+    block (the reason the old-inertia flag was dropped)."""
     vessel = _numpy_source()
     ref = _reference_cases()
     for k in range(len(ref["nu"])):
@@ -242,7 +241,7 @@ def test_G1_numpy_source_matches_current_mss_outside_the_rotational_block():
 
 
 def test_G1_block_matches_matlab_reference():
-    """The block (one path, E-24) vs MATLAB running current MSS otter.m (A-26)."""
+    """The block (one path) vs MATLAB running current MSS otter.m (2026-10-05)."""
     constants, function = _build()
     ref = _reference_cases()
     np.testing.assert_allclose(
@@ -310,7 +309,7 @@ def test_G2_block_matches_numpy_source_on_random_states():
 
 def test_G2_block_matches_otter_m_transcription_on_random_states():
     """Second check of the whole matrices, the rotational block included:
-    ``otter.m`` lines 123-160 transcribed below (``_otter_m_current_matrices``,
+    ``otter.m`` lines 122-159 transcribed below (``_otter_m_current_matrices``,
     ``_otter_m_crb``) on the 1000 seeded states."""
     _, function = _build()
     mrb, ma, ig, rg_total = _otter_m_current_matrices()
@@ -360,11 +359,10 @@ def test_G4_perturbed_block_is_detected(name):
 
 
 # --------------------------------------------------------------------------
-# E-24 — the temporary inertia flag is gone from the contract
+# The temporary inertia flag is gone from the contract
 # --------------------------------------------------------------------------
-def test_E24_contract_has_no_legacy_otter_inertia_flag():
-    """Owner decision E-24 (drop ``legacy_otter_inertia``). Fails until job
-    A-31 removes the keyword and the field from the block."""
+def test_contract_has_no_legacy_otter_inertia_flag():
+    """Owner's decision of 2026-10-05: ``legacy_otter_inertia`` is dropped."""
     block = _contract()
     signature = inspect.signature(block.preprocess_rigid_body)
     assert "legacy_otter_inertia" not in signature.parameters, "keyword still in the contract"
@@ -374,35 +372,35 @@ def test_E24_contract_has_no_legacy_otter_inertia_flag():
 
 # --------------------------------------------------------------------------
 # G5 — Otter constants, MSS otter.m
-# (<MSS_DIR>/CRAFT/USV/models/otter.m, MSS 99bf0b3, file e1dff2a)
+# (<MSS_DIR>/CRAFT/USV/models/otter.m, MSS 72656d1, release 2.0.2)
 # --------------------------------------------------------------------------
-OTTER_M_RELATIVE = "CRAFT/USV/models/otter.m"  # under MSS_DIR (agents-more rule 9)
+OTTER_M_RELATIVE = "CRAFT/USV/models/otter.m"  # under MSS_DIR (nothing relative to one machine)
 OTTER_LINES = {  # line number -> text the constants below were taken from
-    91: "rho = 1025;",
-    92: "L = 2.0;",
-    93: "B = 1.08;",
-    94: "m = 55.0;",
-    95: "rg = [0.2 0 -0.2]';",
-    96: "R44 = 0.4 * B;",
-    97: "R55 = 0.25 * L;",
-    98: "R66 = 0.25 * L;",
-    123: "Ig_CG = m * diag([R44^2, R55^2, R66^2]);",
-    124: "rg_hull = rg;",
-    125: "rg_total = (m*rg_hull + mp*rp)/(m+mp);",
-    126: "r_hull = rg_hull - rg_total;",
-    127: "r_payload = rp - rg_total;",
-    128: "Ig = Ig_CG - m * Smtrx(r_hull)^2 - mp * Smtrx(r_payload)^2;",
-    129: "rg = rg_total;",
-    143: "MRB_CG = [ (m+mp) * I3  O3",
-    145: "CRB_CG = [ (m+mp) * Smtrx(nu2)         O3",
-    146: "O3               -Smtrx(Ig*nu2)  ];",
-    148: "H = Hmtrx(rg);",
-    153: "Xudot = -addedMassSurge(m,L,rho);",
-    154: "Yvdot = -1.5 * m;",
-    155: "Zwdot = -1.0 * m;",
-    156: "Kpdot = -0.2 * Ig(1,1);",
-    157: "Mqdot = -0.8 * Ig(2,2);",
-    158: "Nrdot = -1.7 * Ig(3,3);",
+    90: "rho = 1025;",
+    91: "L = 2.0;",
+    92: "B = 1.08;",
+    93: "m = 55.0;",
+    94: "rg = [0.2 0 -0.2]';",
+    95: "R44 = 0.4 * B;",
+    96: "R55 = 0.25 * L;",
+    97: "R66 = 0.25 * L;",
+    122: "Ig_CG = m * diag([R44^2, R55^2, R66^2]);",
+    123: "rg_hull = rg;",
+    124: "rg_total = (m*rg_hull + mp*rp)/(m+mp);",
+    125: "r_hull = rg_hull - rg_total;",
+    126: "r_payload = rp - rg_total;",
+    127: "Ig = Ig_CG - m * Smtrx(r_hull)^2 - mp * Smtrx(r_payload)^2;",
+    128: "rg = rg_total;",
+    142: "MRB_CG = [ (m+mp) * I3  O3",
+    144: "CRB_CG = [ (m+mp) * Smtrx(nu2)         O3",
+    145: "O3               -Smtrx(Ig*nu2)  ];",
+    147: "H = Hmtrx(rg);",
+    152: "Xudot = -addedMassSurge(m,L,rho);",
+    153: "Yvdot = -1.5 * m;",
+    154: "Zwdot = -1.0 * m;",
+    155: "Kpdot = -0.2 * Ig(1,1);",
+    156: "Mqdot = -0.8 * Ig(2,2);",
+    157: "Nrdot = -1.7 * Ig(3,3);",
 }
 OTTER = {"rho": 1025.0, "L": 2.0, "B": 1.08, "m": 55.0, "rg": [0.2, 0.0, -0.2],
          "R": [0.4, 0.25, 0.25], "added": [1.5, 1.0, 0.2, 0.8, 1.7]}
@@ -441,18 +439,18 @@ def _otter_inputs_as_parameters():
 def test_G5_otter_translational_constants():
     constants, _ = _build(**_otter_inputs_as_parameters())
     m, mp, L, rho = OTTER["m"], OTTER_MP, OTTER["L"], OTTER["rho"]
-    # otter.m 143: MRB_CG(1:3,1:3) = (m+mp)*I3; H keeps this block (Hmtrx.m 17-18)
+    # otter.m 142: MRB_CG(1:3,1:3) = (m+mp)*I3; H keeps this block (Hmtrx.m 17-18)
     np.testing.assert_allclose(
         constants.rigid_body_mass_matrix[:3, :3], (m + mp) * np.eye(3),
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m line 143",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m line 142",
     )
-    # otter.m 153 + addedMassSurge.m 33-34: A11 = 2.7*rho*nabla^(5/3)/L^2, nabla = m/rho
+    # otter.m 152 + addedMassSurge.m 32-33: A11 = 2.7*rho*nabla^(5/3)/L^2, nabla = m/rho
     a11 = 2.7 * rho * (m / rho) ** (5.0 / 3.0) / L**2
-    # otter.m 154-155, 160: MA = -diag(Xudot, Yvdot, Zwdot, ...)
+    # otter.m 153-154, 159: MA = -diag(Xudot, Yvdot, Zwdot, ...)
     expected = [a11, OTTER["added"][0] * m, OTTER["added"][1] * m]
     np.testing.assert_allclose(
         np.diag(constants.added_mass_matrix)[:3], expected,
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 153-155, 160",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 152-154, 159",
     )
 
 
@@ -462,7 +460,7 @@ def _skew(v):
 
 
 def _otter_m_current_inertia():
-    """otter.m lines 123-129 (revision 2026-04-20): inertia about the combined CG."""
+    """otter.m lines 122-128 (revision 2026-04-20): inertia about the combined CG."""
     m, mp = OTTER["m"], OTTER_MP
     rg, rp = np.array(OTTER["rg"]), np.array(OTTER_RP)
     radii = np.array(OTTER["R"]) * np.array([OTTER["B"], OTTER["L"], OTTER["L"]])
@@ -474,31 +472,31 @@ def _otter_m_current_inertia():
 
 
 def test_G5_otter_rotational_inertia_current_mss():
-    # The block's one path (E-11 c, E-24). Until A-4c this was a strict expected failure.
+    # The block's one path (the corrected inertia, owner 2026-10-05).
     constants, _ = _build(**_otter_inputs_as_parameters())
     ig, rg_total = _otter_m_current_inertia()
     m_total = OTTER["m"] + OTTER_MP
     h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
     mrb_cg = np.block([[m_total * np.eye(3), np.zeros((3, 3))], [np.zeros((3, 3)), ig]])
-    # otter.m lines 143-144, 148-149
+    # otter.m lines 142-143, 147-148
     np.testing.assert_allclose(
         constants.rigid_body_mass_matrix, h.T @ mrb_cg @ h,
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 123-129, 143-149",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 122-128, 142-148",
     )
-    # otter.m lines 156-158, 160
+    # otter.m lines 155-157, 159
     expected = [c * ig[i, i] for i, c in enumerate(OTTER["added"][2:])]
     np.testing.assert_allclose(
         np.diag(constants.added_mass_matrix)[3:], expected,
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 156-158, 160",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 155-157, 159",
     )
 
 
 def _otter_m_current_matrices():
     """MRB and MA of otter.m (current), on the frozen parameters.
 
-    MRB: lines 143-144 (MRB_CG), 148-149 (H = Hmtrx(rg), MRB = H' MRB_CG H) with
-    rg = rg_total (line 129). MA: lines 153-158, 160; Xudot from line 153 and
-    addedMassSurge.m lines 33-34 (as in ``test_G5_otter_translational_constants``).
+    MRB: lines 142-143 (MRB_CG), 147-148 (H = Hmtrx(rg), MRB = H' MRB_CG H) with
+    rg = rg_total (line 128). MA: lines 152-157, 159; Xudot from line 152 and
+    addedMassSurge.m lines 32-33 (as in ``test_G5_otter_translational_constants``).
     """
     m, mp, L, rho = OTTER["m"], OTTER_MP, OTTER["L"], OTTER["rho"]
     ig, rg_total = _otter_m_current_inertia()
@@ -511,7 +509,7 @@ def _otter_m_current_matrices():
 
 
 def _otter_m_crb(ig, rg_total, nu2):
-    """otter.m lines 145-146 (CRB_CG), 148, 150 (CRB = H' CRB_CG H)."""
+    """otter.m lines 144-145 (CRB_CG), 147, 149 (CRB = H' CRB_CG H)."""
     m_total = OTTER["m"] + OTTER_MP
     h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
     crb_cg = np.block([
@@ -522,7 +520,7 @@ def _otter_m_crb(ig, rg_total, nu2):
 
 
 def test_G5_default_path_inertia_cg_and_rotational_added_mass():
-    """The block (E-11 c, E-24) against MSS otter.m, computed here from the lines.
+    """The block (the corrected inertia) against MSS otter.m, computed here from the lines.
 
     Every constant comes from a line pinned by ``test_G5_cited_otter_lines_are_unchanged``
     (91-98 data, 123-129 inertia, 156-158 rotational added mass); the payload
@@ -530,28 +528,28 @@ def test_G5_default_path_inertia_cg_and_rotational_added_mass():
     """
     constants, _ = _build(**_otter_inputs_as_parameters())
     m, mp = OTTER["m"], OTTER_MP
-    rg_hull, rp = np.array(OTTER["rg"]), np.array(OTTER_RP)  # lines 95, 124; argument rp
-    # line 96-98: R44 = 0.4*B, R55 = 0.25*L, R66 = 0.25*L
+    rg_hull, rp = np.array(OTTER["rg"]), np.array(OTTER_RP)  # lines 94, 123; argument rp
+    # lines 95-97: R44 = 0.4*B, R55 = 0.25*L, R66 = 0.25*L
     r44, r55, r66 = OTTER["R"][0] * OTTER["B"], OTTER["R"][1] * OTTER["L"], OTTER["R"][2] * OTTER["L"]
-    ig_cg = m * np.diag([r44**2, r55**2, r66**2])                 # line 123
-    rg_total = (m * rg_hull + mp * rp) / (m + mp)                  # line 125
-    r_hull = rg_hull - rg_total                                    # line 126
-    r_payload = rp - rg_total                                      # line 127
+    ig_cg = m * np.diag([r44**2, r55**2, r66**2])                 # line 122
+    rg_total = (m * rg_hull + mp * rp) / (m + mp)                  # line 124
+    r_hull = rg_hull - rg_total                                    # line 125
+    r_payload = rp - rg_total                                      # line 126
     s_hull, s_payload = _skew(r_hull), _skew(r_payload)
-    ig = ig_cg - m * s_hull @ s_hull - mp * s_payload @ s_payload  # line 128 (Smtrx(.)^2)
+    ig = ig_cg - m * s_hull @ s_hull - mp * s_payload @ s_payload  # line 127 (Smtrx(.)^2)
     np.testing.assert_allclose(
-        constants.inertia, ig, atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 123-128"
+        constants.inertia, ig, atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 122-127"
     )
-    np.testing.assert_allclose(  # line 129: rg = rg_total, the CG used by H (line 148)
+    np.testing.assert_allclose(  # line 128: rg = rg_total, the CG used by H (line 147)
         constants.center_of_gravity, rg_total,
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 125, 129",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 124, 128",
     )
-    # lines 156-158: Kpdot = -0.2 Ig(1,1), Mqdot = -0.8 Ig(2,2), Nrdot = -1.7 Ig(3,3);
-    # line 160: MA = -diag([..., Kpdot, Mqdot, Nrdot])
+    # lines 155-157: Kpdot = -0.2 Ig(1,1), Mqdot = -0.8 Ig(2,2), Nrdot = -1.7 Ig(3,3);
+    # line 159: MA = -diag([..., Kpdot, Mqdot, Nrdot])
     k_pdot = -OTTER["added"][2] * ig[0, 0]
     m_qdot = -OTTER["added"][3] * ig[1, 1]
     n_rdot = -OTTER["added"][4] * ig[2, 2]
     np.testing.assert_allclose(
         np.diag(constants.added_mass_matrix)[3:], [-k_pdot, -m_qdot, -n_rdot],
-        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 156-158, 160",
+        atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 155-157, 159",
     )

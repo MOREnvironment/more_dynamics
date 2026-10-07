@@ -1,5 +1,9 @@
 %% ================================================================
-%  Surface hydrostatics reference data from CURRENT MSS (job U2a, 2026-10-06)
+%  Surface hydrostatics reference data from CURRENT MSS (2026-10-06)
+%
+%  MSS line numbers below are those of MSS ac77394 (2026-10-06), where the
+%  CSVs were first made; re-run at 72656d1 (release 2.0.2, 2026-10-07): both
+%  outputs byte-identical (2.0.2 moved otter.m's lines up by one).
 %
 %  Two CSVs beside this file, every number computed by MSS itself:
 %
@@ -11,12 +15,13 @@
 %  2. surface_chain_mss_current.csv -- the hydrostatic coefficient chain
 %     (A_wp, I_T, I_L, KB, BM, GM, G) as MSS computes it for:
 %       kind 1: CRAFT/USV/models/otter.m lines 121-194 (twin hull), 20
-%               payload cases (mp, rp); case 1 is the A-26 payload
+%               payload cases (mp, rp); case 1 is the payload of the catamaran reference
 %               (mp = 25, rp = [0.05 0 -0.35]).
 %       kind 2: mssExamples/exShipHydrostatics.m (monohull, script).
 %       kind 3: CRAFT/SHIP/models/osv.m lines 79-102 (monohull).
 %     Intermediate terms are read from the function workspace through a
-%     copy instrumented at run time in tempdir (never saved), as A-26 did;
+%     copy instrumented at run time in tempdir (never saved), as the catamaran
+%     generator test_dynamics_consistency_mss_current.m does;
 %     the copy is checked against the unmodified function (xdot, M).
 %
 %  Numbers are written with %.17g (exact doubles).
@@ -27,7 +32,7 @@ clear functions;
 format long g
 
 scriptDir = fileparts(mfilename('fullpath'));
-mssDir = getenv('MSS_DIR');   % agents-more rule 9: no path relative to a machine
+mssDir = getenv('MSS_DIR');   % no path relative to a machine
 if isempty(mssDir)
     error('MSS_DIR is not set: point it at an MSS checkout (e.g. MSS_DIR=/path/to/MSS)');
 end
@@ -48,7 +53,7 @@ for k = 1:N
     x_F   = -1 + 2 * rand;
     r_bP  = -1 + 2 * rand(3, 1);
     G = Gmtrx(nabla, A_wp, GMT, GML, x_F, r_bP);
-    Gt = G.';                                   % row-major, as A-26
+    Gt = G.';                                   % row-major, as the catamaran reference
     rows(k, :) = [nabla, A_wp, GMT, GML, x_F, r_bP', Gt(:)'];
 end
 names = [{'nabla','A_wp','GMT','GML','x_F','r_bP_1','r_bP_2','r_bP_3'}, ...
@@ -138,7 +143,7 @@ function fh = mss_instrumented(name)
 % Copy of the MSS file <name>.m, written to tempdir at run time, that also
 % returns its workspace as a last output. Only the function line changes and
 % one capture line is added before the final 'end'; the body is MSS's text.
-% (Same helper as the A-26 generators.)
+% (Same helper as the catamaran and spheroid generators.)
     src = fileread(which(name));
     hdr = ['function\s*\[([^\]]*)\]\s*=\s*' name '\s*\('];
     if isempty(regexp(src, hdr, 'once'))

@@ -1,10 +1,18 @@
 """Steerable electric outboard motor: force map of the rpm and throttle models.
 
-Ported from ``more_generic_models``
-``dynamics/propulsion/thruster/electrical_outboard_motor/electrical_outboard_motor.py``:
-``ElectricOutboardMotor.step`` (throttle, lines 105-184) and
-``ElectricOutboardMotorRPM._prop_thrust_torque`` / ``step`` (rpm, 311-433);
-parameters in ``config/dataclass/thruster/electrical_outboard_motor_params.py``.
+Equations (keys in References):
+
+* rpm model: ``n_p = n / 60``, ``Va = c_Va (1 - w) u_r``, ``J = Va / (n_p D)``,
+  ``K_T(J)``, ``K_Q(J)`` from the Wageningen polynomial; ``T = rho D^4 K_T n_p
+  |n_p|``, ``Q = rho D^5 K_Q n_p |n_p|`` (Fossen 2011, eq. 12.265, p. 411);
+  ``T = (1 - t) T``; shaft power ``P = |2 pi n_p Q|`` capped at ``eta P_max``
+  by scaling ``T``; ``T`` saturated at ``+-T_max``;
+* throttle model: ``T`` saturated at ``min(T_max, P_prop / max(U_h, 0.1))``;
+* steered wrench ``f = T [cos delta, sin delta, 0]`` (an azimuth thruster,
+  Fossen 2011, Table 12.3, p. 398), ``tau = [f; r x f]`` (Fossen 2011,
+  eq. 12.226, p. 400).
+
+No MSS file holds this model; it is the numpy source's own (lines below).
 
 Only the algebraic force map is here. The rpm lag, the thrust lag, the
 steering rate limit and the battery are states of the assembly: the inputs
@@ -12,9 +20,27 @@ are the *actual* propeller speed (rpm) or thrust (N) and the *actual*
 steering angle ``delta`` (rad, port-positive, the source's internal
 convention). A flat battery (zero force in the source) is not modelled.
 
-Reverse thrust (owner decision E-20 Q5 a): for ``n < 0`` the reverse factors
-scale ``K_T`` and ``K_Q`` without the source's former extra ``sign(n)``, so
-full reverse gives a negative surge force.
+Reverse thrust: for ``n < 0`` the reverse factors scale ``K_T`` and ``K_Q``
+only, ``|n| n`` carries the sign, so full reverse gives a negative surge
+force (source lines 317-321 at ``524e336``; an earlier revision of the source
+had an extra ``sign(n)`` that pushed forward at full reverse, corrected by
+the owner's decision of 2026-10-05).
+
+Ported from the numpy source [MGM]
+``dynamics/propulsion/thruster/electrical_outboard_motor/electrical_outboard_motor.py``:
+``ElectricOutboardMotor.step`` (throttle, 105-184) and
+``ElectricOutboardMotorRPM._prop_thrust_torque`` / ``step`` (rpm, 311-433);
+parameters in ``config/dataclass/thruster/electrical_outboard_motor_params.py``.
+
+References
+----------
+[Fossen 2011] Fossen, T. I. (2011). *Handbook of Marine Craft Hydrodynamics
+    and Motion Control*, 1st ed. John Wiley & Sons, Chichester. Ch. 12, Table 12.3, p. 398; eq. 12.226, p. 400; eq. 12.265,
+    p. 411.
+[MGM] Krizman, E. *more_generic_models*.
+    https://github.com/MOREnvironment/more_generic_models (no licence file),
+    revision ``524e336``:
+    the files and lines listed above.
 """
 
 from dataclasses import dataclass
@@ -55,7 +81,8 @@ class OutboardMotorThrottleConstants:
 
 
 def _steered_wrench(thrust, delta, position: np.ndarray) -> ca.SX:
-    """``f = T [cos delta, sin delta, 0]``, ``tau = [f; r x f]`` (lines 162-171, 403-414)."""
+    """``f = T [cos delta, sin delta, 0]``, ``tau = [f; r x f]`` (Fossen 2011,
+    eq. 12.226, p. 400; source lines 162-171, 403-414)."""
     force = ca.vertcat(thrust * ca.cos(delta), thrust * ca.sin(delta), 0.0)
     return wrench(force, position)
 
@@ -114,7 +141,7 @@ def outboard_motor_rpm_casadi(constants: OutboardMotorRpmConstants) -> ca.Functi
     c = constants
 
     n_rps = saturate(n, -c.max_speed, c.max_speed) / 60.0
-    advance_speed = c.advance_speed_gain * nu_r[0]
+    advance_speed = c.advance_speed_gain * nu_r[0]  # Va (source line 382)
     stopped = ca.fabs(n_rps) < ZERO_SPEED_RPS
     advance_number = advance_speed / (ca.if_else(stopped, 1.0, n_rps) * c.propeller_diameter)
     kt, kq = wageningen_expression(c.wageningen, advance_number)
@@ -123,12 +150,13 @@ def outboard_motor_rpm_casadi(constants: OutboardMotorRpmConstants) -> ca.Functi
     kq = ca.if_else(reverse, c.reverse_torque_factor * kq, kq)
 
     quadratic = ca.fabs(n_rps) * n_rps
+    # (Fossen 2011, eq. 12.265, p. 411; source _prop_thrust_torque 311-325)
     thrust = ca.if_else(stopped, 0.0, c.water_density * c.propeller_diameter**4 * kt * quadratic)
     torque = ca.if_else(stopped, 0.0, c.water_density * c.propeller_diameter**5 * kq * quadratic)
-    thrust = (1.0 - c.thrust_deduction) * thrust
+    thrust = (1.0 - c.thrust_deduction) * thrust  # (source line 385)
 
     if c.power_limit:
-        shaft_power = ca.fabs(2.0 * np.pi * n_rps * torque)
+        shaft_power = ca.fabs(2.0 * np.pi * n_rps * torque)  # P = 2 pi n Q (source lines 388-395)
         limit = c.shaft_power_limit
         thrust = ca.if_else(shaft_power > limit, thrust * (limit / ca.fmax(shaft_power, limit)), thrust)
 

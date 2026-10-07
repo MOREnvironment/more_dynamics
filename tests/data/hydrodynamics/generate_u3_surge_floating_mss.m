@@ -1,5 +1,12 @@
 %% ================================================================
-%  U3 reference data from MSS itself (job U3a, verifier, 2026-10-06)
+%  Surge damping, ITTC and floating-damping reference data from MSS itself
+%  (2026-10-06, MSS ac77394)
+%
+%  MSS 2.0.2 (72656d1, 2026-10-07) deleted LIBRARY/modeling/forceSurgeDamping.m
+%  (commit 108ceda, 2026-10-06), so this file runs only on MSS ac77394 or
+%  older. Re-run on 2026-10-07 with MSS 72656d1 on the path and
+%  forceSurgeDamping.m taken from ac77394: xuu_ittc and floating_damping
+%  byte-identical (XuuITTC.m, Dmtrx.m unchanged in 2.0.2).
 %
 %  Calls the MSS functions directly, unmodified, on seeded inputs:
 %    LIBRARY/modeling/forceSurgeDamping.m  (both branches: ITTC, thrust_max)
@@ -24,9 +31,9 @@ clear functions;
 format long g
 
 scriptDir = fileparts(mfilename('fullpath'));
-mssDir = getenv('MSS_DIR');   % agents-more rule 9: no path relative to a workspace
+mssDir = getenv('MSS_DIR');   % no path relative to a workspace
 if isempty(mssDir)
-    error('MSS_DIR is not set: point it at an MSS checkout (agents-more rule 9)');
+    error('MSS_DIR is not set: point it at an MSS checkout');
 end
 addpath(genpath(mssDir));
 fprintf('MATLAB %s\nMSS: %s\n', version, which('forceSurgeDamping'));

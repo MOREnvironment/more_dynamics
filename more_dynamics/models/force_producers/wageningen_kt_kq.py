@@ -1,16 +1,28 @@
 """Wageningen B-series open-water coefficients ``K_T(J)``, ``K_Q(J)``.
 
-Ported from ``more_generic_models``
-``dynamics/propulsion/propeller_models/wagenigen/wagenigen.py`` (lines 3-127):
-the regression of Barnitsas, Ray and Kinley (1981) at Re = 2e6, the same
-tables as MSS ``LIBRARY/modeling/utiles/WageningData.mat`` (``wageningen.m``).
-Rows are ``[C, s, t, u, v]``: ``K = sum C J^s (P/D)^t (A_E/A_O)^u z^v``. The
-tables below are copied by script from the numpy source (lines 14-105).
+Equation (keys in References): ``K = sum_k C_k J^s_k (P/D)^t_k (A_E/A_O)^u_k
+z^v_k``, rows ``[C, s, t, u, v]`` (MSS ``wageningen.m`` 33-38, which
+attributes the regression to Barnitsas, Ray and Kinley (1981), not read
+here). The tables below are copied by script from the numpy source (14-105);
+MSS holds them in ``LIBRARY/modeling/utiles/WageningData.mat``.
 
-Default (owner decision E-22 Q1 a): MSS ``wageningen.m``, the polynomial at
-any ``J``, including ``J < 0`` and ``J > 1.3`` (outside the fitted range).
-``clip_advance_ratio=True`` keeps the numpy source's behaviour: ``J`` is
-replaced by ``min(|J|, 1.3)`` (line 11).
+Default: MSS ``wageningen.m``, the polynomial at any ``J``, including
+``J < 0`` and ``J > 1.3`` (outside the fitted range). Deviation, behind
+``clip_advance_ratio=True``: the numpy source's behaviour, ``J`` replaced by
+``min(|J|, 1.3)`` (its line 11).
+
+Ported from the numpy source [MGM]
+``dynamics/propulsion/propeller_models/wagenigen/wagenigen.py`` (3-127).
+
+References
+----------
+[MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2.
+    https://github.com/cybergalactic/MSS, MIT licence, revision ``72656d1``:
+    ``LIBRARY/modeling/wageningen.m`` 23-38, ``utiles/WageningData.mat``.
+[MGM] Krizman, E. *more_generic_models*.
+    https://github.com/MOREnvironment/more_generic_models (no licence file),
+    revision ``524e336``:
+    the file and lines listed above.
 """
 
 from dataclasses import dataclass
@@ -130,7 +142,7 @@ class WageningenConstants:
 def _collapse(table: np.ndarray, pd: float, aeao: float, z: float) -> np.ndarray:
     """Sum the geometry factors of each power of ``J`` (numpy, preprocess)."""
     powers = table[:, 1].astype(int)
-    weights = table[:, 0] * pd ** table[:, 2] * aeao ** table[:, 3] * z ** table[:, 4]
+    weights = table[:, 0] * pd ** table[:, 2] * aeao ** table[:, 3] * z ** table[:, 4]  # (wageningen.m 35-38)
     polynomial = np.zeros(powers.max() + 1)
     np.add.at(polynomial, powers, weights)
     return polynomial

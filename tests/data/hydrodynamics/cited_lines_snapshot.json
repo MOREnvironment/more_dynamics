@@ -13,73 +13,71 @@
    "467": "rho = 1025;"
   },
   "$MSS_DIR/CRAFT/AUV/models/remus100.m": {
-   "127": "alpha = atan2( nu_r(3), nu_r(1) );                % Angle of attack (rad)",
-   "128": "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );  % Relative speed (m/s)",
-   "132": "L_auv = 1.6;             % AUV length (m)",
-   "133": "D_auv = 0.19;            % AUV diamater (m)",
-   "134": "S = 0.7 * L_auv * D_auv; % Planform area S = 70% of rectangle L_auv * D_auv",
-   "136": "b = 1.0096 * D_auv/2;",
-   "138": "r_bG = [ 0 0 0.02 ]';    % CG w.r.t. to the CO",
-   "139": "r_bB = [ 0 0 0 ]';       % CB w.r.t. to the CO",
-   "144": "Cd = 0.42;                              % From Allen et al. (2000)",
-   "145": "CD_0 = Cd * pi * b^2 / S;",
-   "193": "T1 = 20;                 % Time constant in surge (s)",
-   "194": "T2 = 20;                 % Time constant in sway (s)",
-   "195": "zeta4 = 0.3;             % Relative damping ratio in roll",
-   "196": "zeta5 = 0.8;             % Relative damping ratio in pitch",
-   "197": "T6 = 1;                  % Time constant in yaw (s)",
-   "215": "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
-   "216": "D(1,1) = D(1,1) * exp(-3 * U_r); % Vanish at high through-water speed",
-   "218": "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
-   "219": "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
-   "97": "mu = deg2rad(63.446827); % Latitude for Trondheim, Norway (deg)"
+   "126": "alpha = atan2( nu_r(3), nu_r(1) );                % Angle of attack (rad)",
+   "127": "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );  % Relative speed (m/s)",
+   "131": "L_auv = 1.6;             % AUV length (m)",
+   "132": "D_auv = 0.19;            % AUV diamater (m)",
+   "133": "S = 0.7 * L_auv * D_auv; % Planform area S = 70% of rectangle L_auv * D_auv",
+   "135": "b = 1.0096 * D_auv/2;",
+   "137": "r_bG = [ 0 0 0.02 ]';    % CG w.r.t. to the CO",
+   "138": "r_bB = [ 0 0 0 ]';       % CB w.r.t. to the CO",
+   "143": "Cd = 0.42;                              % From Allen et al. (2000)",
+   "144": "CD_0 = Cd * pi * b^2 / S;",
+   "192": "T1 = 20;                 % Time constant in surge (s)",
+   "193": "T2 = 20;                 % Time constant in sway (s)",
+   "194": "zeta4 = 0.3;             % Relative damping ratio in roll",
+   "195": "zeta5 = 0.8;             % Relative damping ratio in pitch",
+   "196": "T6 = 1;                  % Time constant in yaw (s)",
+   "217": "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
+   "218": "D(1,1) = D(1,1) * exp(-3 * U_r); % Vanish at high through-water speed",
+   "220": "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
+   "221": "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
+   "96": "mu = deg2rad(63.446827); % Latitude for Trondheim, Norway (deg)"
   },
   "$MSS_DIR/CRAFT/SHIP/models/osv.m": {
-   "129": "vessel.T1 = 100;               % Time constants for linear damping (s)",
-   "180": "[X,Xuu,Xu] = forceSurgeDamping(flag,nu_r(1),vessel.m,vessel.S,vessel.L, ...",
-   "181": "vessel.T1,vessel.rho,vessel.U_max,vessel.thrust_max);",
-   "185": "vessel.D(1,1) = 0; % using: X = sigma * Xu * u_r + (1 - sigma) * Xuu * abs(u_r)*u_r",
-   "62": "vessel.L = 83;                 % Length (m)",
-   "63": "vessel.B = 18;                 % Beam (m)",
-   "64": "vessel.T = 5;                  % Draft (m)",
-   "65": "vessel.rho = 1025;             % Density of water (kg/m3)",
-   "66": "vessel.Cb = 0.65;              % Block coefficient: Cb = nabla / (L * B * T)",
-   "67": "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B; % Wetted surface, box approximation",
-   "70": "vessel.K_max = [300e3 300e3 420e3 655e3]';% Max propeller thrust (N)",
-   "76": "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4); % max thrust in the surge direction (N)",
-   "77": "vessel.U_max = 7.7; % Max cruise speed (m/s) corresponding to max thrust",
-   "79": "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T; % Volume displacement(m3)",
-   "80": "vessel.m = vessel.rho * vessel.nabla; % Mass (kg)"
+   "128": "vessel.T1 = 100;               % Time constants for linear damping (s)",
+   "188": "vessel.D(1,1) = 0; % using: X = sigma * Xu * u_r + (1 - sigma) * Xuu * abs(u_r)*u_r",
+   "61": "vessel.L = 83;                 % Length (m)",
+   "62": "vessel.B = 18;                 % Beam (m)",
+   "63": "vessel.T = 5;                  % Draft (m)",
+   "64": "vessel.rho = 1025;             % Density of water (kg/m3)",
+   "65": "vessel.Cb = 0.65;              % Block coefficient: Cb = nabla / (L * B * T)",
+   "66": "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B; % Wetted surface, box approximation",
+   "69": "vessel.K_max = [300e3 300e3 420e3 655e3]';% Max propeller thrust (N)",
+   "75": "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4); % max thrust in the surge direction (N)",
+   "76": "vessel.U_max = 7.7; % Max cruise speed (m/s) corresponding to max thrust",
+   "78": "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T; % Volume displacement(m3)",
+   "79": "vessel.m = vessel.rho * vessel.nabla; % Mass (kg)"
   },
   "$MSS_DIR/CRAFT/USV/models/otter.m": {
-   "100": "T_yaw = 1;          % time constant in yaw (s)",
-   "101": "Umax = 6 * 0.5144;  % 6 knots maximum forward speed (m/s)",
-   "104": "B_pont  = 0.25;     % beam of one pontoon (m)",
-   "107": "Cb_pont = 0.4;      % block coefficient, computed from m = 55 kg",
-   "121": "nabla = (m+mp)/rho;                         % volume",
-   "122": "T = nabla / (2 * Cb_pont * B_pont * L);     % draft",
-   "192": "LCF = -0.2;",
-   "197": "w3 = sqrt( G33/M(3,3) );",
-   "198": "w4 = sqrt( G44/M(4,4) );",
-   "199": "w5 = sqrt( G55/M(5,5) );",
-   "202": "Xu = -24.4 * g / Umax;        % specified using the maximum speed",
-   "203": "Yv = -M(2,2) / T_sway;        % specified using the time constant in sway",
-   "204": "Zw = -2 * 0.3 * w3 * M(3,3);  % specified using relative damping factors",
-   "205": "Kp = -2 * 0.2 * w4 * M(4,4);",
-   "206": "Mq = -2 * 0.4 * w5 * M(5,5);",
-   "207": "Nr = -M(6,6) / T_yaw;         % specified using the time constant in T_yaw",
-   "235": "Xh = Xu * nu_r(1);",
-   "236": "Yh = Yv * nu_r(2);",
-   "237": "Zh = Zw * nu_r(3);",
-   "238": "Kh = Kp * nu_r(4);",
-   "239": "Mh = Mq * nu_r(5);",
-   "240": "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-   "245": "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
-   "90": "g   = 9.81;         % acceleration of gravity (m/s^2)",
-   "91": "rho = 1025;         % density of water",
-   "92": "L = 2.0;            % length (m)",
-   "94": "m = 55.0;           % mass (kg)",
-   "99": "T_sway = 1;         % time constant in sway (s)"
+   "100": "Umax = 6 * 0.5144;  % 6 knots maximum forward speed (m/s)",
+   "103": "B_pont  = 0.25;     % beam of one pontoon (m)",
+   "106": "Cb_pont = 0.4;      % block coefficient, computed from m = 55 kg",
+   "120": "nabla = (m+mp)/rho;                         % volume",
+   "121": "T = nabla / (2 * Cb_pont * B_pont * L);     % draft",
+   "191": "LCF = -0.2;",
+   "196": "w3 = sqrt( G33/M(3,3) );",
+   "197": "w4 = sqrt( G44/M(4,4) );",
+   "198": "w5 = sqrt( G55/M(5,5) );",
+   "201": "Xu = -24.4 * g / Umax;        % specified using the maximum speed",
+   "202": "Yv = -M(2,2) / T_sway;        % specified using the time constant in sway",
+   "203": "Zw = -2 * 0.3 * w3 * M(3,3);  % specified using relative damping factors",
+   "204": "Kp = -2 * 0.2 * w4 * M(4,4);",
+   "205": "Mq = -2 * 0.4 * w5 * M(5,5);",
+   "206": "Nr = -M(6,6) / T_yaw;         % specified using the time constant in T_yaw",
+   "234": "Xh = Xu * nu_r(1);",
+   "235": "Yh = Yv * nu_r(2);",
+   "236": "Zh = Zw * nu_r(3);",
+   "237": "Kh = Kp * nu_r(4);",
+   "238": "Mh = Mq * nu_r(5);",
+   "239": "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
+   "244": "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
+   "89": "g   = 9.81;         % acceleration of gravity (m/s^2)",
+   "90": "rho = 1025;         % density of water",
+   "91": "L = 2.0;            % length (m)",
+   "93": "m = 55.0;           % mass (kg)",
+   "98": "T_sway = 1;         % time constant in sway (s)",
+   "99": "T_yaw = 1;          % time constant in yaw (s)"
   },
   "$MSS_DIR/HYDRO/Hoerner.m": {
    "47": "if B/(2*T) <= 4.00309",
@@ -119,8 +117,8 @@
    "39": "Xuu = -0.5 * rho * S * (1+k) * Cf;"
   },
   "$MSS_DIR/LIBRARY/modeling/addedMassSurge.m": {
-   "33": "nabla = m / rho;                       % Volume displacement (m^3)",
-   "34": "A11 = 2.7 * rho * nabla^(5/3) / L^2;   % Added mass in surge (kg)"
+   "32": "nabla = m / rho;                       % Volume displacement (m^3)",
+   "33": "A11 = 2.7 * rho * nabla^(5/3) / L^2;   % Added mass in surge (kg)"
   },
   "$MSS_DIR/LIBRARY/modeling/coeffLiftDrag.m": {
    "54": "e = 0.3;",
@@ -130,16 +128,16 @@
    "68": "CD = CD_0 + CL.^2 / (pi * e * AR);"
   },
   "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m": {
-   "24": "rho = 1025;     % Density of water",
-   "25": "nStrips = 20;   % Number of hull strips",
-   "26": "dx = L/nStrips; % Strip width",
-   "41": "xL = -L/2 + (i - 0.5) * dx;                       % Strip midpoint",
-   "46": "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
-   "47": "U_v = abs(w_r + xL * q) * (w_r + xL * q);",
-   "48": "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;       % Sway force",
-   "49": "Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;       % Heave force",
-   "50": "Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;  % Pitch moment",
-   "51": "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;  % Yaw moment"
+   "36": "rho = 1025;         % Density of water (kg/m3)",
+   "37": "nStrips = 20;       % Number of hull strips",
+   "38": "dx = L / nStrips;   % Strip width (m)",
+   "56": "xL = -L/2 + (i - 0.5) * dx;                       % Strip midpoint",
+   "61": "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
+   "62": "U_v = abs(w_r + xL * q) * (w_r + xL * q);",
+   "63": "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;       % Sway force",
+   "64": "Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;       % Heave force",
+   "65": "Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;  % Pitch moment",
+   "66": "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;  % Yaw moment"
   },
   "$MSS_DIR/LIBRARY/modeling/forceLiftDrag.m": {
    "26": "rho = 1026;",
@@ -149,7 +147,11 @@
    "35": "cos(alpha) * (-F_drag) - sin(alpha) * (-F_lift)",
    "37": "sin(alpha) * (-F_drag) + cos(alpha) * (-F_lift)"
   },
-  "$MSS_DIR/LIBRARY/modeling/forceSurgeDamping.m": {
+  "$MSS_DIR@ac77394/CRAFT/SHIP/models/osv.m": {
+   "180": "[X,Xuu,Xu] = forceSurgeDamping(flag,nu_r(1),vessel.m,vessel.S,vessel.L, ...",
+   "181": "vessel.T1,vessel.rho,vessel.U_max,vessel.thrust_max);"
+  },
+  "$MSS_DIR@ac77394/LIBRARY/modeling/forceSurgeDamping.m": {
    "57": "u_cross = 2; % Crossover speed linear to quadratic damping (m/s)",
    "60": "Xudot = -addedMassSurge(m,L,rho);",
    "61": "Xu = -(m - Xudot) / T1;",
@@ -165,15 +167,15 @@
    "82": "X = sigma .* Xu .* u_r + (1 - sigma) .* Xuu .* abs(u_r) .* u_r;"
   }
  },
- "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py (job U3a)",
+ "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py (procedure); paths $MSS_DIR@<revision>/... read with git show",
  "revisions": {
   "MORE_GENERIC_MODELS_DIR": {
    "clean": false,
-   "head": "524e33616cf7ebcd6369d89bf0994a0ca6c4d7af"
+   "head": "ba9edf28b880393a92e7cfc13aba2b3f2c9e16cf"
   },
   "MSS_DIR": {
    "clean": true,
-   "head": "ac77394b74a2184317e92c6b73d8deca97b48359"
+   "head": "72656d1b3b962bf533003ded2049347371153062"
   }
  },
  "tables": {

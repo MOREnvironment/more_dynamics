@@ -1,17 +1,18 @@
 """Gate tests for the surface hydrostatics block (linear restoring ``G eta``).
 
-Written before the block exists (job U2a, 2026-10-06); the block is ported by
-U2b. Every block test fails today with "block not ported yet". This is **our**
-surface module (owner E-28); the other developer's
-``models/hydrostatics/linear_surface.py`` is read-only, is not imported here,
-and is described only in the ledger's template audit
-(``agents-more/30_checks/2026-10-06_U2_hydrostatics_gates.md``).
+Written 2026-10-06, before the block existed. This is **our** surface module;
+the other developer's ``models/hydrostatics/linear_surface.py`` is a
+different block, is not edited and is not imported here.
 
-Contract the porter must provide
---------------------------------
+Gates (the test names carry them): G1 the block against MATLAB running MSS
+(frozen CSVs), 1e-9 absolute; G2 against the numpy source, 1e-10; G4 a
+perturbed model is detected; G5 a printed number of Fossen (2011) reproduced.
+
+Contract of the block
+---------------------
 ``more_dynamics.models.hydrostatics.surface`` exports four functions, one per
 numpy source row plus the graph (names and argument order are this test's
-construction, owner E-16 style: geometry in, no vehicle numbers inside):
+construction: geometry in, no vehicle numbers inside):
 
 * ``surface_restoring_matrices(water_density, gravity, displacement_volume,
   waterplane_area, transverse_metacentric_height,
@@ -20,7 +21,7 @@ construction, owner E-16 style: geometry in, no vehicle numbers inside):
   ``RestoringForces.G_restoring_surface_vessel``; MSS ``Gmtrx.m`` 29-37:
   ``G_CF = diag(0, 0, rho g A_wp, rho g nabla GMT, rho g nabla GML, 0)``,
   ``G_CO = H(r_bF)^T G_CF H(r_bF)`` with ``r_bF = [LCF 0 0]``,
-  ``G = H(r_bP)^T G_CO H(r_bP)``; ``H`` from L0 ``H_matrix`` (``Hmtrx.m``).
+  ``G = H(r_bP)^T G_CO H(r_bP)``; ``H`` from ``more_transformations`` ``H_matrix`` (``Hmtrx.m``).
 * ``metacentric_heights(displacement_volume, center_of_buoyancy_above_keel,
   transverse_waterplane_inertia, longitudinal_waterplane_inertia,
   center_of_gravity, draft) -> (6,) array [BM_T, BM_L, KM_T, KM_L, GM_T,
@@ -39,10 +40,11 @@ construction, owner E-16 style: geometry in, no vehicle numbers inside):
   ``I_L = n c_L (1/12) B L^3``; Morrish
   ``KB = (1/3)(5 T/2 - (nabla/n) / A_KB)`` with ``A_KB = A_hull`` (default
   ``"waterplane"``) or ``A_KB = L B`` (``"length_times_beam"``, the
-  ``otter.m`` line 178 behaviour; proposed register row D-MSS-3, see the
-  ledger). ``hull_count`` is 1 or 2; a single hull has
-  ``hull_lateral_offset = 0``. ``gravity=None`` takes L0
-  ``ECEFNEDtransform.gravity(latitude)`` (owner E-22); a number overrides it
+  ``otter.m`` line 177 behaviour, which drops ``Cw``; the waterplane form is
+  the default because a wall-sided hull then has KB = T/2 exactly).
+  ``hull_count`` is 1 or 2; a single hull has ``hull_lateral_offset = 0``.
+  ``gravity=None`` takes ``more_transformations``
+  ``ECEFNEDtransform.gravity(latitude)``; a number overrides it
   (9.81 for the MSS checks, ``Gmtrx.m`` line 26). Only ``gravity`` and
   ``center_of_buoyancy_area`` have defaults.
 * ``SurfaceHydrostaticsConstants``: frozen dataclass with at least
@@ -57,10 +59,10 @@ construction, owner E-16 style: geometry in, no vehicle numbers inside):
 
 ``g`` is the left-hand-side restoring vector, as in the submerged block and as
 the numpy source (``asv_hull.py::get_restoring`` 222-224, ``G @ eta``): the
-equation of motion is ``M nu_dot + ... + G eta = tau`` (``otter.m`` line 262,
+equation of motion is ``M nu_dot + ... + G eta = tau`` (``otter.m`` line 261,
 ``... - G * eta``), so the applied force is ``-g``.
 
-Map rows covered (``agents-more/MIGRATION_MAP.md``), numpy source read in full
+Source functions covered, numpy source read in full
 (``more_generic_models/more_generic_models/dynamics/plant/matrices/
 restoring_forces.py``): ``G_restoring_surface_vessel`` 170-228,
 ``get_coeff_surface_vessel`` 230-288, ``get_metacenter_heights_coeff``
@@ -70,16 +72,16 @@ restoring_forces.py``): ``G_restoring_surface_vessel`` 170-228,
 (``[1.0, 1.0, 1.0]``). The source's three scale factors are, in this
 contract's geometry, ``[n, n c_L, 1/n]``.
 
-Conventions (hidden assumptions, see the ledger)
-------------------------------------------------
+Conventions (hidden assumptions)
+--------------------------------
 * NED, z down; the CO on the waterline (``KG = T - z_g``, MSS
-  ``exShipHydrostatics.m`` line 42 ``r_bB = [.. T-KB]``); small roll, pitch
-  and heave (Fossen 2011 eq. 4.22-4.24).
+  ``exShipHydrostatics.m`` line 41 ``r_bB = [.. T-KB]``); small roll, pitch
+  and heave (Fossen 2011, eqs. 4.22-4.24, pp. 64-65).
 * ``LCF`` and ``reference_point`` are measured from the CO in BODY.
 * Twin hulls are identical and placed at ``+-y``; the waterplane of each is
   symmetric about its own centreline.
 
-Frozen reference: ``tests/data/hydrostatics/`` (``SOURCE.md``, section U2a).
+Frozen reference: ``tests/data/hydrostatics/`` (``SOURCE.md``, section of 2026-10-06).
 """
 
 import ast
@@ -93,7 +95,7 @@ import numpy as np
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "hydrostatics"
-# Outside this repo only through environment variables (agents-more rule 9):
+# Outside this repo only through environment variables (nothing relative to one machine):
 # MSS_DIR = an MSS checkout, MORE_GENERIC_MODELS_DIR = the more_generic_models
 # repo root. Unset -> the tests that need them skip; the gates on the frozen
 # CSVs in tests/data run everywhere.
@@ -101,19 +103,19 @@ CONTRACT_MODULE = "more_dynamics.models.hydrostatics.surface"
 GMTRX_CSV = "surface_gmtrx_mss_current.csv"
 CHAIN_CSV = "surface_chain_mss_current.csv"
 
-G1_TOLERANCE = 1e-9   # 30_checks/README.md, gate G1
-G2_TOLERANCE = 1e-10  # 30_checks/README.md, gate G2
-G4_FACTOR = 10.0      # 30_checks/README.md, gate G4
+G1_TOLERANCE = 1e-9   # G1: block vs MATLAB running MSS, absolute
+G2_TOLERANCE = 1e-10  # G2: block vs the numpy source or a transcription, absolute
+G4_FACTOR = 10.0      # G4: a perturbed model must differ by more than this x G1
 SEED = 20261006
 N_RANDOM_STATES = 1000
 N_RANDOM_SETS = 50
 # Ship-scale G entries reach 1e9-1e10 N/m, N m/rad: an absolute 1e-9 is below
-# double precision there. Those G are checked relative (not a gate; ledger
-# finding), their length-scale coefficients (KB, BM, GM) at G1.
+# double precision there. Those G are checked relative (not a gate), their
+# length-scale coefficients (KB, BM, GM) at G1.
 SHIP_G_RELATIVE = 1e-12
 
 DEFAULT_KB_AREA = "waterplane"          # Morrish with the hull's waterplane area
-MSS_OTTER_KB_AREA = "length_times_beam"  # otter.m line 178 (proposed D-MSS-3)
+MSS_OTTER_KB_AREA = "length_times_beam"  # otter.m line 177 (MSS behaviour behind the flag)
 
 VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
                  "mariner", "torqeedo", "cybership", "prestero", "osv")
@@ -133,27 +135,27 @@ CITED_LINES = {
     (GMTRX, 36): "G_CO = Hmtrx(r_bF)' * G_CF * Hmtrx(r_bF);",
     (GMTRX, 37): "G = Hmtrx(r_bP)' * G_CO * Hmtrx(r_bP);",
     ("LIBRARY/kinematics/Hmtrx.m", 17): "H = [eye(3)     S'",
-    (OTTER, 90): "g   = 9.81;",
-    (OTTER, 104): "B_pont  = 0.25;",
-    (OTTER, 105): "y_pont  = 0.395;",
-    (OTTER, 106): "Cw_pont = 0.75;",
-    (OTTER, 174): "Aw_pont = Cw_pont * L * B_pont;",
-    (OTTER, 175): "I_T = 2 * (1/12)*L*B_pont^3 * (6*Cw_pont^3/((1+Cw_pont)*(1+2*Cw_pont)))...",
-    (OTTER, 176): "+ 2 * Aw_pont * y_pont^2;",
-    (OTTER, 177): "I_L = 0.8 * 2 * (1/12) * B_pont * L^3;",
-    (OTTER, 178): "KB = (1/3)*(5*T/2 - 0.5*nabla/(L*B_pont) );",
-    (OTTER, 183): "KG = T - rg(3);",
-    (OTTER, 187): "G33 = rho * g * (2 * Aw_pont);",
-    (OTTER, 192): "LCF = -0.2;",
-    (OTTER, 262): "M \\ ( tau + tau_damp + tau_crossflow - C * nu_r - G * eta )",
-    (EXSHIP, 33): "Awp = Cw * B * L;",
-    (EXSHIP, 36): "KB = (1/3) * (5*T/2 - nabla/Awp);",
-    (EXSHIP, 39): "k_munro_smith =  (6 * Cw^3) / ((1+Cw) * (1+2*Cw));",
-    (EXSHIP, 42): "r_bB = [-0.5 0 T-KB]';",
-    (EXSHIP, 49): "I_L = 0.7 * (L^3 * B) / 12;",
-    (EXSHIP, 56): "GM_T = BM_T - BG;",
-    (OSV, 85): "vessel.KB = (1/3) * (5*vessel.T/2 - vessel.nabla/vessel.Awp);",
-    (OSV, 93): "vessel.I_L = 0.7 * (vessel.L^3 * vessel.B) / 12;",
+    (OTTER, 89): "g   = 9.81;",
+    (OTTER, 103): "B_pont  = 0.25;",
+    (OTTER, 104): "y_pont  = 0.395;",
+    (OTTER, 105): "Cw_pont = 0.75;",
+    (OTTER, 173): "Aw_pont = Cw_pont * L * B_pont;",
+    (OTTER, 174): "I_T = 2 * (1/12)*L*B_pont^3 * (6*Cw_pont^3/((1+Cw_pont)*(1+2*Cw_pont)))...",
+    (OTTER, 175): "+ 2 * Aw_pont * y_pont^2;",
+    (OTTER, 176): "I_L = 0.8 * 2 * (1/12) * B_pont * L^3;",
+    (OTTER, 177): "KB = (1/3)*(5*T/2 - 0.5*nabla/(L*B_pont) );",
+    (OTTER, 182): "KG = T - rg(3);",
+    (OTTER, 186): "G33 = rho * g * (2 * Aw_pont);",
+    (OTTER, 191): "LCF = -0.2;",
+    (OTTER, 261): "M \\ ( tau + tau_damp + tau_crossflow - C * nu_r - G * eta )",
+    (EXSHIP, 32): "Awp = Cw * B * L;",
+    (EXSHIP, 35): "KB = (1/3) * (5*T/2 - nabla/Awp);",
+    (EXSHIP, 38): "k_munro_smith =  (6 * Cw^3) / ((1+Cw) * (1+2*Cw));",
+    (EXSHIP, 41): "r_bB = [-0.5 0 T-KB]';",
+    (EXSHIP, 48): "I_L = 0.7 * (L^3 * B) / 12;",
+    (EXSHIP, 55): "GM_T = BM_T - BG;",
+    (OSV, 84): "vessel.KB = (1/3) * (5*vessel.T/2 - vessel.nabla/vessel.Awp);",
+    (OSV, 92): "vessel.I_L = 0.7 * (vessel.L^3 * vessel.B) / 12;",
 }
 
 
@@ -163,7 +165,7 @@ CITED_LINES = {
 def _env_dir(variable):
     value = os.environ.get(variable)
     if not value:
-        pytest.skip(f"{variable} is not set (agents-more rule 9); set it to run this check")
+        pytest.skip(f"{variable} is not set (nothing relative to one machine); set it to run this check")
     path = Path(value).expanduser()
     if not path.is_dir():
         pytest.skip(f"{variable}={value} is not a directory")
@@ -182,7 +184,7 @@ def _contract():
         return importlib.import_module(CONTRACT_MODULE)
     except ModuleNotFoundError as exc:
         if exc.name == "casadi":
-            pytest.fail(f"casadi is not installed (owner decision E-7): {exc}")
+            pytest.fail(f"casadi is not installed: {exc}")
         pytest.fail(f"block not ported yet: {exc}")
 
 
@@ -214,19 +216,19 @@ def _max_diff(a, b):
 
 
 def _h(r):
-    """Hmtrx.m 16-18, test-side (the block must take it from L0)."""
+    """Hmtrx.m 16-18, test-side (the block must take it from more_transformations)."""
     x, y, z = r
     s = np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
     return np.block([[np.eye(3), s.T], [np.zeros((3, 3)), np.eye(3)]])
 
 
-def _gravity_l0(latitude):
+def _gravity_library(latitude):
     from more_transformations.ecef_ned_transforms import ECEFNEDtransform
     return ECEFNEDtransform.gravity(latitude)
 
 
 # --------------------------------------------------------------------------
-# Parameter sets (geometry, owner E-16)
+# Parameter sets (geometry, no vehicle number in the block)
 # --------------------------------------------------------------------------
 def _chain_parameters(row, center_of_buoyancy_area):
     """Block parameters for one MSS chain row (generator columns)."""
@@ -250,7 +252,7 @@ def _chain_parameters(row, center_of_buoyancy_area):
 
 
 def _twin_hull_parameters():
-    """otter.m payload case 1 (mp = 25 kg), MSS behaviour of line 178."""
+    """otter.m payload case 1 (mp = 25 kg), MSS behaviour of line 177."""
     row = _load_csv(CHAIN_CSV)[0]
     assert row["kind"] == 1 and row["mp"] == 25
     return _chain_parameters(row, MSS_OTTER_KB_AREA)
@@ -366,7 +368,7 @@ def _source_matrices(p, gravity):
 
 
 def _morrish_kb(p, area):
-    """Morrish KB (exShipHydrostatics.m 36 per hull; otter.m 178 for the flag)."""
+    """Morrish KB (exShipHydrostatics.m 35 per hull; otter.m 177 for the flag)."""
     n = p["hull_count"]
     a_kb = (p["waterplane_area_coefficient"] * p["length"] * p["hull_beam"]
             if area == DEFAULT_KB_AREA else p["length"] * p["hull_beam"])
@@ -514,7 +516,7 @@ def test_G2_function_signature():
 
 def test_G2_block_matches_numpy_source_on_parameter_sets():
     """50 seeded sets. Where the source has the pairing (monohull + waterplane,
-    twin hull + otter.m line 178) the whole chain is compared; for the twin
+    twin hull + otter.m line 177) the whole chain is compared; for the twin
     hull with the default KB the source has no branch, so A_wp, I_T, I_L and G
     are compared and the GM values differ from the flag exactly by the KB
     difference (both KB forms written out in ``_morrish_kb``)."""
@@ -522,7 +524,7 @@ def test_G2_block_matches_numpy_source_on_parameter_sets():
     rf = _restoring_source()
     for k, p in enumerate(_random_parameter_sets()):
         constants, function = _build(p)
-        gravity = _gravity_l0(p["latitude"])
+        gravity = _gravity_library(p["latitude"])
         assert abs(constants.gravity - gravity) <= G2_TOLERANCE, k
         n, area = p["hull_count"], p["center_of_buoyancy_area"]
         if n == 1 or area == MSS_OTTER_KB_AREA:
@@ -640,8 +642,8 @@ def test_G5_fossen_2011_example_4_2_barge():
 def test_G5_fossen_2011_example_4_2_printed_BM_T_is_a_misprint():
     """The book prints BM_T = 2.08 m (4.40) and GM_T = 1.58 m (4.42), but its
     own I_T = 4 266.7 m^4 (4.37) and nabla = 4 000 m^3 (4.39) give
-    BM_T = 1.07 m and GM_T = 0.57 m. Pinned so nobody "repairs" towards the
-    printed value (ledger finding)."""
+    BM_T = 1.07 m and GM_T = 0.57 m (Fossen 2011, p. 67). Pinned so nobody
+    "repairs" towards the printed value."""
     assert round(4266.7 / 4000.0, 2) == 1.07  # the book's own numbers
     constants, _ = _build(_barge_parameters())
     assert round(constants.transverse_metacentric_height, 2) == 0.57
@@ -649,7 +651,7 @@ def test_G5_fossen_2011_example_4_2_printed_BM_T_is_a_misprint():
 
 
 # --------------------------------------------------------------------------
-# Physical signs (no model needed; owner E-23 clarification)
+# Physical signs (no model needed; MSS is checked, not trusted)
 # --------------------------------------------------------------------------
 def _level_params(**changes):
     p = _monohull_parameters()
@@ -695,7 +697,7 @@ def test_physical_heave_pitch_coupling_sign_with_flotation_centre_aft():
     ``x_F`` this gives ``G_CO[2,4] = G_CO[4,2] = -rho g A_wp x_F`` and
     ``G_CO[4,4] = rho g (nabla GM_L + A_wp x_F^2)``. (Fossen 2011 eq. 4.28 prints
     ``-Z_theta = +rho g int x dA``; the sign here follows the derivation and
-    ``Gmtrx.m`` — ledger finding.)"""
+    ``Gmtrx.m``.)"""
     x_f = -0.3
     p = _level_params(longitudinal_center_of_flotation=x_f)
     constants, _ = _build(p)
@@ -742,9 +744,9 @@ def test_restoring_matrix_is_symmetric_at_every_reference_point():
 
 
 # --------------------------------------------------------------------------
-# D-MSS-3 (proposed): Morrish KB area, MSS otter.m behaviour behind the flag
+# Morrish KB area: waterplane by default, MSS otter.m behaviour behind the flag
 # --------------------------------------------------------------------------
-def test_D_MSS_3_default_differs_from_otter_line_178_by_the_documented_kb_term():
+def test_kb_default_differs_from_otter_line_177_by_the_documented_kb_term():
     p = _twin_hull_parameters()
     flag, _ = _build(p)
     default, _ = _build({**p, "center_of_buoyancy_area": DEFAULT_KB_AREA})
@@ -771,12 +773,12 @@ def test_single_hull_must_be_on_the_centreline_and_hull_count_is_one_or_two():
 
 
 # --------------------------------------------------------------------------
-# Gravity (owner E-22) and transforms from L0 (owner E-25, ADR 0003 §4.4)
+# Gravity and transforms from more_transformations
 # --------------------------------------------------------------------------
 def test_gravity_from_latitude_by_default_and_explicit_override():
     p = _monohull_parameters()
     constants, _ = _build(p)
-    assert constants.gravity == _gravity_l0(p["latitude"])
+    assert constants.gravity == _gravity_library(p["latitude"])
     overridden, _ = _build({**p, "gravity": 9.81})
     assert overridden.gravity == 9.81
     ratio = overridden.stiffness_at_flotation[2, 2] / constants.stiffness_at_flotation[2, 2]
@@ -793,9 +795,9 @@ def _l0_classes():
     return (MatrixNumpy, MatrixCasadi), (GravityNumpy, GravityCasadi)
 
 
-def test_L0_transforms_and_gravity_are_taken_from_more_transformations(monkeypatch):
-    """H (Hmtrx.m) and gravity (gravity.m) come from L0, numpy or CasADi form;
-    counted by wrapping the L0 functions while the block is built."""
+def test_transforms_and_gravity_are_taken_from_more_transformations(monkeypatch):
+    """H (Hmtrx.m) and gravity (gravity.m) come from more_transformations, numpy
+    or CasADi form; counted by wrapping those functions while the block is built."""
     matrices, gravities = _l0_classes()
     calls = {"H_matrix": 0, "gravity": 0}
 
@@ -827,7 +829,7 @@ def _code_without_docstrings(module):
     return tree
 
 
-def test_L0_no_local_copies_of_transforms_or_gravity_constants():
+def test_transforms_no_local_copies_or_gravity_constants():
     block = _contract()
     tree = _code_without_docstrings(block)
     local_defs = {n.name.lower() for n in ast.walk(tree)
@@ -839,7 +841,7 @@ def test_L0_no_local_copies_of_transforms_or_gravity_constants():
 
 
 # --------------------------------------------------------------------------
-# Generic by construction (owner E-16)
+# Generic by construction (no vehicle name or number)
 # --------------------------------------------------------------------------
 def test_generic_block_reads_no_vehicle_name_and_has_no_vehicle_defaults():
     block = _contract()
