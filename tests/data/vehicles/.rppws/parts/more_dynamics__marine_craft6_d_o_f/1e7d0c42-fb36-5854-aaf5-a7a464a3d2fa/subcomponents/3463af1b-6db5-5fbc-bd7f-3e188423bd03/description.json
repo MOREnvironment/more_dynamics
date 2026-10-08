@@ -1,0 +1,17 @@
+{
+    "Id": "3463af1b-6db5-5fbc-bd7f-3e188423bd03",
+    "Name": "LambSpheroid_comp",
+    "PluginType": "more_dynamics::AddedMassModel",
+    "PluginName": "more_dynamics::LambSpheroid",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "1e7d0c42-fb36-5854-aaf5-a7a464a3d2fa",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "added_mass",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "Id": "0e81571a-cb82-5bfa-8fc8-fd385963a73a",
+    "Name": "TwinHullMetacentricEquilibriumDraft_comp",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::TwinHullMetacentricEquilibriumDraft",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "0ecda79c-660c-5ccf-a40b-5f7d6e5957de",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "restoring",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

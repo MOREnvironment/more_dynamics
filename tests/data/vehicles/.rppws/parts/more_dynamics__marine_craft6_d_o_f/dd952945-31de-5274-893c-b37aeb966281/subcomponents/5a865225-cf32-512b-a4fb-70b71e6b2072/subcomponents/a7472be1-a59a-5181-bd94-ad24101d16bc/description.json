@@ -1,0 +1,17 @@
+{
+    "Id": "a7472be1-a59a-5181-bd94-ad24101d16bc",
+    "Name": "FinFlowAngleSmallAngle_comp",
+    "PluginType": "more_dynamics::FinFlowAngle",
+    "PluginName": "more_dynamics::FinFlowAngleSmallAngle",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "5a865225-cf32-512b-a4fb-70b71e6b2072",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "flow_angle",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

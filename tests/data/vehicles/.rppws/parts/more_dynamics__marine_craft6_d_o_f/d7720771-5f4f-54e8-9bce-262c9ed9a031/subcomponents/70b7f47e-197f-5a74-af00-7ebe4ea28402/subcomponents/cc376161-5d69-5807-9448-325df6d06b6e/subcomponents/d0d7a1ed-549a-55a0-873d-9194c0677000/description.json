@@ -1,0 +1,17 @@
+{
+    "Id": "d0d7a1ed-549a-55a0-873d-9194c0677000",
+    "Name": "FinInflowTranslational_comp",
+    "PluginType": "more_dynamics::FinInflow",
+    "PluginName": "more_dynamics::FinInflowTranslational",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "cc376161-5d69-5807-9448-325df6d06b6e",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "inflow",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

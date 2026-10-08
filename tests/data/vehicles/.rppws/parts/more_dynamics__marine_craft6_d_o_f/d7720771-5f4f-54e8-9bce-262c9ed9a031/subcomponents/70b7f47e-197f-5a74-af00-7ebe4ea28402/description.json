@@ -1,0 +1,38 @@
+{
+    "Id": "70b7f47e-197f-5a74-af00-7ebe4ea28402",
+    "Name": "ForceProducerSet_comp",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::ForceProducerSet",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "producers": "List[more_dynamics::ForceProducer]"
+    },
+    "Subcomponents": {
+        "producers": [
+            {
+                "Id": "cc376161-5d69-5807-9448-325df6d06b6e",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::LiftingFin",
+                "SlotName": "producers",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            },
+            {
+                "Id": "bddb5e37-c042-5768-a7a1-fa19074ae1b1",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::LiftingFin",
+                "SlotName": "producers",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ]
+    },
+    "ParentComponentInfo": {
+        "Id": "d7720771-5f4f-54e8-9bce-262c9ed9a031",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "force_producers",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

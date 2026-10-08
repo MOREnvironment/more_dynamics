@@ -1,0 +1,17 @@
+{
+    "Id": "ec030b9f-e5d2-503a-8de0-71573e733df4",
+    "Name": "ProlateSpheroidMainDimensions_comp",
+    "PluginType": "more_dynamics::HullForm",
+    "PluginName": "more_dynamics::ProlateSpheroidMainDimensions",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "70a0b366-3d1e-52ec-a6ca-dff09157b617",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hull_form",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

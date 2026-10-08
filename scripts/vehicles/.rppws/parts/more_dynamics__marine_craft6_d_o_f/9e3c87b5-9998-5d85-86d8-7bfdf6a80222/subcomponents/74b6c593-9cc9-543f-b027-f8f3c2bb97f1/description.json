@@ -1,0 +1,17 @@
+{
+    "Id": "74b6c593-9cc9-543f-b027-f8f3c2bb97f1",
+    "Name": "HullWithPointPayload_comp",
+    "PluginType": "more_dynamics::RigidBodyModel",
+    "PluginName": "more_dynamics::HullWithPointPayload",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "9e3c87b5-9998-5d85-86d8-7bfdf6a80222",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "rigid_body",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

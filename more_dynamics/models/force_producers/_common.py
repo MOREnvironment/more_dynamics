@@ -1,72 +1,52 @@
-"""Shared numpy checks and CasADi helpers of the force-producer blocks.
+"""Shared CasADi helpers of the force-producer blocks.
 
-Rotations and skew matrices come from ``more_transformations`` (numpy, in
-the pre-processing) and ``more_transformations.more_casadi_transformations``
-(in the graphs); none is defined here.
+Rotations and skew matrices come from
+``more_transformations.more_casadi_transformations``; none is defined here.
 
 Equations (keys in References):
 
 * Point force ``f`` at ``r`` (BODY, from the CO): ``tau = [f; r x f] =
-  [f; S(r) f]`` (Fossen 2011, eq. 12.226, p. 400; MSS ``Smtrx.m`` 11-13).
+  [f; S(r) f]`` (Fossen 2011, eq. 12.226, p. 400; ``S(r) a = r x a``,
+  Fossen 2011, eqs. 2.9-2.10, p. 20; MSS ``Smtrx.m`` 11-13).
 * Saturation ``min(max(x, lower), upper)`` (MSS ``sat.m`` / ``satlim.m``
-  behaviour, e.g. ``remus100.m`` 113-115, ``otter.m`` 219).
+  behaviour, e.g. ``remus100.m`` 113-115, ``otter.m`` 220).
 
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). *Handbook of Marine Craft Hydrodynamics
-    and Motion Control*, 1st ed. John Wiley & Sons, Chichester. Ch. 12, §12.3.1, eq. 12.226, p. 400.
-[MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2.
-    https://github.com/cybergalactic/MSS, MIT licence, revision ``72656d1``:
-    ``LIBRARY/kinematics/Smtrx.m`` 11-13; ``CRAFT/AUV/models/remus100.m``
-    113-115; ``CRAFT/USV/models/otter.m`` 219.
+    and Motion Control*, 1st ed. John Wiley & Sons, Chichester. Ch. 2,
+    eqs. 2.9-2.10, p. 20; Ch. 12, §12.3.1, eq. 12.226, p. 400.
+[MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
+    with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
+    licence, revision ``cc07579``: ``LIBRARY/kinematics/Smtrx.m`` 11-13;
+    ``CRAFT/AUV/models/remus100.m`` 113-115; ``CRAFT/USV/models/otter.m``
+    220.
+
+Author:    Enio Krizman
+Date:      2026-10-05
 """
 
-from typing import Sequence
-
 import casadi as ca
-import numpy as np
-from more_transformations.more_casadi_transformations.matrix_transforms import (
-    MatrixTransforms as CasadiMatrixTransforms,
-)
-
-
-def positive(name: str, value: float) -> float:
-    value = float(value)
-    if not np.isfinite(value) or value <= 0.0:
-        raise ValueError(f"{name} must be a positive finite value")
-    return value
-
-
-def finite(name: str, value: float) -> float:
-    value = float(value)
-    if not np.isfinite(value):
-        raise ValueError(f"{name} must be a finite value")
-    return value
-
-
-def array(values: Sequence, shape: tuple, name: str) -> np.ndarray:
-    result = np.asarray(values, dtype=float)
-    if result.shape != shape:
-        raise ValueError(f"{name} must have shape {shape}, got {result.shape}")
-    if not np.all(np.isfinite(result)):
-        raise ValueError(f"{name} must contain only finite values")
-    return result
+from more_transformations.more_casadi_transformations import MatrixTransforms
 
 
 def saturate(value, lower, upper):
-    """Elementwise ``clip`` (``np.clip`` order: ``min(max(x, lower), upper)``)."""
-    return ca.fmin(ca.fmax(value, lower), upper)
+    """Elementwise ``min(max(x, lower), upper)`` (the order of ``np.clip``;
+    MSS ``satlim.m`` behaviour, ``otter.m`` 220)."""
+    return ca.fmin(ca.fmax(value, lower), upper)  # (otter.m 220; remus100.m 113-115)
 
 
-def safe_norm(vector: ca.SX) -> ca.SX:
+def safe_norm(vector):
     """``|v|`` with the same value as ``sqrt(v . v)`` and a zero (not NaN)
-    derivative at ``v = 0``."""
-    squared = ca.sumsqr(vector)
+    derivative at ``v = 0`` (a guard of this module: the branch not taken
+    gets a harmless argument)."""
+    squared = ca.sumsqr(vector)  # v . v (definition of the Euclidean norm)
     nonzero = squared > 0.0
-    return ca.if_else(nonzero, ca.sqrt(ca.if_else(nonzero, squared, 1.0)), 0.0)
+    return ca.if_else(nonzero, ca.sqrt(ca.if_else(nonzero, squared, 1.0)), 0.0)  # guard against sqrt'(0)
 
 
-def wrench(force: ca.SX, position: np.ndarray) -> ca.SX:
+def wrench(force, position):
     """``[f; S(r) f]`` for a point force at ``position`` (BODY, about the CO;
-    Fossen 2011, eq. 12.226, p. 400)."""
-    return ca.vertcat(force, ca.mtimes(CasadiMatrixTransforms.skew(position), force))  # (Fossen 2011, eq. 12.226, p. 400)
+    Fossen 2011, eq. 12.226, p. 400). ``position`` may be numbers or a
+    CasADi expression."""
+    return ca.vertcat(force, MatrixTransforms.skew(position) @ force)  # (Fossen 2011, eq. 12.226, p. 400; eq. 2.9, p. 20)

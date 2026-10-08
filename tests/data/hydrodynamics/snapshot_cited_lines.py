@@ -2,15 +2,16 @@
 
 Writes ``cited_lines_snapshot.json`` beside this file: the stripped text of
 each ``CITED_LINES`` entry and the parsed numbers of each ``TABLES`` entry of
-``tests/hydrodynamics/test_hydrodynamics_block.py``, plus the git revisions
+``tests/vehicles/hull_parts/hydrodynamic_loads/test_hydrodynamics_block.py``, plus the git revisions
 the text came from. The tests read the snapshot, so their gates run without
-an MSS or ``more_generic_models`` checkout (nothing relative to a machine); with the
-variables set, ``test_cited_lines_are_unchanged`` compares it with the live files.
+an MSS checkout (nothing relative to a machine); with ``MSS_DIR`` set, ``test_cited_lines_are_unchanged`` compares it with the live files.
 
 Run from the repository root (written 2026-10-06):
 
-    MSS_DIR=<an MSS checkout> MORE_GENERIC_MODELS_DIR=<more_generic_models repo> \\
-        python tests/data/hydrodynamics/snapshot_cited_lines.py
+    MSS_DIR=<an MSS checkout> python tests/data/hydrodynamics/snapshot_cited_lines.py
+
+``$TESTS/...`` pins are files of this repository (the template generators)
+and need no variable.
 
 MSS lines are MIT (T. I. Fossen, MSS); they are quoted here one line at a time
 as citations.
@@ -24,7 +25,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-TEST_FILE = HERE.parents[1] / "hydrodynamics" / "test_hydrodynamics_block.py"
+TEST_FILE = HERE.parents[1] / "vehicles" / "hull_parts" / "hydrodynamic_loads" / "test_hydrodynamics_block.py"
 
 
 def _root(variable):
@@ -44,11 +45,11 @@ def main():
     spec = importlib.util.spec_from_file_location("hydro_tests", TEST_FILE)
     tests = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tests)
-    roots = {v: _root(v) for v in ("MSS_DIR", "MORE_GENERIC_MODELS_DIR")}
-
-    def live(ref):
-        variable, rel = ref[1:].split("/", 1)
-        return (roots[variable] / rel).read_text()
+    variables = sorted({ref[1:].split("/", 1)[0].partition("@")[0] for ref, _ in tests.CITED_LINES} - {"TESTS"})
+    roots = {v: _root(v) for v in variables}
+    # "$VARIABLE/path" is the file in that checkout, "$VARIABLE@<rev>/path" the
+    # file at that git revision of it; the test module's own reader does both.
+    live = tests._live_text
 
     lines, tables = {}, {}
     for (ref, number), text in sorted(tests.CITED_LINES.items()):

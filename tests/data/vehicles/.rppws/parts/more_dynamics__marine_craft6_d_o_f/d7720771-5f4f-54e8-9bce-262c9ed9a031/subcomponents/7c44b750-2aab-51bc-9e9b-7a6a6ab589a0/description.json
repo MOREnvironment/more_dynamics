@@ -1,0 +1,17 @@
+{
+    "Id": "7c44b750-2aab-51bc-9e9b-7a6a6ab589a0",
+    "Name": "TimeConstantDampingSubmerged_comp",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::TimeConstantDampingSubmerged",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "d7720771-5f4f-54e8-9bce-262c9ed9a031",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hydrodynamic_loads",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

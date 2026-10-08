@@ -1,0 +1,17 @@
+{
+    "Id": "91c744cd-e62b-5adb-aaef-6a39cafcf10d",
+    "Name": "NoCurrent_comp",
+    "PluginType": "more_dynamics::CurrentModel",
+    "PluginName": "more_dynamics::NoCurrent",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "bc998e1d-1c81-5899-91f0-1b93a1487474",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "current",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

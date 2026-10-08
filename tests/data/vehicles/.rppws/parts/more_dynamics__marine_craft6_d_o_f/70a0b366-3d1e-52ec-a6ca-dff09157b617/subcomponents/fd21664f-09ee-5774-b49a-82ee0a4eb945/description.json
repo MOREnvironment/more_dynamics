@@ -1,0 +1,17 @@
+{
+    "Id": "fd21664f-09ee-5774-b49a-82ee0a4eb945",
+    "Name": "HorizontalCurrentYawRateTerms_comp",
+    "PluginType": "more_dynamics::CurrentModel",
+    "PluginName": "more_dynamics::HorizontalCurrentYawRateTerms",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "70a0b366-3d1e-52ec-a6ca-dff09157b617",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "current",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

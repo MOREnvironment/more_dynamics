@@ -1,0 +1,21 @@
+{
+    "ScriptPath": "scripts/vehicles/simulate_vehicle.py",
+    "Language": "python",
+    "Configurations": {
+        "remus100": {
+            "Description": "remus100",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "24d92e9a-fa68-528a-8278-5cdc22cbb17b",
+                        "PluginName": "more_dynamics::MarineCraft6DOF"
+                    }
+                ]
+            }
+        }
+    },
+    "ActiveConfiguration": "remus100",
+    "Spec": {
+        "vessels": "List[more_dynamics::VehicleModel3D]"
+    }
+}

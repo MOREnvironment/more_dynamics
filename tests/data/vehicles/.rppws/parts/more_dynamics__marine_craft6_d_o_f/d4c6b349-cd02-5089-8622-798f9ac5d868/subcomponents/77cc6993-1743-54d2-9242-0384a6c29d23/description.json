@@ -1,0 +1,17 @@
+{
+    "Id": "77cc6993-1743-54d2-9242-0384a6c29d23",
+    "Name": "TwinPontoons_comp",
+    "PluginType": "more_dynamics::HullForm",
+    "PluginName": "more_dynamics::TwinPontoons",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "d4c6b349-cd02-5089-8622-798f9ac5d868",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hull_form",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

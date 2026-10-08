@@ -1,0 +1,17 @@
+{
+    "Id": "cee98125-cde8-5379-aaba-6a46264cf2aa",
+    "Name": "Servo_comp",
+    "PluginType": "more_dynamics::ActuatorServo",
+    "PluginName": "more_dynamics::Servo",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "c6ffb8fb-5ed6-53f2-a05a-f93922adffd7",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "servo",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

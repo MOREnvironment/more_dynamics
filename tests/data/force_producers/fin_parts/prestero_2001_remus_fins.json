@@ -1,0 +1,36 @@
+{
+  "source": "Prestero, T. (2001). Verification of a six-degree of freedom simulation model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI. Values typed from the printed page named beside each.",
+  "parameters": {
+    "water_density": {"value": 1030.0, "printed": "+1.03e+003", "unit": "kg/m^3", "where": "Table A.1, p. 102"},
+    "fin_area": {"value": 0.00665, "printed": "+6.65e-003", "unit": "m^2", "where": "Table A.5, p. 103 (S_fin, planform area)"},
+    "fin_span": {"value": 0.0857, "printed": "+8.57e-002", "unit": "m", "where": "Table A.5, p. 103 (b_fin)"},
+    "fin_position_x": {"value": -0.638, "printed": "-6.38e-001", "unit": "m", "where": "Table A.5, p. 103 (x_finpost, moment arm wrt vehicle origin at CB)"},
+    "effective_aspect_ratio": {"value": 2.21, "printed": "+2.21e+000", "unit": "1", "where": "Table A.5, p. 103 (AR_e)"},
+    "lift_slope_parameter": {"value": 0.9, "printed": "+9.00e-001", "unit": "1", "where": "Table A.5, p. 103 (a-tilde)"},
+    "lift_slope": {"value": 3.12, "printed": "+3.12e+000", "unit": "1/rad", "where": "Table A.5, p. 103 (c_L_alpha)"}
+  },
+  "control_fin_coefficients": {
+    "where": "Table C.10, p. 111",
+    "Y_uudr": {"value": 9.64, "unit": "kg/(m*rad)"},
+    "Z_uuds": {"value": -9.64, "unit": "kg/(m*rad)"},
+    "M_uuds": {"value": -6.15, "unit": "kg/rad"},
+    "N_uudr": {"value": -6.15, "unit": "kg/rad"},
+    "Y_uvf": {"value": -9.64, "unit": "kg/m"},
+    "Z_uwf": {"value": -9.64, "unit": "kg/m"},
+    "Y_urf": {"value": 6.15, "unit": "kg/rad"},
+    "Z_uqf": {"value": -6.15, "unit": "kg/rad"},
+    "M_uwf": {"value": -6.15, "unit": "kg"},
+    "N_uvf": {"value": 6.15, "unit": "kg"},
+    "M_uqf": {"value": -3.93, "unit": "kg*m/rad"},
+    "N_urf": {"value": -3.93, "unit": "kg*m/rad"}
+  },
+  "printed_half_unit": {
+    "where": "the values above are printed to three significant figures; half a unit in the last printed digit",
+    "Table A.5 x_finpost": 0.0005,
+    "Table A.5 AR_e": 0.005,
+    "Table A.5 c_L_alpha": 0.005,
+    "Table C.10 9.64": 0.005,
+    "Table C.10 6.15": 0.005,
+    "Table C.10 3.93": 0.005
+  }
+}

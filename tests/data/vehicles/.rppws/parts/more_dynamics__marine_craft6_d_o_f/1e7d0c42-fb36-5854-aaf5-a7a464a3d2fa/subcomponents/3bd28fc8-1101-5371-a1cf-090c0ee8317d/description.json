@@ -1,0 +1,17 @@
+{
+    "Id": "3bd28fc8-1101-5371-a1cf-090c0ee8317d",
+    "Name": "FinPairsDeflectionOnly_comp",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::FinPairsDeflectionOnly",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "1e7d0c42-fb36-5854-aaf5-a7a464a3d2fa",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "force_producers",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

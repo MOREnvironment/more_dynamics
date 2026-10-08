@@ -1,0 +1,96 @@
+{
+    "Id": "d4c6b349-cd02-5089-8622-798f9ac5d868",
+    "Name": "otter_current",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::MarineCraft6DOF",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "site": "more_dynamics::SiteModel",
+        "current": "more_dynamics::CurrentModel",
+        "hull_form": "more_dynamics::HullForm",
+        "rigid_body": "more_dynamics::RigidBodyModel",
+        "added_mass": "more_dynamics::AddedMassModel",
+        "added_mass_coriolis": "more_dynamics::AddedMassCoriolisModel",
+        "restoring": "more_dynamics::HydrostaticsModel",
+        "hydrodynamic_loads": "List[more_dynamics::HydrodynamicsModel]",
+        "force_producers": "List[more_dynamics::ForceProducer]"
+    },
+    "Subcomponents": {
+        "site": {
+            "Id": "935e2ff3-44eb-5730-b959-8e6afd1b13fe",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::SiteGiven",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "current": {
+            "Id": "2ddd067d-e6c2-5251-82c0-90a40600d439",
+            "PluginType": "more_dynamics::CurrentModel",
+            "PluginName": "more_dynamics::HorizontalCurrentFullRotationRate",
+            "SlotName": "current",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hull_form": {
+            "Id": "77cc6993-1743-54d2-9242-0384a6c29d23",
+            "PluginType": "more_dynamics::HullForm",
+            "PluginName": "more_dynamics::TwinPontoons",
+            "SlotName": "hull_form",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "rigid_body": {
+            "Id": "707d4557-1f13-5d18-87ab-68cce76c0f2a",
+            "PluginType": "more_dynamics::RigidBodyModel",
+            "PluginName": "more_dynamics::HullWithPointPayload",
+            "SlotName": "rigid_body",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "added_mass": {
+            "Id": "4a9d0fc0-e62c-513f-9bce-ba4b1d31b7a4",
+            "PluginType": "more_dynamics::AddedMassModel",
+            "PluginName": "more_dynamics::ScaledDerivatives",
+            "SlotName": "added_mass",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "added_mass_coriolis": {
+            "Id": "96d8813b-cf31-5695-a611-9feebd00abd5",
+            "PluginType": "more_dynamics::AddedMassCoriolisModel",
+            "PluginName": "more_dynamics::KirchhoffFull",
+            "SlotName": "added_mass_coriolis",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "restoring": {
+            "Id": "ff2d3238-892e-5b1d-8e40-73c134b4e274",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::TwinHullMetacentricEquilibriumDraft",
+            "SlotName": "restoring",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamic_loads": [
+            {
+                "Id": "5b1b8d95-56a5-572f-b239-00ebf4692148",
+                "PluginType": "more_dynamics::HydrodynamicsModel",
+                "PluginName": "more_dynamics::TimeConstantDampingSurface",
+                "SlotName": "hydrodynamic_loads",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            },
+            {
+                "Id": "6aa4dd9e-03b7-55e3-a47b-f3f744fff01c",
+                "PluginType": "more_dynamics::HydrodynamicsModel",
+                "PluginName": "more_dynamics::CrossFlowStrip",
+                "SlotName": "hydrodynamic_loads",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ],
+        "force_producers": []
+    },
+    "ParentComponentInfo": null
+}

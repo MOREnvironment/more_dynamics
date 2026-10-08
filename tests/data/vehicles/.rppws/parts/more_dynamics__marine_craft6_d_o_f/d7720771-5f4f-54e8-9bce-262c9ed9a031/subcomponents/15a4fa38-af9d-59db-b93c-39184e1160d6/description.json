@@ -1,0 +1,28 @@
+{
+    "Id": "15a4fa38-af9d-59db-b93c-39184e1160d6",
+    "Name": "CrossFlowStrip_comp",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::CrossFlowStrip",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "section": "more_dynamics::SectionDragModel"
+    },
+    "Subcomponents": {
+        "section": {
+            "Id": "ee25638e-6c45-5b6d-a36b-63a4a4e62141",
+            "PluginType": "more_dynamics::SectionDragModel",
+            "PluginName": "more_dynamics::CircularCylinderReynolds",
+            "SlotName": "section",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": {
+        "Id": "d7720771-5f4f-54e8-9bce-262c9ed9a031",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hydrodynamic_loads",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

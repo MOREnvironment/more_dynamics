@@ -1,0 +1,17 @@
+{
+    "Id": "2cc29694-84fc-5df1-89e6-d5bdbc145445",
+    "Name": "KirchhoffFull_comp",
+    "PluginType": "more_dynamics::AddedMassCoriolisModel",
+    "PluginName": "more_dynamics::KirchhoffFull",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "24d92e9a-fa68-528a-8278-5cdc22cbb17b",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "added_mass_coriolis",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

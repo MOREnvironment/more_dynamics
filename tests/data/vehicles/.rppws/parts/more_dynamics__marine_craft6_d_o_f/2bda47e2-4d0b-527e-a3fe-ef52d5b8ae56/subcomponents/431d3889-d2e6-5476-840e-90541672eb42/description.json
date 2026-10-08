@@ -1,0 +1,17 @@
+{
+    "Id": "431d3889-d2e6-5476-840e-90541672eb42",
+    "Name": "HullLiftDrag_comp",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::HullLiftDrag",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "2bda47e2-4d0b-527e-a3fe-ef52d5b8ae56",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hydrodynamic_loads",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

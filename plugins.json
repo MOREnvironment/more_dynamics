@@ -20,12 +20,206 @@
             "Name": "LinearSurfaceHydrodynamics",
             "Path": "more_dynamics/plugins/hydrodynamics/linear_surface_hydrodynamics.py",
             "Type": "file"
+        },
+        {
+            "Name": "SiteAtLatitude",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/site/site_at_latitude.py",
+            "Type": "file"
+        },
+        {
+            "Name": "SiteGiven",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/site/site_given.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HorizontalCurrentFullRotationRate",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/current/horizontal_current_full_rotation_rate.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HorizontalCurrentYawRateTerms",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/current/horizontal_current_yaw_rate_terms.py",
+            "Type": "file"
+        },
+        {
+            "Name": "NoCurrent",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/current/no_current.py",
+            "Type": "file"
+        },
+        {
+            "Name": "ProlateSpheroidMainDimensions",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hull_form/prolate_spheroid_main_dimensions.py",
+            "Type": "file"
+        },
+        {
+            "Name": "TwinPontoons",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hull_form/twin_pontoons.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HomogeneousSpheroid",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/rigid_body/homogeneous_spheroid.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HullWithPointPayload",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/rigid_body/hull_with_point_payload.py",
+            "Type": "file"
+        },
+        {
+            "Name": "LambSpheroid",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/added_mass/lamb_spheroid.py",
+            "Type": "file"
+        },
+        {
+            "Name": "ScaledDerivatives",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/added_mass/scaled_derivatives.py",
+            "Type": "file"
+        },
+        {
+            "Name": "KirchhoffFull",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/added_mass_coriolis/kirchhoff_full.py",
+            "Type": "file"
+        },
+        {
+            "Name": "MunkCouplingsRemoved",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/added_mass_coriolis/munk_couplings_removed.py",
+            "Type": "file"
+        },
+        {
+            "Name": "SubmergedNeutral",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/restoring/submerged_neutral.py",
+            "Type": "file"
+        },
+        {
+            "Name": "TwinHullMetacentricEquilibriumDraft",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/restoring/twin_hull_metacentric_equilibrium_draft.py",
+            "Type": "file"
+        },
+        {
+            "Name": "CrossFlowStrip",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/cross_flow/cross_flow_strip.py",
+            "Type": "file"
+        },
+        {
+            "Name": "HullLiftDrag",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/lift_drag/hull_lift_drag.py",
+            "Type": "file"
+        },
+        {
+            "Name": "SurgeResistanceIttc",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/surge_resistance/surge_resistance_ittc.py",
+            "Type": "file"
+        },
+        {
+            "Name": "TimeConstantDampingSubmerged",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/damping/time_constant_damping_submerged.py",
+            "Type": "file"
+        },
+        {
+            "Name": "TimeConstantDampingSurface",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/damping/time_constant_damping_surface.py",
+            "Type": "file"
+        },
+        {
+            "Name": "CircularCylinderReynolds",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/cross_flow/section_drag/circular_cylinder_reynolds.py",
+            "Type": "file"
+        },
+        {
+            "Name": "RectangularSectionHoerner",
+            "Path": "more_dynamics/plugins/vehicles/hull_parts/hydrodynamic_loads/cross_flow/section_drag/rectangular_section_hoerner.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinPairsDeflectionOnly",
+            "Path": "more_dynamics/plugins/force_producers/fin/fin_pairs_deflection_only.py",
+            "Type": "file"
+        },
+        {
+            "Name": "PrescribedWrench",
+            "Path": "more_dynamics/plugins/force_producers/prescribed_wrench.py",
+            "Type": "file"
+        },
+        {
+            "Name": "PropellerLinearizedOpenWater",
+            "Path": "more_dynamics/plugins/force_producers/propulsor/propeller_linearized_open_water.py",
+            "Type": "file"
+        },
+        {
+            "Name": "MarineCraft6DOF",
+            "Path": "more_dynamics/plugins/vehicles/marine_craft_6dof.py",
+            "Type": "file"
+        },
+        {
+            "Name": "Servo",
+            "Path": "more_dynamics/plugins/force_producers/fin/servo/servo.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinInflowRigidPoint",
+            "Path": "more_dynamics/plugins/force_producers/fin/inflow/rigid_point.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinInflowTranslational",
+            "Path": "more_dynamics/plugins/force_producers/fin/inflow/translational.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinFlowAngleSmallAngle",
+            "Path": "more_dynamics/plugins/force_producers/fin/flow_angle/small_angle.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinFlowAngleNone",
+            "Path": "more_dynamics/plugins/force_producers/fin/flow_angle/none.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinInterferenceNone",
+            "Path": "more_dynamics/plugins/force_producers/fin/interference/none.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinInterferenceSlenderBody",
+            "Path": "more_dynamics/plugins/force_producers/fin/interference/slender_body.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinSectionQuadraticDrag",
+            "Path": "more_dynamics/plugins/force_producers/fin/section/quadratic_drag.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinSectionLinearSection",
+            "Path": "more_dynamics/plugins/force_producers/fin/section/linear_section.py",
+            "Type": "file"
+        },
+        {
+            "Name": "FinSectionLiftingLine",
+            "Path": "more_dynamics/plugins/force_producers/fin/section/lifting_line.py",
+            "Type": "file"
+        },
+        {
+            "Name": "LiftingFin",
+            "Path": "more_dynamics/plugins/force_producers/fin/lifting_fin.py",
+            "Type": "file"
+        },
+        {
+            "Name": "ForceProducerSet",
+            "Path": "more_dynamics/plugins/force_producers/force_producer_set.py",
+            "Type": "file"
         }
     ],
     "PluginTypes": [
         {
             "Name": "VehicleModel2D",
             "Path": "more_dynamics/plugin_types/vehicle_model.capnp",
+            "Type": "file"
+        },
+        {
+            "Path": "more_dynamics/plugin_types/vehicle_parts.capnp",
             "Type": "file"
         }
     ]

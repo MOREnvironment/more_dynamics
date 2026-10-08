@@ -1,0 +1,17 @@
+{
+    "Id": "89de5af7-e4d6-5f66-ad71-5b7298d253a0",
+    "Name": "HomogeneousSpheroid_comp",
+    "PluginType": "more_dynamics::RigidBodyModel",
+    "PluginName": "more_dynamics::HomogeneousSpheroid",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "8d81ec48-1af7-56d8-8491-c7c4aa7b6198",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "rigid_body",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

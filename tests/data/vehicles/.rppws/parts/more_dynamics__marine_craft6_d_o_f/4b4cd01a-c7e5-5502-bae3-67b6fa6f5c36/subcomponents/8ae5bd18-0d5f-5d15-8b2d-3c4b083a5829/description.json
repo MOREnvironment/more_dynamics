@@ -1,0 +1,17 @@
+{
+    "Id": "8ae5bd18-0d5f-5d15-8b2d-3c4b083a5829",
+    "Name": "PrescribedWrench_comp",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::PrescribedWrench",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "4b4cd01a-c7e5-5502-bae3-67b6fa6f5c36",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "force_producers",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

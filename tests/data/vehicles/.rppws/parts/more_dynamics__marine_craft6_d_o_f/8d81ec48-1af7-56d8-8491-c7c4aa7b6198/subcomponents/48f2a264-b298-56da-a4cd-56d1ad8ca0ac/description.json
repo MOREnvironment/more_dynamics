@@ -1,0 +1,17 @@
+{
+    "Id": "48f2a264-b298-56da-a4cd-56d1ad8ca0ac",
+    "Name": "SiteAtLatitude_comp",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::SiteAtLatitude",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "8d81ec48-1af7-56d8-8491-c7c4aa7b6198",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "Id": "e231d18e-f504-5327-9ee7-82a9f8bae69c",
+    "Name": "LinearSurfaceHydrodynamics_comp",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::LinearSurfaceHydrodynamics",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "bc998e1d-1c81-5899-91f0-1b93a1487474",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hydrodynamic_loads",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

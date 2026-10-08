@@ -1,0 +1,21 @@
+{
+    "ScriptPath": "scripts/vehicles/simulate_vehicle.py",
+    "Language": "python",
+    "Configurations": {
+        "otter": {
+            "Description": "otter",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "9e3c87b5-9998-5d85-86d8-7bfdf6a80222",
+                        "PluginName": "more_dynamics::MarineCraft6DOF"
+                    }
+                ]
+            }
+        }
+    },
+    "ActiveConfiguration": "otter",
+    "Spec": {
+        "vessels": "List[more_dynamics::VehicleModel3D]"
+    }
+}

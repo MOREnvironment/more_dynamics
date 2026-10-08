@@ -1,0 +1,17 @@
+{
+    "Id": "b26309f8-276e-56ac-93cb-4ec4c0b80052",
+    "Name": "MunkCouplingsRemoved_comp",
+    "PluginType": "more_dynamics::AddedMassCoriolisModel",
+    "PluginName": "more_dynamics::MunkCouplingsRemoved",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "dd952945-31de-5274-893c-b37aeb966281",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "added_mass_coriolis",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

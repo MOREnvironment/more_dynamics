@@ -1,0 +1,17 @@
+{
+    "Id": "56f7dcf1-18e9-51d5-874d-8f87daca831e",
+    "Name": "CircularCylinderReynolds_comp",
+    "PluginType": "more_dynamics::SectionDragModel",
+    "PluginName": "more_dynamics::CircularCylinderReynolds",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "a11b29cc-a991-5690-8df5-ec89792e0725",
+        "PluginType": "more_dynamics::HydrodynamicsModel",
+        "PluginName": "more_dynamics::CrossFlowStrip",
+        "SlotName": "section",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

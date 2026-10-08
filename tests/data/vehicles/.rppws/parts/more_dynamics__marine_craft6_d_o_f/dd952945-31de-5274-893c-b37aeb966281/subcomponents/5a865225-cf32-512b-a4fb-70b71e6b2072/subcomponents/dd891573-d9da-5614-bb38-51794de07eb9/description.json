@@ -1,0 +1,17 @@
+{
+    "Id": "dd891573-d9da-5614-bb38-51794de07eb9",
+    "Name": "FinInflowRigidPoint_comp",
+    "PluginType": "more_dynamics::FinInflow",
+    "PluginName": "more_dynamics::FinInflowRigidPoint",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "5a865225-cf32-512b-a4fb-70b71e6b2072",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "inflow",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

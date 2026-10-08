@@ -1,0 +1,434 @@
+{
+  "vehicle": "REMUS 100, the MSS 1.6 m REMUS-like model with one value per quantity",
+  "source": {
+    "repository": "MSS (T. I. Fossen), MIT licence",
+    "revision": "cc07579b63630342802a198c34c74ac7e096d5fb",
+    "file": "CRAFT/AUV/models/remus100.m",
+    "copy": "remus100_consistent.m"
+  },
+  "one_value": {
+    "water_density": "1026 kg/m^3 everywhere (remus100.m:98)",
+    "geometry": "L = 1.6000000000000001 m, D = 0.19 m everywhere (remus100.m:131-132)",
+    "mass": 31.9,
+    "mass_place": "remus100.m:3 the mass of the vehicle is 31.9 kg (given; body_density = mass / (4/3 pi a b^2))",
+    "buoyancy": "B = W (remus100.m:214)"
+  },
+  "gravity": {
+    "latitude_rad": 1.1073560310932362,
+    "g": 9.821784864579081,
+    "place": "remus100.m:96-97 mu = deg2rad(63.446827), g_mu = gravity(mu); weight = mass * g"
+  },
+  "selectors": {
+    "mass_properties": "spheroid",
+    "coriolis": "co",
+    "form": "submerged",
+    "drag_model": "cylinder",
+    "strip_grid": "midpoint",
+    "sway_damping_fade": false,
+    "smooth_speed": false,
+    "open_water_model": "linearized",
+    "open_water_coefficients": "given",
+    "clip_advance_ratio": false,
+    "convention": "starboard_down_positive"
+  },
+  "parameters": {
+    "semi_major_axis": {
+      "value": 0.8,
+      "unit": "m",
+      "block": "rigid_body",
+      "block_parameter": "semi_major_axis",
+      "declared": "new",
+      "place": "remus100.m:131 L_auv / 2 (one geometry; MSS scales by 1.0096 at :134)",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "semi_minor_axis": {
+      "value": 0.095,
+      "unit": "m",
+      "block": "rigid_body",
+      "block_parameter": "semi_minor_axis",
+      "declared": "new",
+      "place": "remus100.m:132 D_auv / 2 (one geometry; MSS scales by 1.0096 at :135)",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "body_density": {
+      "value": 1054.7872613500267,
+      "unit": "kg/m^3",
+      "block": "rigid_body",
+      "block_parameter": "body_density",
+      "declared": "new",
+      "place": "mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35",
+      "stage": "hull",
+      "kind": "derived"
+    },
+    "water_density": {
+      "value": 1026,
+      "unit": "kg/m^3",
+      "block": "rigid_body, lift_drag, cross_flow, propeller, fins",
+      "block_parameter": "water_density",
+      "declared": "new",
+      "place": "remus100.m:98 rho = 1026, the one value (MSS: 1026 at imlay61.m:31 and forceLiftDrag.m:26, 1025 at crossFlowDrag.m:36)",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "roll_added_inertia_ratio": {
+      "value": 0.3,
+      "unit": "1",
+      "block": "rigid_body",
+      "block_parameter": "roll_added_inertia_ratio",
+      "declared": "new",
+      "place": "remus100.m:136 r44",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "body_center_of_gravity": {
+      "value": [
+        0,
+        0,
+        0.02
+      ],
+      "unit": "m",
+      "block": "rigid_body",
+      "block_parameter": "body_center_of_gravity",
+      "declared": "new",
+      "place": "remus100.m:137 r_bG",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "center_of_buoyancy": {
+      "value": [
+        0,
+        0,
+        0
+      ],
+      "unit": "m",
+      "block": "submerged_hydrostatics, submerged_linear_damping",
+      "block_parameter": "center_of_buoyancy",
+      "declared": "new",
+      "place": "remus100.m:138 r_bB",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "weight": {
+      "value": 313.31493718007266,
+      "unit": "N",
+      "block": "submerged_hydrostatics, submerged_linear_damping",
+      "block_parameter": "weight",
+      "declared": "new",
+      "place": "remus100.m:214 W = m * g_mu, m = 31.9 kg given (remus100.m:3), g_mu = gravity(mu) (remus100.m:96-97)",
+      "stage": "hull",
+      "kind": "derived"
+    },
+    "buoyancy": {
+      "value": 313.31493718007266,
+      "unit": "N",
+      "block": "submerged_hydrostatics",
+      "block_parameter": "buoyancy",
+      "declared": "new",
+      "place": "remus100.m:214 B = W (neutral, as REMUS states)",
+      "stage": "hull",
+      "kind": "derived"
+    },
+    "time_constants": {
+      "value": [
+        20,
+        20,
+        1
+      ],
+      "unit": "s",
+      "block": "submerged_linear_damping",
+      "block_parameter": "time_constants",
+      "declared": "new",
+      "place": "remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "damping_ratios": {
+      "value": [
+        0.3,
+        0.8
+      ],
+      "unit": "1",
+      "block": "submerged_linear_damping",
+      "block_parameter": "damping_ratios",
+      "declared": "new",
+      "place": "remus100.m:194, 195 [zeta4 zeta5]",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "span": {
+      "value": 0.19,
+      "unit": "m",
+      "block": "lift_drag",
+      "block_parameter": "span",
+      "declared": "new",
+      "place": "remus100.m:132 D_auv, passed as b at :220",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "planform_area": {
+      "value": 0.2128,
+      "unit": "m^2",
+      "block": "lift_drag",
+      "block_parameter": "planform_area",
+      "declared": "new",
+      "place": "remus100.m:133 S = 0.7 * L_auv * D_auv",
+      "stage": "hull",
+      "kind": "derived"
+    },
+    "parasitic_drag_coefficient": {
+      "value": 0.05595961914206819,
+      "unit": "1",
+      "block": "lift_drag",
+      "block_parameter": "parasitic_drag_coefficient",
+      "declared": "new",
+      "place": "remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)",
+      "stage": "hull",
+      "kind": "derived"
+    },
+    "oswald_efficiency": {
+      "value": 0.3,
+      "unit": "1",
+      "block": "lift_drag",
+      "block_parameter": "oswald_efficiency",
+      "declared": "new",
+      "place": "coeffLiftDrag.m:54 e = 0.3",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "length": {
+      "value": 1.6,
+      "unit": "m",
+      "block": "cross_flow",
+      "block_parameter": "length",
+      "declared": "new",
+      "place": "remus100.m:131 L_auv, passed as L at :221",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "beam": {
+      "value": 0.19,
+      "unit": "m",
+      "block": "cross_flow",
+      "block_parameter": "beam",
+      "declared": "new",
+      "place": "remus100.m:132 D_auv, passed as B at :221",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "draft": {
+      "value": 0.19,
+      "unit": "m",
+      "block": "cross_flow",
+      "block_parameter": "draft",
+      "declared": "new",
+      "place": "remus100.m:132 D_auv, passed as T at :221",
+      "stage": "hull",
+      "kind": "published"
+    },
+    "thrust_deduction": {
+      "value": 0.1,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "thrust_deduction",
+      "declared": "new",
+      "place": "remus100.m:149 t_prop",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "wake_fraction": {
+      "value": 0.05600000000000005,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "wake_fraction",
+      "declared": "new",
+      "place": "remus100.m:150 Va = 0.944 * U_r, w = 1 - 0.944",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "pitch_diameter_ratio": {
+      "value": 1,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "pitch_diameter_ratio",
+      "declared": "new",
+      "place": "remus100.m:156 wageningen(0,1,0.718,3), second argument",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "blade_area_ratio": {
+      "value": 0.718,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "blade_area_ratio",
+      "declared": "new",
+      "place": "remus100.m:155-156 blade-area ratio 0.718",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "blade_count": {
+      "value": 3,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "blade_count",
+      "declared": "new",
+      "place": "remus100.m:155-156 3 blades",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "max_advance_number": {
+      "value": 0.6632,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "max_advance_number",
+      "declared": "new",
+      "place": "remus100.m:153 Ja_max",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "roll_moment_scale": {
+      "value": 0.1,
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "roll_moment_scale",
+      "declared": "new",
+      "place": "remus100.m:252 tau(4) = K_prop / 10",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "position": {
+      "value": [
+        0,
+        0,
+        0
+      ],
+      "unit": "m",
+      "block": "propeller",
+      "block_parameter": "position",
+      "declared": "new",
+      "place": "remus100.m:249-252 thrust on x_b through the CO (no moment arm)",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "orientation": {
+      "value": [
+        0,
+        0,
+        0
+      ],
+      "unit": "rad",
+      "block": "propeller",
+      "block_parameter": "orientation",
+      "declared": "new",
+      "place": "remus100.m:249, 252 shaft along x_b (thrust in tau(1), torque in tau(4))",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "thrust_torque_coefficients": {
+      "value": [
+        0.4566,
+        0.07,
+        0.1798,
+        0.0312
+      ],
+      "unit": "1",
+      "block": "propeller",
+      "block_parameter": "thrust_torque_coefficients",
+      "declared": "new",
+      "place": "remus100.m:157, 158, 160, 161 [KT_0 KQ_0 KT_max KQ_max]",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "rudder_area": {
+      "value": 0.0133,
+      "unit": "m^2",
+      "block": "fins",
+      "block_parameter": "rudder_area",
+      "declared": "new",
+      "place": "remus100.m:183 A_r = 2 * S_fin (S_fin :179)",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "stern_plane_area": {
+      "value": 0.0133,
+      "unit": "m^2",
+      "block": "fins",
+      "block_parameter": "stern_plane_area",
+      "declared": "new",
+      "place": "remus100.m:188 A_s = 2 * S_fin (S_fin :179)",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "rudder_lift_coefficient": {
+      "value": 0.5,
+      "unit": "1/rad",
+      "block": "fins",
+      "block_parameter": "rudder_lift_coefficient",
+      "declared": "new",
+      "place": "remus100.m:182 CL_delta_r",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "stern_plane_lift_coefficient": {
+      "value": 0.7,
+      "unit": "1/rad",
+      "block": "fins",
+      "block_parameter": "stern_plane_lift_coefficient",
+      "declared": "new",
+      "place": "remus100.m:187 CL_delta_s",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "rudder_position": {
+      "value": -0.8,
+      "unit": "m",
+      "block": "fins",
+      "block_parameter": "rudder_position",
+      "declared": "new",
+      "place": "remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry)",
+      "stage": "actuators",
+      "kind": "derived"
+    },
+    "stern_plane_position": {
+      "value": -0.8,
+      "unit": "m",
+      "block": "fins",
+      "block_parameter": "stern_plane_position",
+      "declared": "new",
+      "place": "remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry)",
+      "stage": "actuators",
+      "kind": "derived"
+    },
+    "max_deflection": {
+      "value": 0.3490658503988659,
+      "unit": "rad",
+      "block": "fins",
+      "block_parameter": "max_deflection",
+      "declared": "new",
+      "place": "remus100.m:109 delta_max = deg2rad(20)",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "propeller_diameter": {
+      "value": 0.14,
+      "unit": "m",
+      "block": "propeller",
+      "block_parameter": "propeller_diameter",
+      "declared": "new",
+      "place": "remus100.m:148 D_prop",
+      "stage": "actuators",
+      "kind": "published"
+    },
+    "max_shaft_speed": {
+      "value": 1525,
+      "unit": "rpm",
+      "block": "propeller",
+      "block_parameter": "max_shaft_speed",
+      "declared": "new",
+      "place": "remus100.m:110 n_max",
+      "stage": "actuators",
+      "kind": "published"
+    }
+  }
+}

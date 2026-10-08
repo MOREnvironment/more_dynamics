@@ -1,0 +1,79 @@
+{
+ "outboard_rpm": {
+  "advance_speed_factor": 1.0,
+  "blade_area_ratio": 0.718,
+  "blade_count": 3,
+  "efficiency": 0.6,
+  "max_power": 2000.0,
+  "max_speed": 1300.0,
+  "max_thrust": 520.0,
+  "pitch_diameter_ratio": 0.83,
+  "position": [
+   -2.3,
+   0.0,
+   0.55
+  ],
+  "propeller_diameter": 0.305,
+  "propwash_factor": 0.25,
+  "reverse_thrust_factor": 0.5,
+  "reverse_torque_factor": 0.6,
+  "thrust_deduction": 0.1,
+  "water_density": 1025.0
+ },
+ "outboard_throttle": {
+  "max_propulsive_power": 1120.0,
+  "max_thrust": 520.0,
+  "position": [
+   -2.3,
+   0.0,
+   0.55
+  ]
+ },
+ "vsim_fins": {
+  "max_deflection": 0.4363,
+  "max_forces": [
+   [
+    0.0,
+    9.64,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    -9.64
+   ],
+   [
+    0.0,
+    0.0,
+    -9.64
+   ],
+   [
+    0.0,
+    9.64,
+    0.0
+   ]
+  ],
+  "positions": [
+   [
+    -0.455,
+    0.0,
+    0.08
+   ],
+   [
+    -0.455,
+    -0.08,
+    0.0
+   ],
+   [
+    -0.455,
+    0.08,
+    0.0
+   ],
+   [
+    -0.455,
+    0.0,
+    -0.08
+   ]
+  ]
+ }
+}

@@ -1,0 +1,17 @@
+{
+    "Id": "4a9d0fc0-e62c-513f-9bce-ba4b1d31b7a4",
+    "Name": "ScaledDerivatives_comp",
+    "PluginType": "more_dynamics::AddedMassModel",
+    "PluginName": "more_dynamics::ScaledDerivatives",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "d4c6b349-cd02-5089-8622-798f9ac5d868",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "added_mass",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

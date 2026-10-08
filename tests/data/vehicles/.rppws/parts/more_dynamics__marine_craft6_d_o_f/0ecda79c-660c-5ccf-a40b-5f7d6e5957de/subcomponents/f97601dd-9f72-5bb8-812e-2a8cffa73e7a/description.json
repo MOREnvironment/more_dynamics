@@ -1,0 +1,17 @@
+{
+    "Id": "f97601dd-9f72-5bb8-812e-2a8cffa73e7a",
+    "Name": "TimeConstantDampingSurface_comp",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::TimeConstantDampingSurface",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "0ecda79c-660c-5ccf-a40b-5f7d6e5957de",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "hydrodynamic_loads",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

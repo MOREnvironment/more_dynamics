@@ -1,0 +1,17 @@
+{
+    "Id": "935e2ff3-44eb-5730-b959-8e6afd1b13fe",
+    "Name": "SiteGiven_comp",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::SiteGiven",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "d4c6b349-cd02-5089-8622-798f9ac5d868",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

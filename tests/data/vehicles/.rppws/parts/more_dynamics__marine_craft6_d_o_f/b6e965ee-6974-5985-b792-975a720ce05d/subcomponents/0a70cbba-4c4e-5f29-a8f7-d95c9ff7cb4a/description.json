@@ -1,0 +1,17 @@
+{
+    "Id": "0a70cbba-4c4e-5f29-a8f7-d95c9ff7cb4a",
+    "Name": "SubmergedNeutral_comp",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SubmergedNeutral",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "b6e965ee-6974-5985-b792-975a720ce05d",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "restoring",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "Id": "2ddd067d-e6c2-5251-82c0-90a40600d439",
+    "Name": "HorizontalCurrentFullRotationRate_comp",
+    "PluginType": "more_dynamics::CurrentModel",
+    "PluginName": "more_dynamics::HorizontalCurrentFullRotationRate",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "d4c6b349-cd02-5089-8622-798f9ac5d868",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::MarineCraft6DOF",
+        "SlotName": "current",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

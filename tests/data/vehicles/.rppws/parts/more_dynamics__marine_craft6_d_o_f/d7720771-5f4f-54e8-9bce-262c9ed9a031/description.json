@@ -1,0 +1,113 @@
+{
+    "Id": "d7720771-5f4f-54e8-9bce-262c9ed9a031",
+    "Name": "remus100_fin_set",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::MarineCraft6DOF",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "site": "more_dynamics::SiteModel",
+        "current": "more_dynamics::CurrentModel",
+        "hull_form": "more_dynamics::HullForm",
+        "rigid_body": "more_dynamics::RigidBodyModel",
+        "added_mass": "more_dynamics::AddedMassModel",
+        "added_mass_coriolis": "more_dynamics::AddedMassCoriolisModel",
+        "restoring": "more_dynamics::HydrostaticsModel",
+        "hydrodynamic_loads": "List[more_dynamics::HydrodynamicsModel]",
+        "force_producers": "List[more_dynamics::ForceProducer]"
+    },
+    "Subcomponents": {
+        "site": {
+            "Id": "b455bd2d-f742-560e-b604-e5985d30cbf6",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::SiteAtLatitude",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "current": {
+            "Id": "6c19ad59-e938-534c-b315-f9c0183ca257",
+            "PluginType": "more_dynamics::CurrentModel",
+            "PluginName": "more_dynamics::HorizontalCurrentYawRateTerms",
+            "SlotName": "current",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hull_form": {
+            "Id": "18dfadc8-fc07-5d6f-ac05-32840c166846",
+            "PluginType": "more_dynamics::HullForm",
+            "PluginName": "more_dynamics::ProlateSpheroidMainDimensions",
+            "SlotName": "hull_form",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "rigid_body": {
+            "Id": "633cc720-f5d6-57de-ac9d-d3099af1b078",
+            "PluginType": "more_dynamics::RigidBodyModel",
+            "PluginName": "more_dynamics::HomogeneousSpheroid",
+            "SlotName": "rigid_body",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "added_mass": {
+            "Id": "2b896f46-45ae-536f-9286-b515bc0d3270",
+            "PluginType": "more_dynamics::AddedMassModel",
+            "PluginName": "more_dynamics::LambSpheroid",
+            "SlotName": "added_mass",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "added_mass_coriolis": {
+            "Id": "3f7c1775-6914-57d7-bc04-dce3470249fb",
+            "PluginType": "more_dynamics::AddedMassCoriolisModel",
+            "PluginName": "more_dynamics::MunkCouplingsRemoved",
+            "SlotName": "added_mass_coriolis",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "restoring": {
+            "Id": "67235107-ebd7-5884-8b20-a6e1dee078ce",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SubmergedNeutral",
+            "SlotName": "restoring",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamic_loads": [
+            {
+                "Id": "7c44b750-2aab-51bc-9e9b-7a6a6ab589a0",
+                "PluginType": "more_dynamics::HydrodynamicsModel",
+                "PluginName": "more_dynamics::TimeConstantDampingSubmerged",
+                "SlotName": "hydrodynamic_loads",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            },
+            {
+                "Id": "e200ec8a-2873-558a-af66-d881ee38ef86",
+                "PluginType": "more_dynamics::HydrodynamicsModel",
+                "PluginName": "more_dynamics::HullLiftDrag",
+                "SlotName": "hydrodynamic_loads",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            },
+            {
+                "Id": "15a4fa38-af9d-59db-b93c-39184e1160d6",
+                "PluginType": "more_dynamics::HydrodynamicsModel",
+                "PluginName": "more_dynamics::CrossFlowStrip",
+                "SlotName": "hydrodynamic_loads",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ],
+        "force_producers": [
+            {
+                "Id": "70b7f47e-197f-5a74-af00-7ebe4ea28402",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::ForceProducerSet",
+                "SlotName": "force_producers",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ]
+    },
+    "ParentComponentInfo": null
+}

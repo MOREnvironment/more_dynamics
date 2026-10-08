@@ -12,7 +12,7 @@
 #   F003  Maritime Robotics, NTNU Mariner 5 USV Combined FAT/SAT, rev 1.5, signed 8 Apr 2021, 7 pp. (scan)
 #   M001  Maritime Robotics, Mariner 5 USV User Manual rev 1.0, Apr 2021, 76 pp.
 #   TQ    Torqeedo, Cruise 0.8/2.0/4.0 R/T Operating Manual DE/EN v7.0 10.2015 (PDF page numbers; English pp. 26-49)
-#   MGM   more_generic_models@big_cleanup usv_grethe.yaml / ASVHullParams / ElectricOutboardMotorParams
+#   MGM   the owner's earlier Grethe parameter files (usv_grethe.yaml, hull and outboard parameter classes); values unverified
 # Coordinates: x forward, y starboard, z down; origin assumed amidships at the waterline (not stated in any document).
 # The .rppws hull_vessel part parameters carry copies of the `hull`, `mass` and `hydrostatics` values below.
 

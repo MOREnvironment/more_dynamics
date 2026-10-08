@@ -1,41 +1,40 @@
-from .differential_thruster import (
-    DifferentialThrusterConstants,
+"""Force producers: thrusters, propellers, fins and an outboard motor as all-CasADi blocks.
+
+Author:    Enio Krizman
+Date:      2026-10-05
+"""
+
+from .thrusters.differential_thruster import (
+    check_differential_thruster_values,
     differential_thruster_casadi,
-    preprocess_differential_thruster,
+    differential_thruster_parameters,
 )
-from .fins import FinsConstants, fins_casadi, preprocess_fins
-from .outboard_motor import (
-    OutboardMotorRpmConstants,
-    OutboardMotorThrottleConstants,
+from .fins import fins_casadi, fins_parameters
+from .thrusters.outboard_motor import (
     outboard_motor_rpm_casadi,
+    outboard_motor_rpm_parameters,
     outboard_motor_throttle_casadi,
-    preprocess_outboard_motor_rpm,
-    preprocess_outboard_motor_throttle,
+    outboard_motor_throttle_parameters,
 )
-from .propeller import PropellerConstants, preprocess_propeller, propeller_casadi
-from .vsim_fins import VsimFinsConstants, preprocess_vsim_fins, vsim_fins_casadi
-from .wageningen_kt_kq import WageningenConstants, preprocess_wageningen, wageningen_casadi
+from .propulsor.propeller import propeller_casadi, propeller_parameters
+from .vsim_fins import vsim_fins_casadi, vsim_fins_parameters
+from .propulsor.wageningen_kt_kq import wageningen_casadi, wageningen_expression, wageningen_parameters
 
 __all__ = [
-    "DifferentialThrusterConstants",
-    "FinsConstants",
-    "OutboardMotorRpmConstants",
-    "OutboardMotorThrottleConstants",
-    "PropellerConstants",
-    "VsimFinsConstants",
-    "WageningenConstants",
+    "check_differential_thruster_values",
     "differential_thruster_casadi",
+    "differential_thruster_parameters",
     "fins_casadi",
+    "fins_parameters",
     "outboard_motor_rpm_casadi",
+    "outboard_motor_rpm_parameters",
     "outboard_motor_throttle_casadi",
-    "preprocess_differential_thruster",
-    "preprocess_fins",
-    "preprocess_outboard_motor_rpm",
-    "preprocess_outboard_motor_throttle",
-    "preprocess_propeller",
-    "preprocess_vsim_fins",
-    "preprocess_wageningen",
+    "outboard_motor_throttle_parameters",
     "propeller_casadi",
+    "propeller_parameters",
     "vsim_fins_casadi",
+    "vsim_fins_parameters",
     "wageningen_casadi",
+    "wageningen_expression",
+    "wageningen_parameters",
 ]

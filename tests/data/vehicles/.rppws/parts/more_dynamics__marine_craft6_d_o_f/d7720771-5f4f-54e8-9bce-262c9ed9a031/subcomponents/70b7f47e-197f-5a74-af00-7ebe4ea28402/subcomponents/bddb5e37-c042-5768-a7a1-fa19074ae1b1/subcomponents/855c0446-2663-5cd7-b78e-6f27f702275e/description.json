@@ -1,0 +1,17 @@
+{
+    "Id": "855c0446-2663-5cd7-b78e-6f27f702275e",
+    "Name": "FinInterferenceNone_comp",
+    "PluginType": "more_dynamics::FinInterference",
+    "PluginName": "more_dynamics::FinInterferenceNone",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "bddb5e37-c042-5768-a7a1-fa19074ae1b1",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "interference",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

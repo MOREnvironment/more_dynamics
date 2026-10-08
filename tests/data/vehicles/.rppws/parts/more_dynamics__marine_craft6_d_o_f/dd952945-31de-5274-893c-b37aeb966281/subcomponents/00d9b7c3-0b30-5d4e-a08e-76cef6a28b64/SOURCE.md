@@ -1,0 +1,1 @@
+HorizontalCurrentYawRateTerms: MSS form | uniform horizontal current, body acceleration with the yaw-rate terms only (remus100.m 118-122) | assumes the current set is constant in NED | raise: the form with the full attitude and rotation rate once derived from a read source

@@ -1,0 +1,17 @@
+{
+    "Id": "f5e18524-2ac4-50b3-a8b4-4df4da7b3353",
+    "Name": "FinSectionQuadraticDrag_comp",
+    "PluginType": "more_dynamics::FinSection",
+    "PluginName": "more_dynamics::FinSectionQuadraticDrag",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "5a865225-cf32-512b-a4fb-70b71e6b2072",
+        "PluginType": "more_dynamics::ForceProducer",
+        "PluginName": "more_dynamics::LiftingFin",
+        "SlotName": "section",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}
