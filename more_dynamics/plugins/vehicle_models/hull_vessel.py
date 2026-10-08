@@ -39,6 +39,7 @@ class HullVessel(VehicleModel3D):
             ],
         ),
         ParameterDescription("center_of_gravity", [0.0, 0.0, 0.025]),
+        ParameterDescription("include_coriolis", True),
     ]
 
     def __init__(self):
@@ -50,6 +51,7 @@ class HullVessel(VehicleModel3D):
         self._sensor_graphs = []
         self._hydrostatics_graph = None
         self._hydrodynamics_graph = None
+        self._include_coriolis = True
         self.current_input_idx = 0
         self.current_state_idx = 0
         self.current_output_idx = 0
@@ -86,14 +88,37 @@ class HullVessel(VehicleModel3D):
             self.sensors.append(sensor)
             self._sensor_graphs.append(self._get_sensor_graph(sensor))
 
+        self._include_coriolis = context.get_parameter("include_coriolis")
+        if not isinstance(self._include_coriolis, bool):
+            raise ValueError("include_coriolis must be a boolean")
+
         self._mass_properties = preprocess_hull_mass_properties(
             mass=context.get_parameter("mass"),
             inertia=context.get_parameter("inertia"),
             center_of_gravity=context.get_parameter("center_of_gravity"),
             added_mass=context.get_parameter("added_mass"),
         )
+        resolved_inertia = (
+            self._mass_properties.inertia_at_center_of_gravity.diagonal()
+            .tolist()
+        )
+        resolved_added_mass = (
+            self._mass_properties.added_mass_matrix.diagonal().tolist()
+        )
+        effective_surge_mass = self._mass_properties.total_mass_matrix[0, 0]
+        # resolved_parameters = (
+        #     "HullVessel resolved parameters: "
+        #     f"mass={self._mass_properties.mass}, "
+        #     f"inertia={resolved_inertia}, "
+        #     f"center_of_gravity={context.get_parameter('center_of_gravity')}, "
+        #     f"added_mass={resolved_added_mass}, "
+        #     f"effective_surge_mass={effective_surge_mass}, "
+        #     f"include_coriolis={self._include_coriolis}"
+        # )
+        # context.get_logger().info(resolved_parameters)
         self._model = vessel_model_casadi(
             mass_properties=self._mass_properties,
+            include_coriolis=self._include_coriolis,
         )
 
     def step(self, state: VehicleModel3D.Odometry3D,
@@ -124,13 +149,13 @@ class HullVessel(VehicleModel3D):
                 actuators_dot.append(actuator.step(slice_state, slice_inputs))
 
         pose = states[-12:-6]
+        velocity = states[-6:]
         hydrostatics_output = self._hydrostatics_graph.output(
             ca.SX.zeros(0, 1),
             pose,
         )
         force += hydrostatics_output[:6]
 
-        velocity = states[-6:]
         hydrodynamics_output = self._hydrodynamics_graph.output(
             ca.SX.zeros(0, 1),
             velocity,

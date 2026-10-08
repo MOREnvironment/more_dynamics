@@ -304,7 +304,7 @@ def test_refuses_a_first_output_that_is_not_a_six_value_force():
 
 def test_a_part_that_declares_a_vehicle_quantity_as_its_own_parameter_is_only_the_site():
     """One quantity, one value: only a site part carries a water density, a gravity or a kinematic viscosity as
-    its own parameter (Luka's hydrostatics part, which carries its own, is the stated exception)."""
+    its own parameter (Luka's hydrostatics and hydrodynamics parts, which carry their own, are the stated exception)."""
     vc.builder()
     import importlib
     import json
@@ -312,7 +312,7 @@ def test_a_part_that_declares_a_vehicle_quantity_as_its_own_parameter_is_only_th
     for entry in registry["Plugins"]:
         module_path = entry["Path"][:-3].replace("/", ".")
         if ".hull_parts.site." in module_path or entry["Name"] in ("LinearSurfaceHydrostatics", "LinearSurfaceHydrodynamics",
-                                                              "JetNozzle", "HullVessel"):
+                                                              "CrossflowSurfaceHydrodynamics", "JetNozzle", "HullVessel"):
             continue
         cls = getattr(importlib.import_module(module_path), entry["Name"])
         own = {d.name for d in getattr(cls, "PARAMETERS", [])}

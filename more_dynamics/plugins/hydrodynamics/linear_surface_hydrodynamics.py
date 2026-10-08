@@ -31,8 +31,9 @@ class LinearSurfaceHydrodynamics(HydrodynamicsModel):
         self._model = None
 
     def initialize(self, context: ComponentContext) -> None:
+        damping_coefficients = context.get_parameter("damping_coefficients")
         properties = preprocess_linear_surface_hydrodynamics(
-            context.get_parameter("damping_coefficients")
+            damping_coefficients
         )
         self._model = linear_surface_hydrodynamics_casadi(properties)
 
