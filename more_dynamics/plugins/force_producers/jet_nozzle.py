@@ -51,7 +51,6 @@ class JetNozzle(ForceProducer):
         payload = ForceProducer.CasadyPayload()
         payload = self._graph_io(payload)
 
-        location = ca.DM(self.location)
         states = ca.SX.sym("state", 2)
         inputs = ca.SX.sym("input", 2)
 
@@ -60,12 +59,7 @@ class JetNozzle(ForceProducer):
 
         nozzle_angle = ca.fmax(ca.fmin(nozzle_angle, self.max_angle), self.min_angle)
         thrust_ref = ca.fmax(ca.fmin(inputs[0], 1.0), -1.0)
-        normalized_nozzle_angle_ref = ca.fmax(ca.fmin(inputs[1], 1.0), -1.0)
-        nozzle_angle_ref = ca.if_else(
-            normalized_nozzle_angle_ref >= 0.0,
-            normalized_nozzle_angle_ref * self.max_angle,
-            -normalized_nozzle_angle_ref * self.min_angle,
-        )
+        nozzle_angle_ref = self._nozzle_angle_reference(inputs[1])
         thrust_dot = ca.if_else(
             thrust_ref > thrust,
             (thrust_ref - thrust) / self.thrust_rise_time,
@@ -86,19 +80,10 @@ class JetNozzle(ForceProducer):
 
         payload.dynamics = graph_to_bytes(dynamics_fn)
 
-        generated_thrust = (
-            self.max_thrust * self.thrust_coefficient * thrust
-        ) * ca.vertcat(
-            ca.cos(nozzle_angle + self.yaw_bias) * ca.cos(self.trim_angle),
-            ca.sin(nozzle_angle + self.yaw_bias),
-            -ca.sin(self.trim_angle),
-        )
-        generated_moment = ca.cross(location, generated_thrust)
-
         payload.output = graph_to_bytes(ca.Function(
             "output",
             [states, inputs],
-            [ca.vertcat(generated_thrust, generated_moment)],
+            [self._wrench(thrust, nozzle_angle)],
             ["state", "input"],
             ["output"],
         ))
@@ -106,6 +91,55 @@ class JetNozzle(ForceProducer):
 
         return payload
 
+
+    def step(
+        self,
+        state: ForceProducer.Odometry3D,
+        command: ForceProducer.Command,
+        t: float,
+        dt: float,
+        **kwargs,
+    ) -> ForceProducer.Wrench3D:
+        """Return the wrench the nozzle settles at for a command.
+
+        The thrust and nozzle lags of graph() are skipped, so the result is
+        the steady state of that graph for a constant command.
+        """
+        del state, t, dt, kwargs
+        values = [float(value) for value in command.data] + [0.0, 0.0]
+        thrust = min(max(values[0], -1.0), 1.0)
+        nozzle_angle = float(ca.DM(self._nozzle_angle_reference(values[1])))
+        wrench = ca.DM(self._wrench(thrust, nozzle_angle)).full().reshape(-1)
+
+        result = ForceProducer.Wrench3D()
+        result.force.x, result.force.y, result.force.z = (
+            float(value) for value in wrench[:3]
+        )
+        result.torque.x, result.torque.y, result.torque.z = (
+            float(value) for value in wrench[3:]
+        )
+        return result
+
+    def _nozzle_angle_reference(self, normalized_angle):
+        """Map a normalized command in [-1, 1] to a nozzle angle."""
+        normalized_angle = ca.fmax(ca.fmin(normalized_angle, 1.0), -1.0)
+        return ca.if_else(
+            normalized_angle >= 0.0,
+            normalized_angle * self.max_angle,
+            -normalized_angle * self.min_angle,
+        )
+
+    def _wrench(self, thrust, nozzle_angle):
+        """Return the body wrench of a normalized thrust and nozzle angle."""
+        generated_thrust = (
+            self.max_thrust * self.thrust_coefficient * thrust
+        ) * ca.vertcat(
+            ca.cos(nozzle_angle + self.yaw_bias) * ca.cos(self.trim_angle),
+            ca.sin(nozzle_angle + self.yaw_bias),
+            -ca.sin(self.trim_angle),
+        )
+        generated_moment = ca.cross(ca.DM(self.location), generated_thrust)
+        return ca.vertcat(generated_thrust, generated_moment)
 
     def _graph_io(self, payload: ForceProducer.CasadyPayload):
         payload.inputDescription.append(

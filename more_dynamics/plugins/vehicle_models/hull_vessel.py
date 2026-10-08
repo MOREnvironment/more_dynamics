@@ -1,5 +1,8 @@
+from math import asin, atan2, cos, sin
 from typing import List
+
 import casadi as ca
+import numpy as np
 from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_schema.more_dynamics.IODescription import IODescription
 from rpp_schema.more_dynamics.StateDescription import StateDescription
@@ -51,6 +54,7 @@ class HullVessel(VehicleModel3D):
         self._sensor_graphs = []
         self._hydrostatics_graph = None
         self._hydrodynamics_graph = None
+        self._vessel_step = None
         self._include_coriolis = True
         self.current_input_idx = 0
         self.current_state_idx = 0
@@ -120,13 +124,128 @@ class HullVessel(VehicleModel3D):
             mass_properties=self._mass_properties,
             include_coriolis=self._include_coriolis,
         )
+        self._vessel_step = self._create_vessel_step()
 
     def step(self, state: VehicleModel3D.Odometry3D,
             command: List[VehicleModel3D.Command], t: float, dt: float, **kwargs) -> VehicleModel3D.Odometry3D:
-        forces = []
-        for actuator in self.actuators:
-            forces.append(actuator.getForce(command))
-        return state
+        """Advance the vessel pose and twist by dt.
+
+        The command values are read in order as the actuator inputs of
+        graph(). Actuators are taken at the steady state of their command,
+        because an Odometry3D carries no actuator state.
+        """
+        if self._vessel_step is None:
+            raise RuntimeError("HullVessel must be initialized before step()")
+
+        values = [float(value) for item in command for value in item.data]
+        wrench = np.zeros(6)
+        for actuator, graph in zip(self.actuators, self._actuator_graphs):
+            inputs = values[graph.slice_input()]
+            actuator_command = VehicleModel3D.Command()
+            actuator_command.data.extend(
+                inputs + [0.0] * (graph.num_inputs - len(inputs))
+            )
+            actuator_wrench = actuator.step(state, actuator_command, t, dt)
+            wrench += [
+                actuator_wrench.force.x,
+                actuator_wrench.force.y,
+                actuator_wrench.force.z,
+                actuator_wrench.torque.x,
+                actuator_wrench.torque.y,
+                actuator_wrench.torque.z,
+            ]
+
+        next_state = np.asarray(
+            self._vessel_step(self._state_from_odometry(state), wrench, dt)
+        ).reshape(-1)
+        return self._odometry_from_state(next_state)
+
+    def _create_vessel_step(self) -> ca.Function:
+        """Build one RK4 step of the vessel under a constant actuator wrench."""
+        state = ca.SX.sym("state", 12)
+        actuator_wrench = ca.SX.sym("actuator_wrench", 6)
+        delta_t = ca.SX.sym("delta_t")
+
+        def derivative(vessel_state):
+            force = (
+                actuator_wrench
+                + self._hydrostatics_graph.output(
+                    ca.SX.zeros(0, 1), vessel_state[:6]
+                )[:6]
+                + self._hydrodynamics_graph.output(
+                    ca.SX.zeros(0, 1), vessel_state[6:]
+                )[:6]
+            )
+            return self._model(vessel_state, force)
+
+        k1 = derivative(state)
+        k2 = derivative(state + delta_t * k1 / 2.0)
+        k3 = derivative(state + delta_t * k2 / 2.0)
+        k4 = derivative(state + delta_t * k3)
+        next_state = state + delta_t * (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
+        return ca.Function(
+            "vessel_step", [state, actuator_wrench, delta_t], [next_state]
+        )
+
+    @staticmethod
+    def _state_from_odometry(odometry: VehicleModel3D.Odometry3D) -> np.ndarray:
+        """Return position, roll-pitch-yaw, and body twist of an odometry."""
+        position = odometry.pose.position
+        orientation = odometry.pose.orientation
+        norm = (
+            orientation.x**2 + orientation.y**2
+            + orientation.z**2 + orientation.w**2
+        ) ** 0.5
+        if norm < 1e-12:
+            raise ValueError("odometry orientation must be a quaternion")
+        x, y, z, w = (
+            orientation.x / norm,
+            orientation.y / norm,
+            orientation.z / norm,
+            orientation.w / norm,
+        )
+        linear = odometry.twist.linear
+        angular = odometry.twist.angular
+        return np.array(
+            [
+                position.x, position.y, position.z,
+                atan2(2.0 * (w * x + y * z), 1.0 - 2.0 * (x * x + y * y)),
+                asin(min(max(2.0 * (w * y - z * x), -1.0), 1.0)),
+                atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z)),
+                linear.x, linear.y, linear.z,
+                angular.x, angular.y, angular.z,
+            ]
+        )
+
+    @staticmethod
+    def _odometry_from_state(state: np.ndarray) -> VehicleModel3D.Odometry3D:
+        """Build an odometry from position, roll-pitch-yaw, and body twist."""
+        half_roll, half_pitch, half_yaw = (float(angle) / 2.0 for angle in state[3:6])
+        odometry = VehicleModel3D.Odometry3D()
+        position = odometry.pose.position
+        position.x, position.y, position.z = (float(v) for v in state[0:3])
+        orientation = odometry.pose.orientation
+        orientation.x = (
+            sin(half_roll) * cos(half_pitch) * cos(half_yaw)
+            - cos(half_roll) * sin(half_pitch) * sin(half_yaw)
+        )
+        orientation.y = (
+            cos(half_roll) * sin(half_pitch) * cos(half_yaw)
+            + sin(half_roll) * cos(half_pitch) * sin(half_yaw)
+        )
+        orientation.z = (
+            cos(half_roll) * cos(half_pitch) * sin(half_yaw)
+            - sin(half_roll) * sin(half_pitch) * cos(half_yaw)
+        )
+        orientation.w = (
+            cos(half_roll) * cos(half_pitch) * cos(half_yaw)
+            + sin(half_roll) * sin(half_pitch) * sin(half_yaw)
+        )
+        linear = odometry.twist.linear
+        linear.x, linear.y, linear.z = (float(v) for v in state[6:9])
+        angular = odometry.twist.angular
+        angular.x, angular.y, angular.z = (float(v) for v in state[9:12])
+        return odometry
 
 
     def graph(self):
