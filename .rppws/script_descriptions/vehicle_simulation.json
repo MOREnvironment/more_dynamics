@@ -3,11 +3,22 @@
     "Language": "python",
     "Configurations": {
         "remus100": {
-            "Description": "remus100",
+            "Description": "REMUS 100 AUV, torpedo class (Prestero 2001 and MSS remus100.m values)",
             "Components": {
                 "vessels": [
                     {
                         "Id": "24d92e9a-fa68-528a-8278-5cdc22cbb17b",
+                        "PluginName": "more_dynamics::MarineCraft6DOF"
+                    }
+                ]
+            }
+        },
+        "otter": {
+            "Description": "Otter USV, catamaran class (MSS otter.m values)",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "9e3c87b5-9998-5d85-86d8-7bfdf6a80222",
                         "PluginName": "more_dynamics::MarineCraft6DOF"
                     }
                 ]

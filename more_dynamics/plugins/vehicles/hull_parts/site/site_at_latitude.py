@@ -8,7 +8,7 @@ from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.site.site import site_at_latitude, SITE_AT_LATITUDE_PARAMETERS
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class SiteAtLatitude(SiteModel):

@@ -7,8 +7,8 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 
-from more_dynamics.models.force_producers.force_producer_parts import prescribed_wrench
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder
+from more_dynamics.models.force_producers.prescribed_wrench import prescribed_wrench
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder
 
 
 class PrescribedWrench(ForceProducer):

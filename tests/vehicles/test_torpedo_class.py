@@ -301,7 +301,7 @@ def test_tree_holds_only_part_choices_their_parameters_and_the_vehicle_settings(
 
 
 def test_committed_gate_trees_are_the_generator_output(tmp_path):
-    """No hand edit: every file of ``tests/data/vehicles/.rppws`` is what ``make_trees.py`` writes."""
+    """No hand edit: every file of ``tests/vehicles/data/.rppws`` is what ``make_trees.py`` writes."""
     import filecmp
     pytest.importorskip("rpp_plugin_registrator.plugin_descriptors.core", reason="rpp is not installed")
     trees = make_trees.gate_trees()

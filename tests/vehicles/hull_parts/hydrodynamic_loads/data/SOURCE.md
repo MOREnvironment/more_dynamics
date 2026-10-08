@@ -24,7 +24,7 @@
 | `generate_osv_surge_mss.m` | OSV surge generator | — | — | as above | `b71311f91c5edf0b44d2bdf0b5ffe31a6cfb6a8256b1b0ca3196df491ac780d9` |
 | `generate_u3_surge_floating_mss.m` | surge / ITTC / floating-damping generator; runs only where `forceSurgeDamping.m` exists (MSS ≤ `ac77394`); writes beside itself (`%.17g`) | — | — | unchanged | `e9e0610298e2559740ca73b0b9b39a822d019b23c23b201847e5c74afe0c95b5` |
 | `generate_spheroid_template.m`, `generate_catamaran_template.m` | the two template generators (MATLAB, first written 2026-02-18) | — | — | as stated per file above | `64b02930a6ccb82dcf6b1c82aab57f9cf2178eee24211e1674ebde35a79b1685`, `7f681c59f69168860a458a1fda526d2e551d027d48c27e84d079abcecf5df404` |
-| `snapshot_cited_lines.py` | writes the snapshot: `MSS_DIR=<MSS checkout> python tests/data/hydrodynamics/snapshot_cited_lines.py`; refuses a cited line that no longer starts with its pinned text | — | — | — | `ed9f29bd7be5fd319bd88ed48493faaf490327b4bc10115b2963737a18cd7740` |
+| `snapshot_cited_lines.py` | writes the snapshot: `MSS_DIR=<MSS checkout> python tests/vehicles/hull_parts/hydrodynamic_loads/data/snapshot_cited_lines.py`; refuses a cited line that no longer starts with its pinned text | — | — | — | `ed9f29bd7be5fd319bd88ed48493faaf490327b4bc10115b2963737a18cd7740` |
 
 ## Layout and conventions
 

@@ -46,7 +46,7 @@ Conventions (hidden assumptions)
 * ``C_A = m2c(M_A, nu_r)`` (Fossen 2021 Theorem 3.2 form), no Munk-moment
   cancellation.
 
-Frozen reference: ``tests/data/rigid_body/matlab_reference_mss_current.csv``
+Frozen reference: ``tests/vehicles/hull_parts/rigid_body/data/matlab_reference_mss_current.csv``
 (``SOURCE.md`` names origin, revisions and layout).
 """
 
@@ -60,7 +60,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "rigid_body"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 CONTRACT_MODULE = "more_dynamics.models.vehicles.hull_parts.rigid_body"
 
 G1_TOLERANCE = 1e-9   # G1: block vs MATLAB running MSS, absolute
@@ -70,7 +70,7 @@ SEED = 20261005
 N_RANDOM_STATES = 1000
 
 # Values of MSS otter.m (lines at cc07579, pinned in OTTER_LINES) and the payload
-# of the catamaran reference (tests/data/hydrodynamics/generate_catamaran_mss.m 61-62).
+# of the catamaran reference (tests/vehicles/hull_parts/hydrodynamic_loads/data/generate_catamaran_mss.m 61-62).
 PARAMETERS = {
     "length": 2.0,                                   # L, otter.m 92
     "beam": 1.08,                                    # B, otter.m 93

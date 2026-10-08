@@ -17,7 +17,7 @@ Date:      2026-10-08
 from more_dynamics.models.vehicles.hull_parts.rigid_body.kinetics import rigid_body_casadi
 from more_dynamics.models.vehicles.hull_parts.rigid_body.mass_properties import rigid_body_parameters
 
-from more_dynamics.models.wiring import restrict, with_passthrough
+from more_dynamics.models.shared.wiring import restrict, with_passthrough
 
 RIGID_BODY_OUTPUTS = ["M_RB", "C_RB", "mass", "center_of_gravity", "inertia"]
 

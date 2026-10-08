@@ -20,7 +20,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.force_producers.fin.section.linear_section import (linear_section_casadi,
                                                                                    linear_section_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class FinSectionLinearSection(FinSection):

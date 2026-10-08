@@ -20,7 +20,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.force_producers.fin.section.quadratic_drag import (quadratic_drag_casadi,
                                                                                    quadratic_drag_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class FinSectionQuadraticDrag(FinSection):

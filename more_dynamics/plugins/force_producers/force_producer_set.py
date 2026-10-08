@@ -33,7 +33,7 @@ from more_common.casadi_graph import RppCasadiGraph
 from more_transformations.more_casadi_transformations import freeze
 from more_dynamics.models.force_producers.force_producer_set import (force_producer_set_casadi,
                                                                     force_producer_set_parameters)
-from more_dynamics.plugins.payload_io import PayloadBuilder
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder
 
 FED = {"relative_velocity": 6, "water_density": 1}
 

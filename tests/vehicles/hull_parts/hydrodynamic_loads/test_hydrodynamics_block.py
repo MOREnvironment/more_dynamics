@@ -166,7 +166,7 @@ Conventions (hidden assumptions)
   and ``coeffLiftDrag.m`` e = 0.3; the blocks take both as parameters and the
   MSS tests pass the hard-coded values.
 
-Frozen reference: ``tests/data/hydrodynamics/`` (``SOURCE.md``).
+Frozen reference: ``tests/vehicles/hull_parts/hydrodynamic_loads/data/`` (``SOURCE.md``).
 """
 
 import ast
@@ -183,7 +183,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "hydrodynamics"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 # Outside this repo only through environment variables (nothing relative to one machine):
 # MSS_DIR = an MSS checkout. Default: not set. The gates read the frozen CSVs and
 # the snapshot of every cited MSS / generator line (``cited_lines_snapshot.json``,
@@ -228,8 +228,8 @@ OSV_SURGE_CALL = "$MSS_DIR@ac77394/CRAFT/SHIP/models/osv.m"
 OSV_2_0_2 = "$MSS_DIR@72656d1/CRAFT/SHIP/models/osv.m"
 # The template generators of the two template references, in this repository
 # ("$TESTS/..." = this tests/ folder; no variable needed).
-GEN_SPH = "$TESTS/data/hydrodynamics/generate_spheroid_template.m"
-GEN_CAT = "$TESTS/data/hydrodynamics/generate_catamaran_template.m"
+GEN_SPH = "$TESTS/vehicles/hull_parts/hydrodynamic_loads/data/generate_spheroid_template.m"
+GEN_CAT = "$TESTS/vehicles/hull_parts/hydrodynamic_loads/data/generate_catamaran_template.m"
 
 # (file relative to <more>, line) -> how the stripped line starts. Pinned by
 # test_cited_lines_are_unchanged; every constant below is parsed from these.

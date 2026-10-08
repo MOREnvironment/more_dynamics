@@ -10,7 +10,7 @@ from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.hull_form.hull_form import TWIN_PONTOONS_PARAMETERS, twin_pontoons
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class TwinPontoons(HullForm):

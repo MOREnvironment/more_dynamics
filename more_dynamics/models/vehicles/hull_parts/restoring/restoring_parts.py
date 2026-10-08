@@ -23,7 +23,7 @@ from more_transformations.more_casadi_transformations import Parameter
 from more_dynamics.models.vehicles.hull_parts.restoring.submerged import submerged_hydrostatics_casadi
 from more_dynamics.models.vehicles.hull_parts.restoring.surface import surface_hydrostatics_casadi
 
-from more_dynamics.models.wiring import function_from
+from more_dynamics.models.shared.wiring import function_from
 
 SUBMERGED_NEUTRAL_PARAMETERS = (
     Parameter("center_of_buoyancy", (3, 1), "m", "CO -> CB r_bb, body axes (FRD); above the CG"),

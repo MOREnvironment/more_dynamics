@@ -85,9 +85,9 @@ def test_the_model_layer_imports_no_plugin():
     ("otter", []),
 ])
 def test_user_vehicles_build_from_their_script_descriptions(vehicle, commands):
-    """The two vehicles of ``scripts/vehicles/.rppws`` build in rpp's builder, close to nothing open, and are the
-    gate trees' parts with the physics Coriolis form."""
-    script = LIBRARY / "scripts" / "vehicles" / ".rppws" / "script_descriptions" / f"{vehicle}.json"
+    """The two named vehicles of the library's ``.rppws`` build in rpp's builder from the one script description, close
+    to nothing open, and are the gate trees' parts with the physics Coriolis form."""
+    script = LIBRARY / ".rppws" / "script_descriptions" / "vehicle_simulation.json"
     vessel = vc.build(vehicle, script)
     assert vc.input_names(vessel) == commands
     assert [d.name for d in vessel.graph().outputDescription] == ["output"]

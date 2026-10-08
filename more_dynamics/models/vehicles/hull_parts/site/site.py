@@ -18,7 +18,7 @@ import casadi as ca
 
 from more_transformations.more_casadi_transformations import ECEFNEDtransform, Parameter
 
-from more_dynamics.models.wiring import function_from
+from more_dynamics.models.shared.wiring import function_from
 
 _WATER_DENSITY = Parameter("water_density", (1, 1), "kg/m^3", "water density rho", 0.0, minimum_exclusive=True)
 _KINEMATIC_VISCOSITY = Parameter("kinematic_viscosity", (1, 1), "m^2/s", "kinematic viscosity nu",

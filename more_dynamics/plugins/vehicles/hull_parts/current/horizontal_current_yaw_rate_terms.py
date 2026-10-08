@@ -7,7 +7,7 @@ from rpp_plugin_types.more_dynamics import CurrentModel
 from rpp_py.context import ComponentContext
 
 from more_dynamics.models.vehicles.hull_parts.current.current import horizontal_current_yaw_rate_terms, HORIZONTAL_CURRENT_PARAMETERS
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 from rpp_py.parameter_description import ParameterDescription
 
 

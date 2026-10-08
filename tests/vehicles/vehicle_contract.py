@@ -4,10 +4,10 @@ tree with rpp's own ``ComponentContextBuilder`` and read its payload.
 The vehicle class is data: one ``MarineCraft6DOF`` plugin receives its parts
 by slot, and a vehicle is a tree of part folders with their ``parameters.py``.
 REMUS 100 and the Otter differ only in their trees. The gate trees live in
-``tests/data/vehicles/.rppws`` (written by ``tests/data/vehicles/make_trees.py``);
+``tests/vehicles/data/.rppws`` (written by ``tests/vehicles/data/make_trees.py``);
 a perturbed or refused variant is written into a temporary folder from the
 same generator and built in the same way. Reference numbers live under
-``tests/data/vehicles``.
+``tests/vehicles/data``.
 
 The trees need rpp's registry with ``more_dynamics`` registered
 (``rpp library register ./more_dynamics --link``); without it the tree tests
@@ -24,7 +24,7 @@ import casadi as ca
 import numpy as np
 import pytest
 
-DATA = Path(__file__).resolve().parents[1] / "data" / "vehicles"
+DATA = Path(__file__).resolve().parent / "data"
 GATE_TREES = DATA / ".rppws"
 GATE_SCRIPT = GATE_TREES / "script_descriptions" / "vehicles.json"
 SLOTS = ("site", "current", "hull_form", "rigid_body", "added_mass",

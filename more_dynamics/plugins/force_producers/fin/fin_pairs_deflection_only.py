@@ -18,9 +18,9 @@ from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_dynamics.models.force_producers.force_producer_parts import (fin_pairs_deflection_only,
-                                                                      fin_pairs_deflection_only_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
+from more_dynamics.models.force_producers.fin.fin_pairs_deflection_only import (fin_pairs_deflection_only,
+                                                                    fin_pairs_deflection_only_parameters)
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
 
 
 class FinPairsDeflectionOnly(ForceProducer):

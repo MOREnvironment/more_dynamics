@@ -122,7 +122,7 @@ path a plugin carries), so every function below takes the commands and
   ``max_thrust``, ``max_propulsive_power``, ``position`` and inputs
   ``["thrust", "delta", "nu_r"]`` (actual thrust state in N).
 
-Frozen reference: ``tests/data/force_producers/`` (``SOURCE.md``).
+Frozen reference: ``tests/force_producers/data/`` (``SOURCE.md``).
 """
 
 import ast
@@ -137,7 +137,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "force_producers"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 # Nothing relative to one machine (owner, 2026-10-06).
 # Files outside this repo are found through environment variables, default
 # unset: MSS_DIR (the MSS checkout root). A cited path below starts with the
@@ -165,8 +165,8 @@ WAG_TXT = "source-sim/MSS/LIBRARY/modeling/utiles/WageningData.txt"
 WAG_M = "source-sim/MSS/LIBRARY/modeling/wageningen.m"
 # The template generators of the two template references, in this repository
 # ("tests/..." = this tests/ folder; always present, no variable needed).
-GEN_PROP = "tests/data/force_producers/generate_propeller_template.m"
-GEN_DIFF = "tests/data/force_producers/generate_differential_thruster_template.m"
+GEN_PROP = "tests/force_producers/data/generate_propeller_template.m"
+GEN_DIFF = "tests/force_producers/data/generate_differential_thruster_template.m"
 
 CITED_LINES = {
     (OTTER, 90): "g   = 9.81;",
@@ -884,7 +884,7 @@ def test_G2_vsim_fins_signature():
 # 6. Outboard motor (reverse sign fixed, owner 2026-10-05)
 # ==========================================================================
 def _parameter_set(name):
-    """A frozen parameter set of tests/data/force_producers/parameter_sets.json (SOURCE.md)."""
+    """A frozen parameter set of tests/force_producers/data/parameter_sets.json (SOURCE.md)."""
     p = json.loads((DATA_DIR / "parameter_sets.json").read_text())[name]
     return {k: (np.asarray(v, float) if isinstance(v, list) else v) for k, v in p.items()}
 

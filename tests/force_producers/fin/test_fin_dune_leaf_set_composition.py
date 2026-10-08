@@ -14,7 +14,7 @@ Gates:
   same numbers.
 * G2: the set of four leaves, identity map, equals ``vsim_fins_casadi(
   fin_count=4)`` on the LAUV fin forces and positions of DUNE's simulator
-  configuration (``tests/data/force_producers/parameter_sets.json``,
+  configuration (``tests/force_producers/data/parameter_sets.json``,
   ``vsim_fins``: ``etc/common/vsim-models.ini`` 54-62), including speeds
   below the block's zero-speed guard.
 * The leaf takes ``water_density`` (the producer interface) and its force

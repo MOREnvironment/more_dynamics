@@ -19,7 +19,7 @@ import casadi as ca
 
 from more_transformations.more_casadi_transformations import MatrixTransforms, Parameter
 
-from more_dynamics.models.wiring import function_from
+from more_dynamics.models.shared.wiring import function_from
 
 NO_CURRENT_PARAMETERS = ()
 HORIZONTAL_CURRENT_PARAMETERS = (

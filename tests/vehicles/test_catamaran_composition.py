@@ -9,13 +9,14 @@ Date:      2026-10-08
 """
 
 import json
+from pathlib import Path
 
 import numpy as np
 
 import vehicle_contract as vc
 from vehicle_contract import DATA, make_trees
 
-ROOT = DATA.parent
+HULL_PARTS = Path(__file__).resolve().parent / "hull_parts"
 G1_TOLERANCE = 1e-9
 
 
@@ -52,9 +53,9 @@ def test_G1_catamaran_matches_existing_otter_block_references():
     vehicle = vc.build("otter")
     current_vehicle = vc.build("otter_current")  # the rigid-body reference was run in a current
     assert vc.input_names(vehicle) == []
-    rigid_in = np.loadtxt(ROOT / "rigid_body" / "inputs.csv", delimiter=",", skiprows=1)
-    rigid_ref = _table(ROOT / "rigid_body" / "matlab_reference_mss_current.csv")
-    hydro_ref = _table(ROOT / "hydrodynamics" / "catamaran_matlab_reference_mss_cc07579.csv")
+    rigid_in = np.loadtxt(HULL_PARTS / "rigid_body" / "data" / "inputs.csv", delimiter=",", skiprows=1)
+    rigid_ref = _table(HULL_PARTS / "rigid_body" / "data" / "matlab_reference_mss_current.csv")
+    hydro_ref = _table(HULL_PARTS / "hydrodynamic_loads" / "data" / "catamaran_matlab_reference_mss_cc07579.csv")
     worst = {}
     nothing = np.zeros(0)
 

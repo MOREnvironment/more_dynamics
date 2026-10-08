@@ -14,7 +14,7 @@ from rpp_plugin_types.more_dynamics import FinFlowAngle
 from rpp_py.context import ComponentContext
 
 from more_dynamics.models.force_producers.fin.flow_angle.none import none_casadi, none_parameters
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class FinFlowAngleNone(FinFlowAngle):

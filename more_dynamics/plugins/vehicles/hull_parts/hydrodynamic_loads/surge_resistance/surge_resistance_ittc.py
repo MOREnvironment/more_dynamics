@@ -22,7 +22,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.hydrodynamic_load_parts import (surge_resistance_ittc,
                                                                          surge_resistance_ittc_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
 
 
 class SurgeResistanceIttc(HydrodynamicsModel):

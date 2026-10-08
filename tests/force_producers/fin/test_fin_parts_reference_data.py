@@ -1,5 +1,5 @@
 """Checks of the frozen reference data of the fin parts
-(``tests/data/force_producers/fin_parts/``).
+(``tests/force_producers/fin/data/``).
 
 Written 2026-10-08. These tests need no part and run now:
 

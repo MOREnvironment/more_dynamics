@@ -13,7 +13,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.hydrodynamic_load_parts import (
     time_constant_damping_surface, time_constant_damping_surface_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class TimeConstantDampingSurface(HydrodynamicsModel):

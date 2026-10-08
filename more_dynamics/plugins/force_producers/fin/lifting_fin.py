@@ -38,7 +38,7 @@ from rpp_py.parameter_description import ParameterDescription
 from more_transformations.more_casadi_transformations import freeze
 from more_dynamics.models.force_producers.fin.lifting_fin import (check_lifting_fin_values, lifting_fin_casadi,
                                                                        lifting_fin_parameters)
-from more_dynamics.plugins.payload_io import MODEL_NAMES, PayloadBuilder, named_function
+from more_dynamics.plugins.shared.payload_io import MODEL_NAMES, PayloadBuilder, named_function
 
 FED_INPUTS = ["command", "state", "nu_r", "water_density"]
 

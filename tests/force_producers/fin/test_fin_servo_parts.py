@@ -47,13 +47,14 @@ after ``t1`` (or from the start when ``|d| <= time_constant * max_rate``)
 the lag is linear: ``d - delta = (d - delta(t1)) exp(-(t - t1) /
 time_constant)``.
 
-The wind-up release times used below (0.667 s, 5.00 s) are a scratch
-construction, not a published value: command held at twice the angle limit
-for 30 s, then reversed to minus twice the limit; the output-side state
-winds up unclamped and the output leaves the stop ``max_deflection /
-max_rate`` seconds after the reversal, deep inside the rate-limited phase
-(``agents-more/60_working/A49_scripts/a49_envelope_output.txt``, ``SERVO2``
-lines; `tests/data/force_producers/fin_parts/SOURCE.md`).
+The wind-up release times used below (0.667 s, 5.00 s) are derived here,
+not published values: command held at twice the angle limit for 30 s, then
+reversed to minus twice the limit; the output-side state winds up unclamped
+and the output leaves the stop ``max_deflection / max_rate`` seconds after
+the reversal, deep inside the rate-limited phase: 20 deg / 30 deg/s =
+0.667 s with the servo of Sarhadi (2026, Fig. 4, p. 4) and 35 deg / 7 deg/s
+= 5.00 s with the Zeefakkel actuator of Murray-Smith (2016, p. 246)
+(`tests/force_producers/fin/data/SOURCE.md`).
 
 References
 ----------
@@ -334,8 +335,8 @@ def test_G5_output_saturated_wind_up_release_after_a_saturating_reversal(name, t
     """Command held at twice the angle limit for 30 s (the unclamped state
     winds up close to it), then reversed to minus twice the limit: the
     output leaves the +max_deflection stop max_deflection / max_rate
-    seconds later (`a49_envelope_output.txt`, `SERVO2` lines: 0.667 s,
-    5.00 s). The state is still deep in the rate-limited phase there
+    seconds later (20 / 30 = 0.667 s for Sarhadi 2026, Fig. 4, p. 4;
+    35 / 7 = 5.00 s for Murray-Smith 2016, p. 246). The state is still deep in the rate-limited phase there
     (|state + 2 max_deflection| = 3 max_deflection >> max_rate *
     time_constant for both parameter sets), so the crossing time does not
     depend on time_constant."""

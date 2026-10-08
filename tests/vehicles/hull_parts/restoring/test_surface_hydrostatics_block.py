@@ -64,7 +64,7 @@ Conventions (hidden assumptions)
 * Twin hulls are identical and placed at ``+-y``; the waterplane of each is
   symmetric about its own centreline.
 
-Frozen reference: ``tests/data/hydrostatics/`` (``SOURCE.md``, section of 2026-10-06).
+Frozen reference: ``tests/vehicles/hull_parts/restoring/data/`` (``SOURCE.md``, section of 2026-10-06).
 """
 
 import ast
@@ -78,10 +78,11 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "hydrostatics"
+DATA_DIR = Path(__file__).resolve().parent / "data"
+HYDRODYNAMICS_DATA = Path(__file__).resolve().parents[1] / "hydrodynamic_loads" / "data"   # the catamaran reference of the hydrodynamic loads
 # Outside this repo only through environment variables (nothing relative to one machine):
 # MSS_DIR = an MSS checkout. Unset -> the tests that need it skip; the gates on the frozen
-# CSVs in tests/data run everywhere.
+# CSVs in this folder's data/ run everywhere.
 CONTRACT_MODULE = "more_dynamics.models.vehicles.hull_parts.restoring.surface"
 GMTRX_CSV = "surface_gmtrx_mss_current.csv"
 CHAIN_CSV = "surface_chain_mss_current.csv"
@@ -376,7 +377,7 @@ def test_reference_shapes_and_kinds():
 
 def test_chain_case_1_equals_the_A26_catamaran_reference():
     """Same otter.m G as ``hydrodynamics/catamaran_matlab_reference_mss_current.csv``."""
-    path = DATA_DIR.parent / "hydrodynamics" / "catamaran_matlab_reference_mss_current.csv"
+    path = HYDRODYNAMICS_DATA / "catamaran_matlab_reference_mss_current.csv"
     header = path.read_text().splitlines()[0].split(",")
     a26 = np.loadtxt(path, delimiter=",", skiprows=1, ndmin=2)
     g26 = a26[0, [header.index(f"G_{i:02d}") for i in range(1, 37)]].reshape(6, 6)
@@ -386,7 +387,7 @@ def test_chain_case_1_equals_the_A26_catamaran_reference():
 def test_chain_case_1_equals_the_catamaran_reference_at_cc07579():
     """Both files made by MSS ``cc07579`` (``otter.m`` 178, the waterplane KB):
     chain row 1 G = ``catamaran_matlab_reference_mss_cc07579.csv`` G."""
-    path = DATA_DIR.parent / "hydrodynamics" / "catamaran_matlab_reference_mss_cc07579.csv"
+    path = HYDRODYNAMICS_DATA / "catamaran_matlab_reference_mss_cc07579.csv"
     header = path.read_text().splitlines()[0].split(",")
     cat = np.loadtxt(path, delimiter=",", skiprows=1, ndmin=2)
     g_cat = cat[0, [header.index(f"G_{i:02d}") for i in range(1, 37)]].reshape(6, 6)

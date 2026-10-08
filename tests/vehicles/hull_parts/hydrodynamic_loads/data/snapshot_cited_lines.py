@@ -8,7 +8,7 @@ an MSS checkout (nothing relative to a machine); with ``MSS_DIR`` set, ``test_ci
 
 Run from the repository root (written 2026-10-06):
 
-    MSS_DIR=<an MSS checkout> python tests/data/hydrodynamics/snapshot_cited_lines.py
+    MSS_DIR=<an MSS checkout> python tests/vehicles/hull_parts/hydrodynamic_loads/data/snapshot_cited_lines.py
 
 ``$TESTS/...`` pins are files of this repository (the template generators)
 and need no variable.
@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-TEST_FILE = HERE.parents[1] / "vehicles" / "hull_parts" / "hydrodynamic_loads" / "test_hydrodynamics_block.py"
+TEST_FILE = HERE.parent / "test_hydrodynamics_block.py"
 
 
 def _root(variable):
@@ -60,7 +60,7 @@ def main():
     for ref, name in tests.TABLES:
         tables.setdefault(ref, {})[name] = tests._parse_table(live(ref), name).tolist()
     snapshot = {
-        "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py",
+        "made_by": "tests/vehicles/hull_parts/hydrodynamic_loads/data/snapshot_cited_lines.py",
         "revisions": {v: _revision(p) for v, p in roots.items()},
         "lines": lines,
         "tables": tables,

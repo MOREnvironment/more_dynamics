@@ -243,7 +243,7 @@ class _Part:
 
 def _hull_load(inputs, outputs, states=()):
     from rpp_plugin_types.more_dynamics import HydrodynamicsModel
-    from more_dynamics.plugins.payload_io import PayloadBuilder
+    from more_dynamics.plugins.shared.payload_io import PayloadBuilder
 
     def build():
         io = PayloadBuilder(HydrodynamicsModel.CasadyPayload())
@@ -276,7 +276,7 @@ def test_refuses_a_mis_sized_input():
 def test_refuses_a_quantity_two_single_slots_produce():
     _, CompositionError = _vehicle_class()
     from rpp_plugin_types.more_dynamics import CurrentModel
-    from more_dynamics.plugins.payload_io import PayloadBuilder
+    from more_dynamics.plugins.shared.payload_io import PayloadBuilder
 
     def build():
         io = PayloadBuilder(CurrentModel.CasadyPayload())

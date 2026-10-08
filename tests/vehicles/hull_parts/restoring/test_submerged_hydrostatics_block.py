@@ -48,7 +48,7 @@ Conventions (hidden assumptions)
   applied force is ``-g``: for B > W at level attitude ``g_z = B - W > 0`` and
   the force ``-g_z`` points up (negative z in NED).
 
-Frozen reference: ``tests/data/hydrostatics/`` (``SOURCE.md``).
+Frozen reference: ``tests/vehicles/hull_parts/restoring/data/`` (``SOURCE.md``).
 """
 
 import ast
@@ -62,10 +62,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "hydrostatics"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 # Outside this repo only through environment variables (nothing relative to one machine):
 # MSS_DIR = an MSS checkout. Unset -> the tests that need it skip; the gates on the frozen
-# CSVs in tests/data run everywhere.
+# CSVs in this folder's data/ run everywhere.
 CONTRACT_MODULE = "more_dynamics.models.vehicles.hull_parts.restoring.submerged"
 # Current-MSS MATLAB reference (2026-10-05); the template-generator file it equals.
 REFERENCE_CSV = "spheroid_matlab_reference_mss_current.csv"

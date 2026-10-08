@@ -7,7 +7,7 @@ from rpp_plugin_types.more_dynamics import CurrentModel
 from rpp_py.context import ComponentContext
 
 from more_dynamics.models.vehicles.hull_parts.current.current import no_current, NO_CURRENT_PARAMETERS
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class NoCurrent(CurrentModel):

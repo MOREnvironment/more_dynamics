@@ -7,8 +7,8 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import SectionDragModel
 from rpp_py.context import ComponentContext
 
-from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.cross_flow.cross_flow_strip_parts import circular_cylinder_reynolds
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder
+from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.cross_flow.section_drag.circular_cylinder_reynolds import circular_cylinder_reynolds
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder
 
 
 class CircularCylinderReynolds(SectionDragModel):

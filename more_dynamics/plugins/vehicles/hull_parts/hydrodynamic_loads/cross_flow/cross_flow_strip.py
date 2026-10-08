@@ -10,8 +10,8 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 
-from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.cross_flow.cross_flow_strip_parts import cross_flow_strip_with_section
-from more_dynamics.plugins.payload_io import MODEL_NAMES, PayloadBuilder, named_function
+from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.cross_flow.cross_flow_strip import cross_flow_strip_with_section
+from more_dynamics.plugins.shared.payload_io import MODEL_NAMES, PayloadBuilder, named_function
 from rpp_py.parameter_description import ParameterDescription
 
 

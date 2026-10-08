@@ -23,7 +23,7 @@ from more_dynamics.models.vehicles.hull_parts.added_mass.added_mass import added
 from more_dynamics.models.vehicles.hull_parts.rigid_body.kinetics import rigid_body_casadi
 from more_dynamics.models.vehicles.hull_parts.rigid_body.mass_properties import rigid_body_parameters
 
-from more_dynamics.models.wiring import function_from, restrict
+from more_dynamics.models.shared.wiring import function_from, restrict
 
 SCALED_DERIVATIVES_PARAMETERS = (
     Parameter("added_mass_coefficients", (6, 1), "1",

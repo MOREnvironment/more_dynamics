@@ -8,8 +8,8 @@ builds them. Every number is read from the frozen parameter files in this
 folder (``remus100/remus100_parameters_consistent.json``,
 ``otter/otter_mss_cc07579.json``); none is typed here.
 
-The gate trees under ``tests/data/vehicles/.rppws`` and the user vehicles
-under ``scripts/vehicles/.rppws`` are the output of
+The gate trees under ``tests/vehicles/data/.rppws`` and the named
+vehicles, parts of the library's root ``.rppws`` beside Luka's, are the output of
 
     python make_trees.py
 
@@ -31,13 +31,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LIBRARY = HERE.parents[2]
 GATE_TREES = HERE / ".rppws"
-USER_TREES = LIBRARY / "scripts" / "vehicles" / ".rppws"
+USER_TREES = LIBRARY / ".rppws"
 NAMESPACE = uuid.UUID("6d0e1a00-0000-4000-8000-000000000001")
 
 REMUS_FILE = json.loads((HERE / "remus100" / "remus100_parameters_consistent.json").read_text())
 REMUS = {name: entry["value"] for name, entry in REMUS_FILE["parameters"].items()}
 OTTER = json.loads((HERE / "otter" / "otter_mss_cc07579.json").read_text())
-_RIGID_TEST = (HERE.parents[1] / "vehicles" / "hull_parts" / "rigid_body" / "test_rigid_body_block.py").read_text()
+_RIGID_TEST = (HERE.parent / "hull_parts" / "rigid_body" / "test_rigid_body_block.py").read_text()
 CURRENT_SPEED = float(re.search(r"^CURRENT_SPEED = ([0-9.]+)$", _RIGID_TEST, re.M).group(1))
 CURRENT_DIRECTION = math.radians(float(
     re.search(r"^CURRENT_DIRECTION = np.deg2rad\(([0-9.]+)\)$", _RIGID_TEST, re.M).group(1)))
@@ -345,7 +345,7 @@ def _parameters_py(params):
     return "\n".join(lines) + "\n"
 
 
-def _write(folder, tree_name, path, n, parent):
+def _write(folder, tree_name, path, n, parent, name=None):
     folder.mkdir(parents=True)
     cid = str(uuid.uuid5(NAMESPACE, f"{tree_name}/{path}"))
     subcomponents = {}
@@ -371,7 +371,7 @@ def _write(folder, tree_name, path, n, parent):
             else:
                 _write(sub, tree_name, cpath, c, parent_info)
         subcomponents[slot] = infos if slot in LIST_SLOTS else infos[0]
-    description = {"Id": cid, "Name": f"{n['plugin']}_comp" if parent else tree_name,
+    description = {"Id": cid, "Name": f"{n['plugin']}_comp" if parent else (name or tree_name),
                    "PluginType": f"more_dynamics::{TYPES[n['plugin']]}", "PluginName": f"more_dynamics::{n['plugin']}",
                    "Library": "more_dynamics", "SubcomponentSpec": SPEC.get(n["plugin"], {}),
                    "Subcomponents": subcomponents, "ParentComponentInfo": parent}
@@ -391,9 +391,9 @@ def top_id(tree_name):
     return str(uuid.uuid5(NAMESPACE, f"{tree_name}/"))
 
 
-def top(workspace, tree_name, n):
+def top(workspace, tree_name, n, name=None):
     cid = top_id(tree_name)
-    _write(workspace / "parts" / plugin_id(n["plugin"]) / cid, tree_name, "", n, None)
+    _write(workspace / "parts" / plugin_id(n["plugin"]) / cid, tree_name, "", n, None, name)
     return cid
 
 
@@ -413,6 +413,33 @@ def write_workspace(workspace, trees, script_path, descriptions, parts=None):
             "ScriptPath": script_path, "Language": "python", "Configurations": configurations,
             "ActiveConfiguration": names[0], "Spec": {"vessels": "List[more_dynamics::VehicleModel3D]"}},
             indent=4) + "\n")
+    return ids
+
+
+# the vehicles to use, by the name they are served under: configuration -> (name of the part, description)
+VEHICLES = {
+    "remus100": ("REMUS 100", "REMUS 100 AUV, torpedo class (Prestero 2001 and MSS remus100.m values)"),
+    "otter": ("Otter", "Otter USV, catamaran class (MSS otter.m values)"),
+}
+
+
+def write_vehicles(root, trees):
+    """Write the named vehicles ``trees`` ({configuration: node}) as parts of the library's own ``.rppws`` and the
+    one script description ``vehicle_simulation.json`` with a configuration per vehicle, beside the parts and
+    script descriptions already there: only the ``MarineCraft6DOF`` part folder and this description are rewritten,
+    nothing else of the workspace is touched."""
+    root = Path(root)
+    own = root / "parts" / plugin_id("MarineCraft6DOF")
+    if own.exists():
+        shutil.rmtree(own)
+    (root / "script_descriptions").mkdir(parents=True, exist_ok=True)
+    ids = {name: top(root, name, n, VEHICLES[name][0]) for name, n in trees.items()}
+    configurations = {name: {"Description": VEHICLES[name][1], "Components": {"vessels": [
+        {"Id": ids[name], "PluginName": "more_dynamics::MarineCraft6DOF"}]}} for name in trees}
+    (root / "script_descriptions" / "vehicle_simulation.json").write_text(json.dumps({
+        "ScriptPath": "scripts/vehicles/simulate_vehicle.py", "Language": "python", "Configurations": configurations,
+        "ActiveConfiguration": next(iter(trees)), "Spec": {"vessels": "List[more_dynamics::VehicleModel3D]"}},
+        indent=4) + "\n")
     return ids
 
 
@@ -457,7 +484,7 @@ def fin_pair_set(r=None):
 def prestero_fin():
     """One REMUS 100 fin at the fin post with the servo of the plugin's defaults, the rigid-point inflow, the
     small-angle flow angle, no interference and the quadratic-drag section: the fin of the linked-part gate."""
-    prestero = json.loads((HERE.parent / "force_producers" / "fin_parts" / "prestero_2001_remus_fins.json")
+    prestero = json.loads((HERE.parents[1] / "force_producers" / "fin" / "data" / "prestero_2001_remus_fins.json")
                           .read_text())["parameters"]
 
     def line(name, key):
@@ -534,8 +561,7 @@ def main():
     write_workspace(GATE_TREES, gate, "tests/vehicles/vehicle_contract.py", {"vehicles": list(gate)},
                     parts=gate_parts())
     user = user_trees()
-    write_workspace(USER_TREES, user, "scripts/vehicles/simulate_vehicle.py",
-                    {name: [name] for name in user})
+    write_vehicles(USER_TREES, user)
     print(f"wrote {len(gate)} gate trees under {GATE_TREES} and {len(user)} user vehicles under {USER_TREES}")
 
 

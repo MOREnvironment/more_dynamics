@@ -17,7 +17,7 @@ import casadi as ca
 
 from more_transformations.more_casadi_transformations import Parameter
 
-from more_dynamics.models.wiring import function_from
+from more_dynamics.models.shared.wiring import function_from
 
 PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS = (
     Parameter("length", (1, 1), "m", "body length L", 0.0, minimum_exclusive=True),

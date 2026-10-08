@@ -19,7 +19,7 @@ import casadi as ca
 
 from more_dynamics.models.vehicles.hull_parts.rigid_body.kinetics import added_mass_coriolis_casadi
 
-from more_dynamics.models.wiring import function_from
+from more_dynamics.models.shared.wiring import function_from
 
 
 def _part(name, stabilize):

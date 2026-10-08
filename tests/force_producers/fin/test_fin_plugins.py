@@ -22,8 +22,8 @@ plugins of Luka's form, built from ``.rppws`` trees by rpp's own builder.
   wrong shape; the plugin layer holds no trace of the retired part base.
 
 Reference numbers: the frozen MSS rows and the printed Prestero values of
-``tests/data/force_producers/fin_parts`` and the REMUS parameter file of
-``tests/data/vehicles``.
+``tests/force_producers/fin/data`` and the REMUS parameter file of
+``tests/vehicles/data``.
 
 References
 ----------

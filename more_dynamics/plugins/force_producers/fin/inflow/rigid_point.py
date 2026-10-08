@@ -16,7 +16,7 @@ from rpp_plugin_types.more_dynamics import FinInflow
 from rpp_py.context import ComponentContext
 
 from more_dynamics.models.force_producers.fin.inflow.rigid_point import rigid_point_casadi, rigid_point_parameters
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class FinInflowRigidPoint(FinInflow):

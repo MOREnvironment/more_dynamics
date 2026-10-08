@@ -18,9 +18,9 @@ from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_dynamics.models.force_producers.force_producer_parts import (propeller_linearized_open_water,
-                                                                      propeller_linearized_open_water_parameters)
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
+from more_dynamics.models.force_producers.propulsor.propeller_linearized_open_water import (
+    propeller_linearized_open_water, propeller_linearized_open_water_parameters)
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
 
 
 class PropellerLinearizedOpenWater(ForceProducer):

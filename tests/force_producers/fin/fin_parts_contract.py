@@ -71,8 +71,8 @@ import numpy as np
 import pytest
 
 PACKAGE = "more_dynamics.models.force_producers"
-DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "force_producers" / "fin_parts"
-PARENT_DATA_DIR = DATA_DIR.parent
+DATA_DIR = Path(__file__).resolve().parent / "data"
+PARENT_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 G1_TOLERANCE = 1e-9    # against MATLAB running MSS, absolute (as tests/force_producers)
 G2_TOLERANCE = 1e-10   # against a transcription of a cited source or another block, absolute
@@ -323,7 +323,7 @@ def prestero_value(name):
 
 
 def parameter_set(name):
-    """A parameter set of ``tests/data/force_producers/parameter_sets.json``."""
+    """A parameter set of ``tests/force_producers/data/parameter_sets.json``."""
     return json.loads((PARENT_DATA_DIR / "parameter_sets.json").read_text())[name]
 
 

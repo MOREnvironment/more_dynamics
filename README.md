@@ -25,13 +25,16 @@ more_dynamics/{models,plugins}/            (tests/ mirrors the same tree)
       servo/  inflow/  flow_angle/  interference/  section/
     propulsor/
     thrusters/
-  wiring.py (models) · payload_io.py (plugins)   helpers shared by both families
+    shared/                                helpers of the force producers (models)
+  shared/                                  helpers of both families: wiring.py (models), payload_io.py (plugins)
 plugin_types/
 ```
 
+Each test folder keeps its frozen reference data beside it in `data/` (the MATLAB generators, their outputs and a `SOURCE.md` naming the source of every file): `tests/vehicles/hull_parts/<part>/data/`, `tests/force_producers/data/`, `tests/force_producers/fin/data/`, and `tests/vehicles/data/` for the vehicle parameter files and the gate trees. References that need MSS skip without `MSS_DIR`; the frozen files run everywhere.
+
 A vehicle is built through it in five steps: (1) pick one plugin per hull part from `plugins/vehicles/hull_parts/<part>/` (a site, a current model, a hull form, a rigid body, an added mass and its Coriolis term, a restoring model, a list of hull loads); (2) pick the force producers from `plugins/force_producers/` (fins, a propeller, a set of them); (3) write them as a tree of part folders with their `parameters.py` under an `.rppws` workspace, the producers as children of the vehicle's `force_producers` slot; (4) build it with rpp's builder; (5) the vehicle's `graph()` is one CasADi graph of all of them, with the commands of the producers as its inputs.
 
-Luka's own files keep their places and are not part of the nested tree: `models/hull_vessel/`, `models/hydrostatics/linear_surface.py`, `models/hydrodynamics/linear_surface.py`, `plugins/vehicle_models/hull_vessel.py`, `plugins/hydrostatics/`, `plugins/hydrodynamics/`, `plugins/force_producers/{jet_nozzle,thruster}.py` and the root `.rppws/`.
+Luka's own files keep their places and are not part of the nested tree: `models/hull_vessel/`, `models/hydrostatics/linear_surface.py`, `models/hydrodynamics/{linear_surface,crossflow_surface}.py`, `plugins/vehicle_models/hull_vessel.py`, `plugins/hydrostatics/`, `plugins/hydrodynamics/`, `plugins/force_producers/{jet_nozzle,thruster}.py`, their tests `tests/{vehicle_models,hydrostatics,hydrodynamics}/`, `scripts/{thruster,vehicle_models}/` and his parts and script descriptions in the root `.rppws/`.
 
 ### Swapping a force producer: same vehicle, two sets
 
@@ -45,7 +48,7 @@ from rpp_plugin_registrator.library_manager import LibraryManager
 from rpp_py.context_builder import ComponentContextBuilder
 from more_common.casadi_graph import RppCasadiGraph
 
-script = Path("tests/data/vehicles/.rppws/script_descriptions/vehicles.json")
+script = Path("tests/vehicles/data/.rppws/script_descriptions/vehicles.json")
 builder = ComponentContextBuilder(data_manager=DataManager(library_manager=LibraryManager()))
 
 def vehicle(configuration):
@@ -73,7 +76,16 @@ The two agree because both are the deflection-only setting; they part the moment
 
 `MarineCraft6DOF` takes one part per slot (water, current, hull form, rigid body, added mass, its Coriolis term, restoring) and lists of hull loads and force producers, and connects every part input by name to a vehicle quantity (`pose`, `velocity`, `relative_velocity`, `mass_matrix`) or to an output of an earlier single-slot part with the same name and size; a missing or mis-sized input is refused with the slot and the part named. A force producer's input that nothing feeds is a command, listed by `getInputDescriptions()`. `open_inputs` leaves a part parameter open as a vehicle input (identification, a time-varying current), and `diagnostic_outputs` appends named quantities (`mass_matrix`, `hydrodynamic_loads.0.damping_matrix`, ...) after the twelve states.
 
-A vehicle is a tree of part folders with their `parameters.py` values, built by rpp's builder: the vehicles to use are in `scripts/vehicles/.rppws` (REMUS 100 and Otter, one script description each; `scripts/vehicles/simulate_vehicle.py remus100` runs one), the trees the tests gate against in `tests/data/vehicles/.rppws`. Both are written by `tests/data/vehicles/make_trees.py` from the frozen parameter files, and each part folder carries a `SOURCE.md` with the fidelity level of the part and the line of every value. The trees need `more_dynamics` registered in rpp's registry (`rpp library register ./more_dynamics --link`).
+A vehicle is a tree of part folders with their `parameters.py` values, built by rpp's builder. The vehicles to use are named parts of the library's own `.rppws/parts/`, beside Luka's hull vessel, and one script description, `.rppws/script_descriptions/vehicle_simulation.json`, holds one configuration per vehicle for `scripts/vehicles/simulate_vehicle.py`:
+
+    python scripts/vehicles/simulate_vehicle.py --configuration remus100 --surge-speed 1.5 --duration 20
+
+| Name | Type | Configuration | Part id | Sources |
+|---|---|---|---|---|
+| REMUS 100 | `MarineCraft6DOF` (torpedo class) | `remus100` | `more_dynamics__marine_craft6_d_o_f/24d92e9a-fa68-528a-8278-5cdc22cbb17b` | Prestero (2001) and MSS `remus100.m` @ `cc07579`, per value in each part's `SOURCE.md` |
+| Otter | `MarineCraft6DOF` (catamaran class) | `otter` | `more_dynamics__marine_craft6_d_o_f/9e3c87b5-9998-5d85-86d8-7bfdf6a80222` | MSS `otter.m` @ `cc07579`, per value in each part's `SOURCE.md` |
+
+The trees the tests gate against are in `tests/vehicles/data/.rppws`. Both sets are written by `tests/vehicles/data/make_trees.py` from the frozen parameter files (it rewrites only its own part folder and script description in the root `.rppws`), and each part folder carries a `SOURCE.md` with the fidelity level of the part and the line of every value. The trees need `more_dynamics` registered in rpp's registry (`rpp library register ./more_dynamics --link`).
 
 ## Choosing fin and servo options
 
@@ -103,4 +115,4 @@ Marie's fins and Grethe's steering: `first_order_lag` / `True` / `on_command`, n
 | section | `quadratic_drag` | MSS shortcut — flagged, not the default when a physics form exists | published simulator model | no zero-lift drag, no induced drag; registered as a shortcut | `linear_section` with an identified zero-lift drag |
 | section | `linear_section` | default | published vehicle model | small-angle lift and a fixed zero-lift drag | a lifting-line induced-drag form once its source is read |
 
-A composition's choice of parts, and the measurement that would raise each one, are recorded per unit in the corresponding ledger under `agents-more/30_checks/`; this guide carries the content for a collaborator who has only this library.
+Sources behind the two tables: the servo settings follow MSS `remus100.m` 109, 113-114 (Fossen, MSS, MIT, `cc07579`; angle limit on the command), Murray-Smith, D. J. (2016), *Inverse simulation methods applied to investigations of actuator nonlinearities in ship steering*, Simulation Notes Europe 26(4), 245-256, pp. 246-247 (steering machine: time constant 3 s, ±35°, ±7 and ±10 °/s) and Sarhadi, P. (2026), *Simple yet effective anti-windup techniques for amplitude and rate saturation: an AUV case study*, arXiv:2601.01302v2, Fig. 4, p. 4 (time constant 0.1 s, ±20°, ±30 °/s; the amplitude limit on the output); the fin parts follow Prestero, T. (2001), *Verification of a six-degree of freedom simulation model for the REMUS autonomous underwater vehicle*, MIT/WHOI MSc thesis, eqs. 4.37 (linear section), 4.40 (rigid-point inflow), 4.41-4.43 (small flow angle), pp. 31-33, and MSS `remus100.m` 234-245 (translational inflow, quadratic-drag section). Each part's module docstring and the `SOURCE.md` beside each part's parameters carry the full citation and the line of every value.

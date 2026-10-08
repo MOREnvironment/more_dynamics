@@ -9,7 +9,7 @@ from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.hydrodynamic_loads.hydrodynamic_load_parts import hull_lift_drag, hull_lift_drag_parameters
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
 
 
 class HullLiftDrag(HydrodynamicsModel):

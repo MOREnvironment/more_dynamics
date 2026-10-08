@@ -39,7 +39,7 @@ from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.force_producers.fin.servo.servo import servo_casadi, servo_parameters
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block
 
 
 class Servo(ActuatorServo):

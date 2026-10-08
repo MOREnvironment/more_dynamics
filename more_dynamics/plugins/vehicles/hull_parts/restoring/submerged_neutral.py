@@ -12,7 +12,7 @@ from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.vehicles.hull_parts.restoring.restoring_parts import SUBMERGED_NEUTRAL_PARAMETERS, submerged_neutral
-from more_dynamics.plugins.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder, frozen_block, payload_name
 
 
 class SubmergedNeutral(HydrostaticsModel):

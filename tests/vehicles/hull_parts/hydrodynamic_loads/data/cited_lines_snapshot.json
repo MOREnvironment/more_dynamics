@@ -156,20 +156,20 @@
    "79": "sigma = 1 - tanh(u_r / u_cross);",
    "82": "X = sigma .* Xu .* u_r + (1 - sigma) .* Xuu .* abs(u_r) .* u_r;"
   },
-  "$TESTS/data/hydrodynamics/generate_catamaran_template.m": {
+  "$TESTS/vehicles/hull_parts/hydrodynamic_loads/data/generate_catamaran_template.m": {
    "165": "mu = deg2rad(63.446827); % Lattitude for Trondheim, Norway (deg)",
    "166": "g = gravity(mu);      % Gravity vector (m/s2)",
    "216": "Xu = -24.4*g/Umax; Yv = -M(2,2)/T_sway; Zw = -2*0.3*w3*M(3,3);",
    "35": "mp = 25;"
   },
-  "$TESTS/data/hydrodynamics/generate_spheroid_template.m": {
+  "$TESTS/vehicles/hull_parts/hydrodynamic_loads/data/generate_spheroid_template.m": {
    "231": "rho = 1025;                % Water density (kg/m\u00b3)",
    "292": "D(1,1) = D(1,1) * exp(-3*U_r);",
    "293": "D(2,2) = D(2,2) * exp(-3*U_r);",
    "492": "rho = 1025;"
   }
  },
- "made_by": "tests/data/hydrodynamics/snapshot_cited_lines.py",
+ "made_by": "tests/vehicles/hull_parts/hydrodynamic_loads/data/snapshot_cited_lines.py",
  "revisions": {
   "MSS_DIR": {
    "clean": true,

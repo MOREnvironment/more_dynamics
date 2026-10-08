@@ -99,7 +99,7 @@ the code of every file below is unchanged since ``99bf0b3``): ``LIBRARY/modeling
 ``LIBRARY/kinematics/Hmtrx.m`` 16-18, ``CRAFT/AUV/models/remus100.m`` 131-137,
 199-210, ``CRAFT/USV/models/otter.m`` 152-159.
 
-Frozen references (``tests/data/rigid_body/SOURCE.md``, section of 2026-10-06):
+Frozen references (``tests/vehicles/hull_parts/rigid_body/data/SOURCE.md``, section of 2026-10-06):
 ``rigid_body_rbody_mss_current.csv``, ``rigid_body_spheroid_mss_current.csv``,
 ``rigid_body_hull_mss_current.csv``, ``rigid_body_m2c_3dof_mss_current.csv``
 (MATLAB R2026a running MSS), ``rigid_body_m2c_3dof_coupled_mss_cc07579.csv``
@@ -114,7 +114,7 @@ code.
 
 Outside this repo (nothing relative to one machine): ``MSS_DIR`` (MSS checkout) for the
 pinned-line test; unset -> it skips and names the variable. Every other test
-needs only ``tests/data/rigid_body/``.
+needs only ``tests/vehicles/hull_parts/rigid_body/data/``.
 """
 
 import ast
@@ -132,10 +132,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "rigid_body"
+DATA_DIR = Path(__file__).resolve().parent / "data"
 # Outside this repo (nothing relative to one machine): found only through these variables,
 # default not set; a test that needs one skips with a message naming it. The
-# frozen CSVs in tests/data/ are the only hard dependency.
+# frozen CSVs in this folder's data/ are the only hard dependency.
 MSS_DIR_VARIABLE = "MSS_DIR"                                  # MSS checkout root
 CONTRACT_MODULE = "more_dynamics.models.vehicles.hull_parts.rigid_body"
 
