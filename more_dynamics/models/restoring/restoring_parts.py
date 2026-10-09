@@ -109,13 +109,27 @@ MUMFORD_DRAFT_FACTOR = 1.7  # (XuuITTC.m 38)
 
 WETTED_SURFACE_METHODS = ("computed", "given", "regression_table")
 
+# E-104 (owner, 2026-10-09): hull_block_coefficient was a typed value standing in for an unmeasured
+# draft (rule 16: a derived quantity, not a primitive, once the draft is known). "given" (default, every
+# existing gate) is unchanged: hull_block_coefficient primitive, draft derived (otter.m 122).
+# "computed" inverts it: draft primitive (a measured quay value), hull_block_coefficient derived,
+# C_b = nabla / (n L B T) -- the same equation solved the other way.
+BLOCK_COEFFICIENT_METHODS = ("given", "computed")
+DRAFT_PARAMETER = Parameter("draft", (1, 1), "m", "draft T at equilibrium (block_coefficient_method='computed')",
+                            0.0, minimum_exclusive=True)
 
-def surface_restoring(hull_count, *, wetted_surface_method="computed"):
-    """``nabla = m / rho``, ``T = nabla / (n C_b L B_hull)`` (otter.m 121-122) fed into the surface restoring block
-    (``hull_count`` 1 or 2, gravity given by the site). The hull geometry (``length``, ``hull_beam``,
-    ``hull_block_coefficient``, ``hull_waterplane_coefficient``, ``hull_lateral_offset`` for two hulls) and the
-    mass, density, gravity and centre of gravity are the vehicle's quantities. The output ``wetted_surface`` is,
-    by ``wetted_surface_method`` (one of ``WETTED_SURFACE_METHODS``): the Mumford approximation of the
+
+def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coefficient_method="given"):
+    """``nabla = m / rho`` fed into the surface restoring block (``hull_count`` 1 or 2, gravity given by the
+    site). The hull geometry (``length``, ``hull_beam``, ``hull_waterplane_coefficient``,
+    ``hull_lateral_offset`` for two hulls) and the mass, density, gravity and centre of gravity are the
+    vehicle's quantities. ``draft`` and ``hull_block_coefficient`` relate by ``T = nabla / (n C_b L B_hull)``
+    (otter.m 121-122): by ``block_coefficient_method`` (one of ``BLOCK_COEFFICIENT_METHODS``, module
+    docstring), ``"given"`` takes ``hull_block_coefficient`` (a vehicle coupling, unchanged) and computes
+    ``draft``; ``"computed"`` takes the declared ``draft`` and computes ``hull_block_coefficient`` instead
+    (not exposed as an output: a vehicle already has its own ``hull_block_coefficient`` coupling from the
+    hull form, and the two would collide, rule 16 "one quantity, one value"). The output ``wetted_surface``
+    is, by ``wetted_surface_method`` (one of ``WETTED_SURFACE_METHODS``): the Mumford approximation of the
     ``hull_count`` hulls at the equilibrium draft (``"computed"``), the given input of that name (``"given"``), or
     the RA14 regression's hydrostatic value (``"regression_table"``, module docstring; one hull only -- the
     regression has no multi-hull form, so ``hull_count`` must be 1)."""
@@ -123,9 +137,13 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed"):
         raise ValueError(f"wetted_surface_method must be one of {WETTED_SURFACE_METHODS}, got {wetted_surface_method!r}")
     if wetted_surface_method == "regression_table" and hull_count != 1:
         raise ValueError("wetted_surface_method='regression_table' has no multi-hull form, got hull_count=2")
+    if block_coefficient_method not in BLOCK_COEFFICIENT_METHODS:
+        raise ValueError(f"block_coefficient_method must be one of {BLOCK_COEFFICIENT_METHODS}, "
+                        f"got {block_coefficient_method!r}")
     block = surface_hydrostatics_casadi(hull_count=hull_count, gravity_source="value")
-    names = ("mass", "water_density", "gravity", "length", "hull_beam", "hull_block_coefficient",
-             "hull_waterplane_coefficient")
+    names = ["mass", "water_density", "gravity", "length", "hull_beam", "hull_waterplane_coefficient"]
+    if block_coefficient_method == "given":
+        names.append("hull_block_coefficient")
     s = {n: ca.SX.sym(n) for n in names}
     if hull_count == 2:
         s["hull_lateral_offset"] = ca.SX.sym("hull_lateral_offset")
@@ -134,7 +152,14 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed"):
     s["center_of_gravity"] = ca.SX.sym("center_of_gravity", 3)
     s["eta"] = ca.SX.sym("eta", 6)
     displaced_volume = s["mass"] / s["water_density"]  # nabla = m / rho (otter.m 121)
-    draft = displaced_volume / (hull_count * s["hull_block_coefficient"] * s["hull_beam"] * s["length"])  # (otter.m 122)
+    if block_coefficient_method == "given":
+        hull_block_coefficient = s["hull_block_coefficient"]
+        draft = displaced_volume / (hull_count * hull_block_coefficient * s["hull_beam"] * s["length"])  # (otter.m 122)
+    else:
+        s["draft"] = ca.SX.sym("draft")
+        draft = s["draft"]
+        # C_b = nabla / (n L B T), the same equation solved for C_b instead (not exposed, see docstring)
+        hull_block_coefficient = displaced_volume / (hull_count * s["hull_beam"] * s["length"] * draft)
     args = dict(eta=s["eta"], length=s["length"], beam=s["hull_beam"], draft=draft,
                 displacement_volume=displaced_volume, waterplane_area_coefficient=s["hull_waterplane_coefficient"],
                 center_of_gravity=s["center_of_gravity"],
@@ -152,7 +177,7 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed"):
             displaced_volume, s["length"]) * displaced_volume ** (2.0 / 3.0)
     else:  # S = n 1.025 L (C_b B + 1.7 T) per hull (XuuITTC.m 38, Mumford)
         wetted_surface = hull_count * MUMFORD_AREA_FACTOR * s["length"] * (
-            s["hull_block_coefficient"] * s["hull_beam"] + MUMFORD_DRAFT_FACTOR * draft)
+            hull_block_coefficient * s["hull_beam"] + MUMFORD_DRAFT_FACTOR * draft)
     return function_from(f"surface_restoring_{hull_count}_hull", s, {
         "g": out["g"], "G": out["G"], "G_CF": out["G_CF"],
         "displaced_volume": displaced_volume, "draft": draft, "wetted_surface": wetted_surface})
