@@ -3,7 +3,7 @@
 are given together as published nondimensional derivative tables (Healey and
 Lienard 1993, via MSS ``npsauv.m``), rather than ``SpheroidAuv``'s formula
 parts (Lamb spheroid added mass, Prestero lift/drag) — the given-derivatives
-route Marie's own identified vehicle later takes (E-69, E-103). As Luka's
+route an identified vehicle's own model later takes (E-69, E-103). As Luka's
 ``VehicleModel3D`` in the form of ``HullVessel``/``SpheroidAuv``: its own
 parameters, the rigid body and the added mass computed here from
 ``models/``, and the slots ``hydrostatics``, ``hydrodynamics`` and
@@ -53,7 +53,7 @@ step below); the 52 hull-only derivatives are declared a second time, with
 the same values, on ``CoefficientHullLoads`` (which alone reads them: the
 contract requires every published quantity named on the vehicle, while the
 quantity it is used by stays the hydrodynamics child, as ``AuvHullLoads``'s
-own derivatives are REMUS's); the remaining 27 couple to a fin deflection or
+own derivatives come from a different named part); the remaining 27 couple to a fin deflection or
 the propeller and are not yet read by any plugin of this vehicle (flag,
 below).
 
@@ -65,7 +65,7 @@ relative velocity, several also scaled by a through-water correction
 ``epsilon`` shared across the stern plane, bow planes and roll moment, and by
 the propeller's own sign. ``Fin``'s lift/drag model is a different physics
 form (a lifting surface evaluated at the local flow, Prestero 2001) built for
-REMUS/Otter; it does not reproduce this empirical polynomial, and the shared
+the vehicles that use the ``Fin`` force producer; it does not reproduce this empirical polynomial, and the shared
 ``epsilon`` is a coupling between an actuator (a fin) and another actuator
 (the propeller) that the existing architecture's actuator slot does not
 carry (each force producer is independent, ``vehicle_graph.py``). Four
@@ -77,7 +77,7 @@ This is a gap in the standard's actuator slot for this vehicle's physics
 (rule 19): the smallest extension in the standard's own shape is not
 designed here; it is an owner question for the next job.
 
-Defaults are the NPS AUV II (Healey and Lienard 1993; MSS ``npsauv.m``); the
+Default values and their provenance are in ``DEFAULTS.md``; the underlying
 paper itself is not read (needs-access, ``SOURCE.md``) — every default is
 read from MSS's instrumented workspace, cited to its line.
 

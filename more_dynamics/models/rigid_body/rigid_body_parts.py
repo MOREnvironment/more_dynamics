@@ -86,10 +86,11 @@ def full_tensor_rigid_body():
     ``M_RB = [[m I3, -m S(r_g)], [m S(r_g), I_o]]`` (Fossen 2011, eq. 3.44,
     p. 52, the general-origin form; MSS ``npsauv.m`` 159-164).
 
-    No ``C_RB``: the NPS AUV II's own equations (``npsauv.m`` 241-274) embed
-    the rigid-body Coriolis-centripetal terms directly in the hydrodynamic
-    force, evaluated with the relative velocity and no separate ``-C nu_r``
-    term in the equation of motion (unlike ``remus100.m`` 257-258) —
+    No ``C_RB``: a full-tensor-inertia vehicle's own hydrodynamic-force
+    equations (e.g. ``npsauv.m`` 241-274) can embed the rigid-body
+    Coriolis-centripetal terms directly, evaluated with the relative
+    velocity and no separate ``-C nu_r`` term in the equation of motion
+    (unlike a spheroid-inertia vehicle, e.g. ``remus100.m`` 257-258) —
     ``coefficient_loads`` reproduces them there, bug-for-bug with MSS (a
     candidate MSS sign inconsistency in the pitch moment is flagged there,
     not fixed: rule 15)."""

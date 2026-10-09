@@ -44,7 +44,8 @@ Options, each with its fidelity and what raises it:
   ``latitude``, ``gravity.m`` 11-12; the default latitude is the MSS site of
   ``remus100.m`` 96-97).
 
-Defaults are the Otter (MSS ``otter.m``), each citing its line.
+Default values and their provenance (each citing its line) are in
+``DEFAULTS.md``.
 
 References
 ----------

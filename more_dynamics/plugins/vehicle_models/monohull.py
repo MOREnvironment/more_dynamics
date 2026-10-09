@@ -29,27 +29,26 @@ body axes with the full attitude, Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-
 shortcuts ``"yaw_rate_terms"``, ``"full_rotation_rate"``, still water ``"none"``) and
 ``site_form`` (``"given"``, default, or ``"latitude"``), each with its fidelity.
 
-Defaults are those of the NTNU Mariner 5 USV Grethe (Maritime Robotics build
-40402, Pioner 17 ft hull), from the Grethe parameter file
-``scripts/vehicle_models/params/grethe_mariner5.yaml`` (the key is in each
-comment). **Document** values are read off a cited page; **estimate** values
-are starting points with no document behind them (earlier Grethe parameter
-files, unverified): to be identified from logs, and none is a measurement.
+Default values and their provenance (the key is in each comment; **document**
+values are read off a cited page, **estimate** values are starting points
+with no document behind them, to be identified from logs) are in
+``DEFAULTS.md``.
 
 ``added_mass_mass_basis`` (E-101 Q5 a) chooses the mass the added-mass
 derivatives scale with (``models/added_mass``): ``"hull"`` (the hull mass
 alone, today's default, MSS ``otter.m`` 152-159 and A-64 Section 3.1 gap 6)
 or ``"displaced"`` (the rigid body's own mass, hull plus payload -- a vehicle
 with a payload displaces more water, and the added mass should follow). The
-plugin default stays ``"hull"`` so the Otter-style gates this type is also
-tested against are unaffected; Grethe's own composition selects
-``"displaced"``.
+plugin default stays ``"hull"`` so the gates this type is also tested
+against (set up before this option existed) are unaffected; a named part
+with its own payload may select ``"displaced"``.
 
 ``waterline_length``/``waterline_beam`` (A-64 Section 3.3 row R11) are
 declared so a composition can record the waterline dimensions distinct from
 the overall ``length``/``beam`` (0.0 = not given); **not yet wired** into
 the hull form, restoring, cross-flow or resistance (``SOURCE.md`` of the
-Grethe reference data: "the future basis, once ... wired") -- a later job.
+reference data this default comes from: "the future basis, once ... wired")
+-- a later job.
 
 References
 ----------
@@ -116,7 +115,7 @@ class Monohull(VehicleModel3D):
         ParameterDescription("radii_of_gyration", [0.35, 0.25, 0.25]),  # estimate: grethe_mariner5.yaml mass.radii_of_gyration_scale (fractions of [B, L, L])
         ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
-        ParameterDescription("added_mass_mass_basis", "hull"),  # "hull" keeps the Otter-style gates green; Grethe selects "displaced" (E-101 Q5 a)
+        ParameterDescription("added_mass_mass_basis", "hull"),  # "hull" keeps the committed gates green; a payload-carrying part may select "displaced" (E-101 Q5 a, DEFAULTS.md)
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]

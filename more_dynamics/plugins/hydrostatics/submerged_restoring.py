@@ -19,10 +19,8 @@ measurement that raises it to the next level:
   and the weight act at different points, ``center_of_buoyancy`` against the
   vehicle's ``center_of_gravity``.
 
-``displaced_volume`` and ``buoyancy`` are read only by their own method; the
-defaults are the REMUS 100 hull (volume of the prolate spheroid of
-``remus100.m`` 131-132, ``4/3 pi (L/2)(D/2)^2``; ``m g`` at the site of
-``remus100.m`` 96-97 with the mass of ``remus100.m`` 3).
+``displaced_volume`` and ``buoyancy`` are read only by their own method;
+default values and their provenance are in ``DEFAULTS.md``.
 
 References
 ----------

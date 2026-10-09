@@ -39,7 +39,7 @@ References
 [RA14] Radojcic, D., Zgradic, A., Kalajdzic, M., Simic, A. (2014). Resistance
     prediction for hard chine hulls in the pre-planing regime. Polish
     Maritime Research 21(2):9-26. Appendix 1, p. 24 (through
-    ``models/shared/ra14_residual_resistance.py``).
+    ``models/surge_resistance/ra14_residual_resistance.py``).
 
 Author:    Enio Krizman
 Date:      2026-10-09

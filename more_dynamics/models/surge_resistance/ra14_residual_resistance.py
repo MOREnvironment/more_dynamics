@@ -78,7 +78,8 @@ _STANDARD_REYNOLDS_FLOOR = 1.0
 # Numerical device: avoids division by zero in the Froude scaling at rest.
 # The surge-damping blend multiplies this term by zero there (its own
 # sigma = 1 - tanh(|u_r| / u_cross) = 1 at u_r = 0), so the result is
-# unaffected; the same role as surge_damping.py's MSS_REYNOLDS_OFFSET.
+# unaffected; the same role as surge_damping.py's Reynolds-number log offset
+# (``REYNOLDS_LOG_OFFSET``).
 _SPEED_FLOOR = 1e-9
 
 VALIDITY_FROUDE_NUMBER = 0.6  # below it the regression does not cover the hull (A-64 hidden assumption 3)

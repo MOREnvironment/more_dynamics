@@ -14,7 +14,8 @@ the published 93 derivatives are read by the added-mass block and the
 actuators: ``models/coefficient_loads`` module docstring).
 
 **No rigid-body Coriolis matrix of the vehicle's own** applies alongside
-this block: the NPS AUV II folds it into the hull force directly
+this block: a vehicle using this hull-load form folds the rigid-body
+Coriolis-centripetal terms into the hull force directly
 (``models/coefficient_loads`` module docstring; ``DerivativeAuv.coriolis_matrix``
 is zero).
 
@@ -40,8 +41,8 @@ from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
 class CoefficientHullLoads(HydrodynamicsModel):
     PARAMETERS = [
         # 52 hull-only derivatives (npsauv.m 126-156), each 0.0 by default: no generic physics default exists for
-        # an empirical coefficient table (contrast AuvHullLoads's cited REMUS defaults); a composition gives every
-        # one of them (the named "NPS AUV II" part does, from nps_auv_ii_parameters.json).
+        # an empirical coefficient table (contrast AuvHullLoads's computed defaults, DEFAULTS.md); a composition
+        # gives every one of them (DEFAULTS.md names the part that supplies them).
         *[ParameterDescription(d.name, 0.0) for d in coefficient_hull_loads_parameters()],
         ParameterDescription("cross_flow_drag_coefficients", [0.5, 0.6]),  # npsauv.m:220 [Cdy, Cdz]
         ParameterDescription("cross_flow_section_dimensions", [0.53, 0.53]),  # npsauv.m:220-221 [Hx, Bx]

@@ -46,8 +46,8 @@ Options, each with its fidelity and what raises it:
   ``"given"`` (``body_density``). Raise: the mass from a weighing, the volume
   from the hull lines.
 
-Defaults are the REMUS 100 (Prestero 2001; MSS ``remus100.m``), one density
-and one geometry throughout; each default cites its line.
+Default values and their provenance (one density and one geometry
+throughout; each cites its line) are in ``DEFAULTS.md``.
 
 References
 ----------

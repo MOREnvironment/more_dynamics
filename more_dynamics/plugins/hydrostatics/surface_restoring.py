@@ -30,10 +30,9 @@ is the published Radojcic et al. (2014) hydrostatic (zero-speed) wetted-surface
 regression (one hull only; ``models/restoring/restoring_parts.py``). Raise:
 the wetted surface from the hull lines.
 
-Defaults are the Otter (MSS ``otter.m`` 177-179, 192): ``hull_count`` 2,
-``longitudinal_inertia_factor`` 0.8, ``longitudinal_center_of_flotation``
--0.2 m. Fidelity: the linear metacentric restoring around equilibrium;
-raise: a measured draft and the waterplane from the hull lines.
+Default values and their provenance are in ``DEFAULTS.md``. Fidelity: the
+linear metacentric restoring around equilibrium; raise: a measured draft and
+the waterplane from the hull lines.
 
 References
 ----------
@@ -66,7 +65,7 @@ class SurfaceRestoring(HydrostaticsModel):
         ParameterDescription("longitudinal_center_of_flotation", -0.2),  # otter.m 177, 192
         ParameterDescription("reference_point", [0.0, 0.0, 0.0]),  # the body-frame origin (CO)
         ParameterDescription("wetted_surface_method", "computed"),  # S = n 1.025 L (C_b B + 1.7 T), XuuITTC.m:38 (Mumford)
-        ParameterDescription("wetted_surface", 1.77),  # m^2, given value, read with "given": the Mumford value at the Otter set (otter.m 92-107, mass 80 kg, XuuITTC.m:38)
+        ParameterDescription("wetted_surface", 1.77),  # m^2, given value, read with "given" (DEFAULTS.md: source and named part)
         ParameterDescription("block_coefficient_method", "given"),  # E-104: "given" keeps every existing gate (hull_block_coefficient a vehicle coupling, draft derived)
         ParameterDescription("draft", 0.3),  # m, read with "computed" only: document (F003 p2; M001 p7, ~0.3 m)
     ]

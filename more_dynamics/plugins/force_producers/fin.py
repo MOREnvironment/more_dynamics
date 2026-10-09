@@ -39,8 +39,9 @@ cited sources, not a large-angle flow-axis model: f = 1/2 rho A U^2 (C_L
 lift_axis - C_D chord_axis), tau = [f; r x f] (Prestero 2001, eqs. 4.37,
 4.41-4.43, pp. 31-33; Fossen 2011, eq. 12.226, p. 400).
 
-Defaults: one REMUS 100 fin at the fin post, a rudder lifting along +y (the
-sign of the lift axis is a convention of the composition).
+Defaults: one fin at the fin post, a rudder lifting along +y (the sign of
+the lift axis is a convention of the composition); provenance of every
+default number is in ``DEFAULTS.md``.
 
 References
 ----------

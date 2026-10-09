@@ -20,7 +20,7 @@ approximation ``S = n 1.025 L (C_b B_hull + 1.7 T)`` of a displacement hull
 summed over the ``n`` hulls without interference between them; ``"given"``
 takes the parameter ``wetted_surface``; ``"regression_table"`` reads
 ``S / nabla^(2/3)`` from the published Radojcic et al. (2014) regression at
-its own hydrostatic (zero-speed) term (``models/shared/ra14_residual_resistance.py``).
+its own hydrostatic (zero-speed) term (``models/surge_resistance/ra14_residual_resistance.py``).
 Raise: the wetted surface from the hull lines.
 
 References
@@ -45,7 +45,7 @@ from more_transformations.more_casadi_transformations import Parameter
 from more_dynamics.models.restoring.submerged import submerged_hydrostatics_casadi
 from more_dynamics.models.restoring.surface import surface_hydrostatics_casadi
 
-from more_dynamics.models.shared import ra14_residual_resistance
+from more_dynamics.models.surge_resistance import ra14_residual_resistance
 from more_dynamics.models.shared.wiring import function_from
 
 BUOYANCY_METHODS = ("neutral", "from_volume", "given")

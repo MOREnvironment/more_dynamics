@@ -105,7 +105,7 @@ def surge_resistance_ittc_residual():
 def surge_resistance_ittc_residual_parameters():
     """Own declared parameters -- the same set as ``"ittc"``: the RA14 table
     is a module constant of the published regression
-    (``models/shared/ra14_residual_resistance.py``), not a composition value."""
+    (``models/surge_resistance/ra14_residual_resistance.py``), not a composition value."""
     declared = surge_damping_parameters("ittc_residual", ittc_reynolds_bound="floor")
     return _subset(declared, _ITTC_OWN + ("ittc_reynolds_floor",))
 
