@@ -310,11 +310,9 @@ def _number_in(rel, number, pattern):
 
 
 def _gravity(mu):
-    """INS/functions/gravity.m lines 11-12."""
-    g0 = _number_in(GRAVITY, 11, r"g = ([0-9.]+) \*")
-    k1 = _number_in(GRAVITY, 11, r"1 \+ ([0-9.]+) \*")
-    e2 = _number_in(GRAVITY, 12, r"1 - ([0-9.]+) \*")
-    return g0 * (1 + k1 * np.sin(mu) ** 2) / np.sqrt(1 - e2 * np.sin(mu) ** 2)
+    """gravity.m 11-12, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
+    return ECEFNEDtransform.gravity(mu, unit="rad")
 
 
 # modules under PACKAGE: each block sits in the folder of its physics

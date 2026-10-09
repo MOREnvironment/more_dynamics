@@ -455,11 +455,9 @@ def _table(rel, name):
 
 
 def _gravity(mu):
-    """INS/functions/gravity.m lines 11-12."""
-    g0 = _number_in(GRAVITY, 11, r"g = ([0-9.]+) \*")
-    k1 = _number_in(GRAVITY, 11, r"1 \+ ([0-9.]+) \*")
-    e2 = _number_in(GRAVITY, 12, r"1 - ([0-9.]+) \*")
-    return g0 * (1 + k1 * np.sin(mu) ** 2) / np.sqrt(1 - e2 * np.sin(mu) ** 2)
+    """gravity.m 11-12, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
+    return ECEFNEDtransform.gravity(mu, unit="rad")
 
 
 def _contract(name):
@@ -546,12 +544,15 @@ def _max_diff(a, b):
 
 
 def _skew(v):
-    x, y, z = v
-    return np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    """Smtrx.m 11-13, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.matrix_transforms import MatrixTransforms
+    return MatrixTransforms.skew(v)
 
 
 def _hmtrx(r):
-    return np.block([[np.eye(3), _skew(r).T], [np.zeros((3, 3)), np.eye(3)]])
+    """Hmtrx.m, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.matrix_transforms import MatrixTransforms
+    return MatrixTransforms.H_matrix(r)
 
 
 # --------------------------------------------------------------------------

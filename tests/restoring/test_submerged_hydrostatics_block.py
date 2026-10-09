@@ -12,6 +12,12 @@ Added 2026-10-06: G5 against the printed ``gvect`` example of Fossen (2011)
 p. 61; the rotation comes from ``more_transformations.more_casadi_transformations``,
 no local trigonometry; the block's docstring states the ``-g`` step.
 
+Added 2026-10-09 (T1, E-62): the ``Rzyx.m`` row-3 transcription and the gravity
+helpers now take the transform from ``more_transformations``; the gravity oracle
+is MATLAB running ``gravity.m`` at the REMUS latitude, frozen in
+``data/gravity_mss_cc07579.csv`` (``test_gravity_matches_frozen_mss_output``), not
+a Python re-implementation of its formula.
+
 Gates (the test names carry them): G1 the block against MATLAB running MSS
 (frozen CSV), G2 against an independent transcription (``gvect.m`` vs
 ``gRvect.m`` forms), G4 a perturbed model is detected,
@@ -146,17 +152,13 @@ def _mss_value(rel, number, env=None):
     return float(eval(expr, names, dict(env or {})))  # pinned MSS arithmetic only
 
 
-def _gravity(mu):
-    """INS/functions/gravity.m lines 11-12 (WGS-84 latitude gravity)."""
-    for number in (11, 12):
-        line = _mss_line("INS/functions/gravity.m", number)
-        assert line.startswith(CITED_LINES[("INS/functions/gravity.m", number)]), line
-    line = _mss_line("INS/functions/gravity.m", 11)
-    nums = [float(t) for t in line.replace("(", " ").replace(")", " ").replace("*", " ").split()
-            if t[0].isdigit()]
-    g0, k1 = nums[0], nums[2]
-    e2 = float(_mss_line("INS/functions/gravity.m", 12).split("-")[1].split("*")[0])
-    return g0 * (1 + k1 * np.sin(mu) ** 2) / np.sqrt(1 - e2 * np.sin(mu) ** 2)
+def _frozen_gravity_reference():
+    """``gravity.m`` run by MATLAB at the REMUS latitude (frozen, ``data/gravity_mss_cc07579.csv``,
+    ``generate_gravity_mss.m``): a frozen MSS output, not a Python re-implementation of the
+    transform (Transforms rule, E-62)."""
+    header, values = _load_csv("gravity_mss_cc07579.csv")
+    row = values[0]
+    return row[header.index("mu_deg")], row[header.index("g")]
 
 
 def _contract():
@@ -274,8 +276,9 @@ def _matlab_parameters():
 # MSS transcriptions (each line cited and pinned)
 # --------------------------------------------------------------------------
 def _rzyx_row3(phi, theta):
-    """Rzyx.m line 19: third row of R."""
-    return np.array([-np.sin(theta), np.cos(theta) * np.sin(phi), np.cos(theta) * np.cos(phi)])
+    """Rzyx.m line 19: third row of R, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.matrix_transforms import MatrixTransforms
+    return MatrixTransforms.Rzyx_explicit((phi, theta, 0.0))[2, :]
 
 
 def _g_rvect(p, eta):
@@ -327,9 +330,7 @@ def test_current_mss_reference_is_byte_identical_to_legacy():
 
 def test_typed_constants_equal_the_cited_mss_lines():
     """REMUS_CONSTANTS are typed with their lines (no number from memory, nothing
-    relative to one machine); with MSS_DIR set they are read back from MSS, and
-    the gravity of more_transformations equals the
-    transcription of gravity.m lines 11-12."""
+    relative to one machine); with MSS_DIR set they are read back from MSS."""
     c = REMUS_CONSTANTS
     assert _mss_value(REMUS, 131) == c["L_auv"] and _mss_value(REMUS, 132) == c["D_auv"]
     assert _mss_value("LIBRARY/modeling/spheroid.m", 35) == c["rho"]
@@ -337,8 +338,15 @@ def test_typed_constants_equal_the_cited_mss_lines():
     assert list(_mss_value(REMUS, 137)) == c["r_bG"] and list(_mss_value(REMUS, 138)) == c["r_bB"]
     for prefix, key in (("a = 1.0096", 134), ("b = 1.0096", 135)):
         assert _mss_line(REMUS, key).startswith(prefix)
-    mu = np.deg2rad(c["mu_deg"])
-    assert abs(_gravity(mu) - _gravity_library(c["mu_deg"])) <= 1e-12
+
+
+def test_gravity_matches_frozen_mss_output():
+    """The gravity of more_transformations equals MATLAB running MSS gravity.m at the
+    REMUS latitude (frozen, data/gravity_mss_cc07579.csv; owner, 2026-10-09, E-62): the
+    oracle is the frozen MSS output, not a Python re-implementation of the transform."""
+    mu_deg, g_mss = _frozen_gravity_reference()
+    assert mu_deg == REMUS_CONSTANTS["mu_deg"]
+    assert abs(_gravity_library(mu_deg) - g_mss) <= 1e-12
 
 
 def test_cited_mss_lines_are_unchanged():

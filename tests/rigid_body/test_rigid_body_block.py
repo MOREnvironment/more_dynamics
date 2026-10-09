@@ -394,8 +394,9 @@ def test_G5_otter_translational_constants():
 
 
 def _skew(v):
-    x, y, z = v
-    return np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    """Smtrx.m 11-13, from more_transformations (owner, 2026-10-09, E-62)."""
+    from more_transformations.matrix_transforms import MatrixTransforms
+    return MatrixTransforms.skew(v)
 
 
 def _otter_m_current_inertia():
