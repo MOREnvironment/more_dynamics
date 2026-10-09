@@ -19,29 +19,17 @@ Date:      2026-10-08
 
 import casadi as ca
 
-from more_common.casadi_graph import RppCasadiGraph, graph_to_bytes
+from more_common.casadi_graph import graph_to_bytes
 from more_transformations.more_casadi_transformations import freeze
-from rpp_py.parameter_description import ParameterDescription
-
-# Every part declares it: the names of its own parameters left as graph inputs
-# (identification, a time-varying current in a gate). Default: none, every
-# parameter frozen in initialize().
-OPEN_PARAMETERS = ParameterDescription("open_parameters", [])
 
 
 def frozen_block(context, block, declared):
-    """``block`` with every declared parameter frozen to its composition
-    value except the ones the composition lists in ``open_parameters``."""
+    """``block`` with every declared parameter frozen to the plugin's value of it."""
     declared = tuple(declared)
-    names = {d.name for d in declared}
-    opened = list(context.get_parameter("open_parameters") or [])
-    unknown = [n for n in opened if n not in names]
-    if unknown:
-        raise ValueError(f"open_parameters {unknown} are not parameters of block {block.name()!r}: {sorted(names)}")
-    kept = tuple(d for d in declared if d.name not in opened)
-    if not kept:
+    if not declared:
         return block
-    return freeze(block, kept, {d.name: context.get_parameter(d.name) for d in kept})
+    return freeze(block, declared, {d.name: context.get_parameter(d.name) for d in declared})
+
 
 # model-layer symbol -> payload name (one name per quantity across every part)
 PAYLOAD_NAMES = {
@@ -50,9 +38,6 @@ PAYLOAD_NAMES = {
     "M_A": "added_mass_matrix", "C_A": "added_mass_coriolis_matrix",
     "G": "restoring_matrix", "G_CF": "restoring_matrix_at_flotation", "D": "damping_matrix",
 }
-
-
-MODEL_NAMES = {payload: model for model, payload in PAYLOAD_NAMES.items()}
 
 
 def payload_name(model_name, rename=None):
@@ -144,37 +129,3 @@ def _splitter(symbols, stacked):
         parts.append(ca.reshape(stacked[k:k + n], s.size1(), s.size2()))
         k += n
     return parts
-
-
-def named_entries(descriptions, vector):
-    """``{name: slice of vector}`` in description order (sizes add up)."""
-    out, k = {}, 0
-    for d in descriptions:
-        out[d.name] = vector[k:k + d.size]
-        k += d.size
-    if k != vector.numel():
-        raise ValueError(f"descriptions cover {k} values, the vector has {vector.numel()}")
-    return out
-
-
-def named_function(payload, name, rename=None, state_name=None):
-    """A child's payload as one ``ca.Function`` with named inputs and outputs:
-    what a composite (a fin, the cross-flow strip) hands to its model-layer
-    assembly, which speaks the model symbols (``rename``: payload name ->
-    model name). With ``state_name`` the child's stacked state is the input
-    ``state_name`` and its derivative the output ``<state_name>_dot`` (empty
-    when the child has no state)."""
-    rename = rename or {}
-    graph = RppCasadiGraph(payload)
-    state = ca.SX.sym("state", graph.num_states)
-    ins = {d.name: ca.SX.sym(d.name, d.size) for d in payload.inputDescription}
-    stacked = ca.vertcat(*ins.values()) if ins else ca.SX(0, 1)
-    outs = named_entries(payload.outputDescription, graph.output(state, stacked))
-    inputs = dict(ins)
-    if state_name is not None:
-        inputs = {state_name: state} | inputs
-        outs[f"{state_name}_dot"] = graph.step(state, stacked) if graph.step is not None else ca.SX(0, 1)
-    elif graph.num_states:
-        raise ValueError(f"{name}: a child with states needs a state name")
-    return ca.Function(name, list(inputs.values()), list(outs.values()),
-                       [rename.get(n, n) for n in inputs], [rename.get(n, n) for n in outs])
