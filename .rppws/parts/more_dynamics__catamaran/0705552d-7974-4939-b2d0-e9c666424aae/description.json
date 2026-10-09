@@ -1,6 +1,6 @@
 {
     "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
-    "Name": "Otter",
+    "Name": "Otter (MSS)",
     "PluginType": "more_dynamics::VehicleModel3D",
     "PluginName": "more_dynamics::Catamaran",
     "Library": "more_dynamics",

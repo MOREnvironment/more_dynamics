@@ -9,11 +9,12 @@ checked the library itself (`agents-more/20_sources/monohull_structure_for_greth
 Section 7).
 
 Run:  python3 generate_grethe_references.py
-      writes every CSV/JSON beside this file; a re-run is checked with ``cmp``
-      against the committed files (deterministic arithmetic, no MSS_DIR, no
-      MATLAB_BIN; the one dependency is more_transformations' ``skew``, as
-      every library generator takes it, AGENTS.md Transforms -- not run with
-      ``-I``, U8b).
+      reads ``grethe_parameters.json`` (the one hand-edited source, R10, E-104;
+      never written here) and writes every CSV beside this file; a re-run is
+      checked with ``cmp`` against the committed files (deterministic
+      arithmetic, no MSS_DIR, no MATLAB_BIN; the one dependency is
+      more_transformations' ``skew``, as every library generator takes it,
+      AGENTS.md Transforms -- not run with ``-I``, U8b).
 
 Sources (numbers and forms, rule 4 — none typed from memory without a citation)
 ---------------------------------------------------------------------------
@@ -57,9 +58,12 @@ from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-G = 9.81  # estimate: grethe_mariner5.yaml hydrostatics.gravity ("standard"), A-43 Part 2 header
-RHO = 1025.0  # published: standard sea water (A-43 M5)
-NU_WATER = 1.0e-6  # Fossen 2011, p. 125, below eq. 6.85 (20 degC); cylinderDrag.m 78-80
+# Grethe's declared numbers and selectors: read from grethe_parameters.json, the one
+# hand-edited source (R10, E-104) -- every value below is read from it, not retyped.
+_PARAMS = json.loads((HERE / "grethe_parameters.json").read_text())["parameters"]
+G = _PARAMS["gravity"]["value"]  # estimate: grethe_mariner5.yaml hydrostatics.gravity ("standard"), A-43 Part 2 header
+RHO = _PARAMS["water_density"]["value"]  # published: standard sea water (A-43 M5)
+NU_WATER = _PARAMS["kinematic_viscosity"]["value"]  # Fossen 2011, p. 125, below eq. 6.85 (20 degC); cylinderDrag.m 78-80
 
 
 # ---------------------------------------------------------------------------
@@ -359,81 +363,14 @@ def linear_coupled_sway_yaw(mass_matrix, time_sway, time_yaw, nu_r):
 # ---------------------------------------------------------------------------
 
 def parameter_set():
-    return {
-        "gravity": {"value": G, "unit": "m/s^2", "kind": "estimate",
-                   "place": "grethe_mariner5.yaml hydrostatics.gravity (\"standard\"), A-43 header"},
-        "water_density": {"value": RHO, "unit": "kg/m^3", "kind": "published",
-                          "place": "A-43 M5: standard sea water"},
-        "kinematic_viscosity": {"value": NU_WATER, "unit": "m^2/s", "kind": "published",
-                                "place": "Fossen 2011 p. 125, below eq. 6.85 (20 degC)"},
-        "length": {"value": 5.2, "unit": "m", "kind": "document",
-                  "place": "A-43 M1: F003 p2, M001 p7 (overall length)"},
-        "beam": {"value": 2.15, "unit": "m", "kind": "document",
-                "place": "A-43 M2: F003 p2, M001 p7, D002 p1"},
-        "waterline_length": {"value": 4.63, "unit": "m", "kind": "estimate",
-                             "place": "A-64 Section 1.1: D002 p1 drawing measurement at T = 0.30 m "
-                                      "(sensitivity case for the unmeasured projected chine length L_P, "
-                                      "A-64 Section 1.2 footnote 7)"},
-        "waterline_beam": {"value": 1.97, "unit": "m", "kind": "estimate",
-                           "place": "A-64 Section 1.1: D002 p1 drawing measurement at T = 0.30 m"},
-        "hull_block_coefficient": {"value": 0.234, "unit": "1", "kind": "derived",
-                                   "place": "A-43 M4: 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness"},
-        "hull_waterplane_coefficient": {"value": 0.8, "unit": "1", "kind": "estimate", "place": "A-43 M14"},
-        "hull_mass": {"value": 806.0, "unit": "kg", "kind": "document", "place": "A-43 M7: F003 p2 (FAT, +/- 20 kg)"},
-        "payload_mass": {"value": 0.0, "unit": "kg", "kind": "gap",
-                         "place": "A-43 M8: the 2026 field payload (USBL mount, battery packs) is not weighed"},
-        "hull_center_of_gravity": {"value": [0.0, 0.0, 0.025], "unit": "m", "kind": "estimate", "place": "A-43 M9"},
-        "payload_position": {"value": [0.0, 0.0, 0.0], "unit": "m", "kind": "gap", "place": "A-43 M10 (unused, payload_mass 0)"},
-        "radii_of_gyration": {"value": [0.35, 0.25, 0.25], "unit": "1", "kind": "estimate", "place": "A-43 M12"},
-        "added_mass_coefficients": {"value": [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7], "unit": "1", "kind": "estimate",
-                                    "place": "A-43 M11 (the workspace .rppws value, open: library yaw is -1.2)"},
-        "added_mass_form": {"value": "scaled_derivatives", "unit": "-", "kind": "selector", "place": "monohull.py 99"},
-        "added_mass_mass_basis": {"value": "displaced", "unit": "-", "kind": "owner decision",
-                                  "place": "E-101 Q5 a (not yet a library option, A-64 Section 3.1 gap 6)"},
-        "coriolis_form": {"value": "kirchhoff_full", "unit": "-", "kind": "selector", "place": "monohull.py 100"},
-        "current_form": {"value": "none", "unit": "-", "kind": "test convention",
-                         "place": "still water: the G1 references below hold current fixed, not the form itself"},
-        "site_form": {"value": "given", "unit": "-", "kind": "selector", "place": "monohull.py 84"},
-        "hull_count": {"value": 1, "unit": "-", "kind": "convention", "place": "A-43 M15: monohull"},
-        "reference_point": {"value": [-2.24, 0.0, 0.0], "unit": "m", "kind": "owner decision",
-                            "place": "E-101 Q4 a: CO at the midpoint of the waterline length, on the waterline"},
-        "longitudinal_inertia_factor": {"value": 1.0, "unit": "1", "kind": "estimate", "place": "A-43 M17"},
-        "longitudinal_center_of_flotation": {"value": -0.3, "unit": "m", "kind": "estimate", "place": "A-43 M18"},
-        "wetted_surface_method": {"value": "regression_table", "unit": "-", "kind": "owner decision",
-                                  "place": "A-64 Section 3.3 R11: not yet a library option (today: computed/given only)"},
-        "time_constants": {"value": [8.0, 16.0], "unit": "s", "kind": "estimate",
-                           "place": "A-43 M24: [T_sway, T_yaw] (surface damping form)"},
-        "damping_ratios": {"value": [0.3, 0.2, 0.5], "unit": "1", "kind": "estimate", "place": "A-43 M21"},
-        "yaw_damping_nonlinearity": {"value": 10.0, "unit": "s/rad", "kind": "published (other vehicle)",
-                                    "place": "A-43 M25: the Otter's value, not Grethe's (OTTER:240)"},
-        "surge_resistance": {"value": "ittc_residual", "unit": "-", "kind": "owner decision",
-                             "place": "E-101 Q1 a (not yet a library option: today's SurfaceHullLoads has none/ittc only)"},
-        "time_constant": {"value": 15.0, "unit": "s", "kind": "estimate", "place": "A-43 M26 (= M20 T1)"},
-        "form_factor": {"value": 0.1, "unit": "1", "kind": "published", "place": "Fossen 2011 p. 125; A-43 M27"},
-        "crossover_speed": {"value": 2.0, "unit": "m/s", "kind": "published (MSS constant)", "place": "A-43 M28"},
-        "surge_added_mass_factor": {"value": 2.7, "unit": "1", "kind": "published", "place": "addedMassSurge.m 33; A-43"},
-        "ittc_reynolds_floor": {"value": 1.0e5, "unit": "1", "kind": "published + owner default", "place": "A-43 M29"},
-        "manoeuvring_damping": {"value": "linear_coupled", "unit": "-", "kind": "owner decision",
-                                "place": "A-64 Section 3.4 G0 set (not yet a library option)"},
-        "sway_yaw_derivatives": {"value": None, "unit": "N s/m, N m s", "kind": "derived + unidentified",
-                                 "place": "Y_v, N_r from time_constants (library's own formula, D_ii = M_ii / T_i); "
-                                          "Y_r = N_v = 0 (E-101 Q2 a) — numeric values in grethe_damping.csv"},
-        "modulus_coefficients": {"value": 0.0, "unit": "-", "kind": "unidentified", "place": "A-64 Section 3.3 (placeholder, not identified)"},
-        "cross_flow": {"value": "hoerner_strips", "unit": "-", "kind": "selector", "place": "monohull.py / A-64 Section 3.4"},
-    }
+    """Grethe's declared numbers and selectors (module docstring: read from
+    ``grethe_parameters.json``, not retyped)."""
+    return _PARAMS
 
 
 def main():
     out = HERE
-    values = parameter_set()
-    (out / "grethe_parameters.json").write_text(json.dumps({
-        "vehicle": "Grethe (NTNU Mariner 5 USV, Maritime Robotics build 40402, Pioner 17 ft hull)",
-        "source": "agents-more/60_working/2026-10-07_A43_vehicle_parameter_dossiers.md Part 2; "
-                 "agents-more/20_sources/monohull_structure_for_grethe.md Section 1.1, 3.3; "
-                 "agents-more/80_owner/inbox/E-101_a64_grethe_monohull_choices_remus_density_at_repin.md",
-        "no_august_data": True,
-        "parameters": values,
-    }, indent=2) + "\n")
+    values = parameter_set()  # read from grethe_parameters.json (the hand-edited source); never written here
 
     # -- rigid body + added mass: two payload masses, two added-mass bases ---------------------
     hull_cg = np.array(values["hull_center_of_gravity"]["value"])
@@ -581,8 +518,9 @@ def main():
         writer.writeheader()
         writer.writerows(d_rows)
 
-    print("wrote: grethe_parameters.json, grethe_rigid_body_added_mass.csv, grethe_coriolis.csv, "
-         "grethe_restoring.csv, grethe_cross_flow.csv, grethe_surge_resistance.csv, grethe_damping.csv")
+    print("read: grethe_parameters.json (not written); wrote: grethe_rigid_body_added_mass.csv, "
+         "grethe_coriolis.csv, grethe_restoring.csv, grethe_cross_flow.csv, grethe_surge_resistance.csv, "
+         "grethe_damping.csv")
     print(f"Y_v = {y_v:.6f} N s/m (from T_sway=8s), N_r = {n_r:.6f} N m s (from T_yaw=16s), Y_r = N_v = 0 (unidentified)")
 
 

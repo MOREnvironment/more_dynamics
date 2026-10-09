@@ -1,6 +1,6 @@
 {
     "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
-    "Name": "REMUS 100",
+    "Name": "REMUS 100 (MSS)",
     "PluginType": "more_dynamics::VehicleModel3D",
     "PluginName": "more_dynamics::SpheroidAuv",
     "Library": "more_dynamics",

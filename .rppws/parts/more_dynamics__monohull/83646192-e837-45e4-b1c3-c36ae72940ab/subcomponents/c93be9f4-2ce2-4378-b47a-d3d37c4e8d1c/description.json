@@ -1,0 +1,17 @@
+{
+    "Id": "c93be9f4-2ce2-4378-b47a-d3d37c4e8d1c",
+    "Name": "Grethe hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::SurfaceHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "83646192-e837-45e4-b1c3-c36ae72940ab",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Monohull",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

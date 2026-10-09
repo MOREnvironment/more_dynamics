@@ -112,10 +112,10 @@ plugin carries) and keep every assertion of the earlier contract.
   ``max_speed``, ``max_thrust``, ``crossover_speed``;
   ``Xuu = -max_thrust / max_speed^2``.
 * The two selectors (owner's decision of 2026-10-06): ``surge_blend="symmetric"``
-  (default) blends on ``|u_r|``, ``"mss_tanh"`` is MSS line 79;
+  (default) blends on ``|u_r|``, ``"signed"`` is MSS line 79;
   ``ittc_reynolds_bound="floor"`` (default) bounds ``Rn`` below by the
   parameter ``ittc_reynolds_floor`` as ``XuuITTC.m`` 34-36,
-  ``"mss_offset"`` is MSS lines 72-73 (unbounded). The test parameter dicts
+  ``"offset"`` is MSS lines 72-73 (unbounded). The test parameter dicts
   keep the earlier keys (``ittc_reynolds_floor=None`` for the MSS line,
   ``smooth_speed_epsilon=0`` for MSS) because the committed blocks read them;
   ``_selectors_from_numbers`` turns them into the selectors and parameters.
@@ -776,7 +776,7 @@ def _reynolds_bound(form, numbers):
         return {}, numbers
     floor = numbers.pop("ittc_reynolds_floor", _value(XITTC, 34))
     if floor is None:
-        return {"ittc_reynolds_bound": "mss_offset"}, numbers
+        return {"ittc_reynolds_bound": "offset"}, numbers
     numbers["ittc_reynolds_floor"] = floor
     return {"ittc_reynolds_bound": "floor"}, numbers
 
@@ -849,7 +849,7 @@ def _named_columns(csv):
 def _surge_parameters(set_id, model, mss=False):
     """Block parameters of one parameter set of the surge CSV (set 1 = osv.m).
     ``mss=True`` adds the flags that reproduce the MSS lines
-    (``surge_blend="mss_tanh"``, ``ittc_reynolds_floor=None``).
+    (``surge_blend="signed"``, ``ittc_reynolds_floor=None``).
     ``kinematic_viscosity`` (the ITTC forms) and ``surge_added_mass_factor``
     (both forms) are declared parameters now (rule 16): given here at the
     values the cited MSS lines fix (``forceSurgeDamping.m`` 69,
@@ -860,7 +860,7 @@ def _surge_parameters(set_id, model, mss=False):
               "time_constant": ref["T1"][row], "crossover_speed": _value(FSD, 57),
               "surge_added_mass_factor": _number_in(AMS, 33, r"A11 = ([0-9.]+) \*")}
     if mss:
-        common["surge_blend"] = "mss_tanh"
+        common["surge_blend"] = "signed"
     if model == "ittc":
         flags = {"ittc_reynolds_floor": None} if mss else {}
         return {"quadratic_model": "ittc", **common, "wetted_surface": ref["S"][row],
@@ -1071,7 +1071,7 @@ def test_G2_function_signatures():
     for form in ("ittc", "exp_ittc"):
         assert surge.surge_damping_casadi(surge_form=form).name_in()[-1] == "ittc_reynolds_floor", form
         assert "ittc_reynolds_floor" not in surge.surge_damping_casadi(
-            surge_form=form, ittc_reynolds_bound="mss_offset").name_in(), form
+            surge_form=form, ittc_reynolds_bound="offset").name_in(), form
     for function, outs in (
         (_build_submerged(_spheroid_damping(False))[1], ["D", "tau"]),
         (_build_surface(_surface_damping_catamaran(_matlab_gravity_catamaran()))[1], ["D", "tau"]),
@@ -1492,7 +1492,7 @@ def test_physical_surge_damping_dissipation_mss_blend_is_documented():
     u_r < 0 and flips the quadratic term. Example pinned: osv.m with its
     thrust calibration at u_r = -8 m/s gives X < 0 (pushes it further astern).
     Owner's decision of 2026-10-06: our default is ``surge_blend="symmetric"``,
-    tested below; MSS stays behind ``surge_blend="mss_tanh"``."""
+    tested below; MSS stays behind ``surge_blend="signed"``."""
     ref = _named_columns(MSS_SURGE)
     real = ref["probe"] == 0
     power = ref["X"] * ref["u_r"]
@@ -1576,7 +1576,7 @@ def test_surge_reynolds_bound_selector_is_checked():
     with pytest.raises(ValueError, match="ittc_reynolds_bound"):
         surge.surge_damping_casadi(surge_form="ittc", ittc_reynolds_bound="none")
     with pytest.raises(ValueError, match="ittc_reynolds_bound"):
-        surge.surge_damping_casadi(surge_form="max_thrust", ittc_reynolds_bound="mss_offset")
+        surge.surge_damping_casadi(surge_form="max_thrust", ittc_reynolds_bound="offset")
 
 
 # --------------------------------------------------------------------------
@@ -1686,7 +1686,7 @@ def test_regularisation_parameters_are_declared_with_unit_and_range():
         assert (floor.name, floor.shape, floor.unit) == ("ittc_reynolds_floor", (1, 1), "1")
         assert (floor.minimum, floor.minimum_exclusive, floor.maximum) == (100.0, True, None)
         assert "ittc_reynolds_floor" not in [
-            d.name for d in surge.surge_damping_parameters(form, ittc_reynolds_bound="mss_offset")]
+            d.name for d in surge.surge_damping_parameters(form, ittc_reynolds_bound="offset")]
     assert "ittc_reynolds_floor" not in [d.name for d in surge.surge_damping_parameters("max_thrust")]
     for form in ("floating", "surface"):
         with pytest.raises(ValueError, match="smooth_speed"):
@@ -2094,7 +2094,7 @@ def test_physical_exp_ittc_surge_law_is_dissipative():
 
 def test_exp_ittc_refuses_the_tanh_blend():
     with pytest.raises(ValueError, match="surge_blend"):
-        _contract(SURGE_DAMPING).surge_damping_casadi(surge_form="exp_ittc", surge_blend="mss_tanh")
+        _contract(SURGE_DAMPING).surge_damping_casadi(surge_form="exp_ittc", surge_blend="signed")
 
 
 # --------------------------------------------------------------------------
@@ -2176,8 +2176,12 @@ def _committed_cases(old):
                 # does not take them as keywords.
                 q = {k: v for k, v in p.items()
                     if k not in ("quadratic_model", "kinematic_viscosity", "surge_added_mass_factor")}
+                # COMMITTED_REVISION is an immutable historical snapshot (git show): it still
+                # expects the selector values the library carried before the R10 rename
+                # (rule 17, "signed"/"offset"), so the bridge translates back, new code untouched.
+                old_q = {**q, **({"surge_blend": "mss_tanh"} if q.get("surge_blend") == "signed" else {})}
                 oldf = old.surge_damping.surge_damping_casadi(
-                    getattr(old.surge_damping, f"preprocess_surge_damping_{model}")(**q))
+                    getattr(old.surge_damping, f"preprocess_surge_damping_{model}")(**old_q))
                 cases.append((f"surge {set_id} {model} mss={mss}", _build_surge(p)[1], oldf, ("tau",)))
     return cases
 

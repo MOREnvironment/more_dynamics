@@ -3,7 +3,7 @@
     "Language": "python",
     "Configurations": {
         "remus100": {
-            "Description": "REMUS 100 AUV, spheroid class (Prestero 2001 and MSS remus100.m values)",
+            "Description": "REMUS 100 (MSS) AUV, spheroid class (Prestero 2001 and MSS remus100.m values)",
             "Components": {
                 "vessels": [
                     {
@@ -14,12 +14,23 @@
             }
         },
         "otter": {
-            "Description": "Otter USV, catamaran class (MSS otter.m values)",
+            "Description": "Otter (MSS) USV, catamaran class (MSS otter.m values)",
             "Components": {
                 "vessels": [
                     {
                         "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
                         "PluginName": "more_dynamics::Catamaran"
+                    }
+                ]
+            }
+        },
+        "grethe": {
+            "Description": "Grethe, NTNU Mariner 5 USV, monohull class (A-43/A-64/E-101 values)",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "83646192-e837-45e4-b1c3-c36ae72940ab",
+                        "PluginName": "more_dynamics::Monohull"
                     }
                 ]
             }

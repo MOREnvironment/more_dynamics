@@ -43,10 +43,12 @@ def plugins():
             from more_dynamics.plugins.vehicle_models.spheroid_auv import SpheroidAuv
             from more_dynamics.plugins.vehicle_models.monohull import Monohull
             from more_dynamics.plugins.vehicle_models.catamaran import Catamaran
+            from more_dynamics.plugins.vehicle_models.derivative_auv import DerivativeAuv
             from more_dynamics.plugins.hydrostatics.submerged_restoring import SubmergedRestoring
             from more_dynamics.plugins.hydrostatics.surface_restoring import SurfaceRestoring
             from more_dynamics.plugins.hydrodynamics.auv_hull_loads import AuvHullLoads
             from more_dynamics.plugins.hydrodynamics.surface_hull_loads import SurfaceHullLoads
+            from more_dynamics.plugins.hydrodynamics.coefficient_hull_loads import CoefficientHullLoads
             from more_dynamics.plugins.force_producers.fin import Fin
             from more_dynamics.plugins.force_producers.fin_pairs_deflection_only import FinPairsDeflectionOnly
             from more_dynamics.plugins.force_producers.propeller import Propeller

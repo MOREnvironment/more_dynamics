@@ -1,0 +1,31 @@
+{
+    "Id": "83646192-e837-45e4-b1c3-c36ae72940ab",
+    "Name": "Grethe",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::Monohull",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "1bf92efa-2459-403d-87fc-a945e6f07789",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SurfaceRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "c93be9f4-2ce2-4378-b47a-d3d37c4e8d1c",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::SurfaceHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}

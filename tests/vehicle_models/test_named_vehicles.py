@@ -1,11 +1,13 @@
-"""The named vehicles of the library's own ``.rppws`` (REMUS 100 and Otter),
-built by rpp's own ``ComponentContextBuilder`` from
-``.rppws/script_descriptions/vehicle_simulation.json``, equal the plugins'
-declared defaults (the cited REMUS 100 and Otter values), whose gates are in
-``test_spheroid_auv.py`` and ``test_catamaran.py``; and every parameter file
-of those parts names only parameters its plugin declares, so rpp does not drop
-a value silently. The two parts are the reference vehicles: a vehicle with
-other numbers is made in the GUI as a copy, not by editing these.
+"""The named vehicles of the library's own ``.rppws`` (REMUS 100 (MSS), Otter
+(MSS) and Grethe), built by rpp's own ``ComponentContextBuilder`` from
+``.rppws/script_descriptions/vehicle_simulation.json``. REMUS 100 (MSS) and
+Otter (MSS) equal the plugins' declared defaults, whose gates are in
+``test_spheroid_auv.py`` and ``test_catamaran.py``; Grethe's own physics gates
+are in ``test_monohull_grethe.py`` (U8a/U8b) -- here only the part itself is
+checked: it builds, and every parameter file of every part names only
+parameters its plugin declares, so rpp does not drop a value silently. These
+three parts are the reference vehicles: a vehicle with other numbers is made
+in the GUI as a copy, not by editing these.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -23,7 +25,7 @@ import vehicle_contract as vc
 LIBRARY = Path(__file__).resolve().parents[2]
 RPPWS = LIBRARY / ".rppws"
 DESCRIPTION = RPPWS / "script_descriptions" / "vehicle_simulation.json"
-NAMED = {"remus100": "REMUS 100", "otter": "Otter"}
+NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe"}
 
 
 def _build(configuration):
@@ -52,8 +54,14 @@ def test_the_script_description_lists_one_configuration_per_named_vehicle():
     assert set(description["Configurations"]) == set(NAMED)
     assert description["Spec"] == {"vessels": "List[more_dynamics::VehicleModel3D]"}
     assert (LIBRARY / description["ScriptPath"]).is_file()
-    for configuration in description["Configurations"].values():
+    for key, configuration in description["Configurations"].items():
         assert len(configuration["Components"]["vessels"]) == 1
+        part_id = configuration["Components"]["vessels"][0]["Id"]
+        # the part's own description.json carries the E-106 name, found by id (rule 20, R10)
+        matches = [p for p in RPPWS.joinpath("parts").rglob("description.json")
+                  if json.loads(p.read_text()).get("Id") == part_id]
+        assert len(matches) == 1, (key, part_id)
+        assert json.loads(matches[0].read_text())["Name"] == NAMED[key]
 
 
 def test_remus_100_from_the_workspace_equals_the_plugins_on_their_defaults():
@@ -80,6 +88,40 @@ def test_otter_from_the_workspace_equals_the_frozen_otter_set():
     a, b = vc.graph_of(built).step, vc.graph_of(reference).step
     for x in _states(30, 4):
         assert np.array_equal(np.asarray(a(x, [])), np.asarray(b(x, [])))
+
+
+def _own_parameters(part_id):
+    """``{name: value}`` of one part's own ``params/parameters.py``, found by id (as
+    ``test_every_parameter_file_names_only_parameters_its_plugin_declares`` reads them)."""
+    for description in RPPWS.joinpath("parts").rglob("description.json"):
+        if json.loads(description.read_text()).get("Id") == part_id:
+            namespace = {}
+            exec((description.parent / "params" / "parameters.py").read_text(), namespace)
+            cp = namespace["ComponentParameters"]
+            return {k: getattr(cp, k) for k in vars(cp) if not k.startswith("_")}
+    raise AssertionError(f"no part with id {part_id!r}")
+
+
+def test_grethe_from_the_workspace_builds_with_its_own_selectors():
+    """Structural only (physics gates are U8a/U8b's ``test_monohull_grethe.py``): the part
+    builds as a ``Monohull`` with no open actuator input, and its two children' own parameter
+    files (not the plugins' defaults) carry E-101's selectors."""
+    built = _build("grethe")
+    assert type(built).__name__ == "Monohull"
+    assert vc.input_names(built) == []
+    description = json.loads(DESCRIPTION.read_text())
+    vessel = description["Configurations"]["grethe"]["Components"]["vessels"][0]
+    root = next(p for p in RPPWS.joinpath("parts").rglob("description.json")
+               if json.loads(p.read_text()).get("Id") == vessel["Id"])
+    record = json.loads(root.read_text())
+    hydrostatics = _own_parameters(record["Subcomponents"]["hydrostatics"]["Id"])
+    hydrodynamics = _own_parameters(record["Subcomponents"]["hydrodynamics"]["Id"])
+    root_params = _own_parameters(vessel["Id"])
+    assert root_params["added_mass_mass_basis"] == "displaced"
+    assert hydrostatics["wetted_surface_method"] == "regression_table"
+    assert hydrodynamics["manoeuvring_damping"] == "linear_coupled"
+    assert hydrodynamics["surge_resistance"] == "ittc_residual"
+    assert hydrodynamics["sway_yaw_derivatives"] == [-251.875, 0.0, 0.0, -229.86112500000002]
 
 
 def test_every_parameter_file_names_only_parameters_its_plugin_declares():
