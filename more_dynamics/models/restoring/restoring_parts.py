@@ -13,7 +13,12 @@ centre of gravity apart (``r_bb``, ``r_bg``).
 
 Surface: ``nabla = m / rho``, ``T = nabla / (n C_b L B_hull)`` (MSS
 ``otter.m`` 121-122 for two hulls) fed into the surface restoring block
-(``gravity`` given by the site).
+(``gravity`` given by the site). The wetted surface of the hulls at that draft
+is an output too: the Mumford approximation ``S = n 1.025 L (C_b B_hull +
+1.7 T)`` of a displacement hull (MSS ``XuuITTC.m`` 38, which attributes it to
+Mumford; the original not read), summed over the ``n`` hulls without
+interference between them, or given as a value (``wetted_surface_given``).
+Raise: the wetted surface from the hull lines.
 
 References
 ----------
@@ -23,7 +28,8 @@ References
     line).
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 214
     (neutral buoyancy, W = m g = B); CRAFT/USV/models/otter.m 121-122,
-    172-193 (equilibrium draft of the twin pontoons).
+    172-193 (equilibrium draft of the twin pontoons);
+    LIBRARY/modeling/XuuITTC.m 38 (Mumford wetted-area approximation).
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -92,11 +98,19 @@ SURFACE_RESTORING_PARAMETERS = (
 )
 
 
-def surface_restoring(hull_count):
+WETTED_SURFACE_PARAMETER = Parameter("wetted_surface", (1, 1), "m^2", "wetted surface S of the hulls",
+                                     0.0, minimum_exclusive=True)
+MUMFORD_AREA_FACTOR = 1.025  # (XuuITTC.m 38)
+MUMFORD_DRAFT_FACTOR = 1.7  # (XuuITTC.m 38)
+
+
+def surface_restoring(hull_count, *, wetted_surface_given=False):
     """``nabla = m / rho``, ``T = nabla / (n C_b L B_hull)`` (otter.m 121-122) fed into the surface restoring block
     (``hull_count`` 1 or 2, gravity given by the site). The hull geometry (``length``, ``hull_beam``,
     ``hull_block_coefficient``, ``hull_waterplane_coefficient``, ``hull_lateral_offset`` for two hulls) and the
-    mass, density, gravity and centre of gravity are the vehicle's quantities."""
+    mass, density, gravity and centre of gravity are the vehicle's quantities. The output ``wetted_surface`` is
+    the Mumford approximation of the ``hull_count`` hulls at the equilibrium draft, or the given input of that name
+    when ``wetted_surface_given``."""
     block = surface_hydrostatics_casadi(hull_count=hull_count, gravity_source="value")
     names = ("mass", "water_density", "gravity", "length", "hull_beam", "hull_block_coefficient",
              "hull_waterplane_coefficient")
@@ -118,6 +132,12 @@ def surface_restoring(hull_count):
     if hull_count == 2:
         args["hull_lateral_offset"] = s["hull_lateral_offset"]
     out = block(**args)
+    if wetted_surface_given:
+        s["wetted_surface"] = ca.SX.sym("wetted_surface")
+        wetted_surface = s["wetted_surface"]
+    else:  # S = n 1.025 L (C_b B + 1.7 T) per hull (XuuITTC.m 38, Mumford)
+        wetted_surface = hull_count * MUMFORD_AREA_FACTOR * s["length"] * (
+            s["hull_block_coefficient"] * s["hull_beam"] + MUMFORD_DRAFT_FACTOR * draft)
     return function_from(f"surface_restoring_{hull_count}_hull", s, {
         "g": out["g"], "G": out["G"], "G_CF": out["G_CF"],
-        "displaced_volume": displaced_volume, "draft": draft})
+        "displaced_volume": displaced_volume, "draft": draft, "wetted_surface": wetted_surface})

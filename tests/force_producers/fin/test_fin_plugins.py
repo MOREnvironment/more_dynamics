@@ -267,9 +267,9 @@ def _two_ideal_fins(values):
     return [(p.Fin, fin("rudder", [0.0, -1.0, 0.0])), (p.Fin, fin("stern_plane", [0.0, 0.0, -1.0]))]
 
 
-def _pairs(values):
+def _pairs(values, **choices):
     p = vc.plugins()
-    return [(p.FinPairsDeflectionOnly, vc.pick(p.FinPairsDeflectionOnly, values))]
+    return [(p.FinPairsDeflectionOnly, {**vc.pick(p.FinPairsDeflectionOnly, values), **choices})]
 
 
 def _wrench(vessel, commands, nu_r, keys):
@@ -300,7 +300,8 @@ def test_the_two_fins_equal_the_matlab_wrench_of_the_mss_rows_with_the_mss_fin_p
     values = {**vc.remus_values(), "rudder_position": mss_constant(ref, "x_r"),
               "stern_plane_position": mss_constant(ref, "x_s")}
     assert values["water_density"] == mss_constant(ref, "rho")
-    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", values=values, actuators=_pairs(values))
+    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", values=values,
+                     actuators=_pairs(values, fin_positions_method="given"))  # the rows' own positions, not -a
     fins = vc.remus(coriolis="munk_couplings_removed", current="none", values=values,
                     actuators=_two_ideal_fins(values))
     assert max_diff(_wrench(pairs, commands, nu_r, ["actuators.0.generated_force"]), expected) <= G1_TOLERANCE

@@ -17,10 +17,11 @@ angles, BODY FRD velocity, SI units. Inputs: the current (``current_speed``,
 not ``"none"``, then the commands of the actuators in list order.
 
 Primitives (rule: derived quantities are computed): ``latitude`` (gravity by
-WGS-84 normal gravity), ``water_density``, ``kinematic_viscosity``, ``length``
-and ``diameter`` (the hull, one geometry: beam, draft, span and the semi-axes
-follow), ``body_density`` and ``body_center_of_gravity`` (mass and inertia of
-the homogeneous spheroid), ``roll_added_inertia_ratio`` (Lamb added mass).
+WGS-84 normal gravity) or ``gravity`` (given), ``water_density``,
+``kinematic_viscosity``, ``length`` and ``diameter`` (the hull, one geometry:
+beam, draft, span and the semi-axes follow), ``body_mass`` and
+``body_center_of_gravity`` (mass and inertia of the homogeneous spheroid),
+``roll_added_inertia_ratio`` (Lamb added mass).
 
 Options, each with its fidelity and what raises it:
 
@@ -30,9 +31,20 @@ Options, each with its fidelity and what raises it:
 * ``coriolis_form``: ``"kirchhoff_full"`` (every term of ``C_A``, the physics
   form, default) or ``"munk_couplings_removed"`` (MSS shortcut of
   ``remus100.m`` 207-210, a comparison form).
-* ``current_form``: ``"none"`` (still water), ``"yaw_rate_terms"`` (MSS
-  ``remus100.m`` 118-122) or ``"full_rotation_rate"`` (MSS ``otter.m``
-  113-118). Raise: a measured current profile.
+* ``current_form``: ``"full_attitude"`` (default: the current constant in NED
+  taken into the body axes with the full attitude and rotation rate, Fossen
+  2011, eqs. 8.138-8.141, 8.157, pp. 221-225), ``"none"`` (still water),
+  ``"yaw_rate_terms"`` (MSS ``remus100.m`` 118-122) or
+  ``"full_rotation_rate"`` (MSS ``otter.m`` 113-118); the last two are MSS
+  shortcuts. Raise: a measured current profile. Every form but ``"none"``
+  adds the three current inputs first.
+* ``site_form``: ``"latitude"`` (default; WGS-84 normal gravity at
+  ``latitude``, ``remus100.m`` 96-97) or ``"given"`` (``gravity``, 9.81 m/s^2
+  as MSS 2.0.5, ``mssConstants.m`` 14).
+* ``body_density_method``: ``"computed"`` (default; the density that gives
+  ``body_mass`` on the spheroid's own volume, ``spheroid.m`` 36) or
+  ``"given"`` (``body_density``). Raise: the mass from a weighing, the volume
+  from the hull lines.
 
 Defaults are the REMUS 100 (Prestero 2001; MSS ``remus100.m``), one density
 and one geometry throughout; each default cites its line.
@@ -40,13 +52,15 @@ and one geometry throughout; each default cites its line.
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
-    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120.
+    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120; eqs. 8.138-8.141,
+    8.157, pp. 221-225 (the current in the body axes).
 [Prestero 2001] Prestero, T. (2001). Verification of a six-degree of freedom
     simulation model for the REMUS autonomous underwater vehicle. MIT/WHOI
     MSc thesis.
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 3, 96-98,
     118-125, 131-138, 207-210, 257-259; LIBRARY/modeling/spheroid.m 35-42;
-    imlay61.m 31-59; INS/functions/gravity.m 11-12.
+    imlay61.m 31-59; INS/functions/gravity.m 11-12; and, @ 49e03e3 (release
+    2.0.5), LIBRARY/mssConstants.m 12-14 (given density and gravity).
 [HullVessel] Mandic, L. more_dynamics ``HullVessel`` (hull_vessel.py): the
     form of the vehicle plugin (parameters, slots, ``graph()``) this follows.
 
@@ -63,22 +77,17 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.added_mass.added_mass_parts import lamb_spheroid, lamb_spheroid_parameters
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
-from more_dynamics.models.current.current import (
-    horizontal_current_full_rotation_rate, horizontal_current_yaw_rate_terms, no_current)
 from more_dynamics.models.hull_form.hull_form import (
     PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS, prolate_spheroid_main_dimensions)
-from more_dynamics.models.rigid_body.rigid_body_parts import homogeneous_spheroid, homogeneous_spheroid_parameters
-from more_dynamics.models.site.site import SITE_AT_LATITUDE_PARAMETERS, site_at_latitude
+from more_dynamics.models.rigid_body.rigid_body_parts import (
+    SPHEROID_BODY_MASS_PARAMETERS, homogeneous_spheroid, homogeneous_spheroid_parameters, spheroid_body_density)
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
 
 ADDED_MASS_FORMS = {"lamb_spheroid": (lamb_spheroid, lamb_spheroid_parameters)}
+BODY_DENSITY_METHODS = ("computed", "given")
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
-CURRENT_FORMS = {"none": no_current, "yaw_rate_terms": horizontal_current_yaw_rate_terms,
-                 "full_rotation_rate": horizontal_current_full_rotation_rate}
-CURRENT_INPUTS = (("current_speed", 1, "horizontal current speed, m/s"),
-                  ("current_direction", 1, "current set, NED, from north, clockwise, rad"),
-                  ("current_vertical_speed", 1, "vertical current speed, NED, down positive, m/s"))
 
 
 class SpheroidAuv(VehicleModel3D):
@@ -91,17 +100,21 @@ class SpheroidAuv(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827)
+        ParameterDescription("site_form", "latitude"),  # gravity.m 11-12; remus100.m 96-97
+        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827); read with site_form "latitude"
+        ParameterDescription("gravity", 9.81),  # m/s^2, mssConstants.m:14 @ 49e03e3 (MSS 2.0.5); read with site_form "given"
         ParameterDescription("water_density", 1026),  # remus100.m:98 rho = 1026, the one value (MSS: 1026 at imlay61.m:31 and forceLiftDrag.m:26, 1025 at crossFlowDrag.m:36)
         ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
         ParameterDescription("length", 1.6),  # remus100.m:131 L_auv, passed as L at :221
         ParameterDescription("diameter", 0.19),  # remus100.m:132 D_auv, passed as B at :221
-        ParameterDescription("body_density", 1054.7872613500267),  # mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35
+        ParameterDescription("body_density_method", "computed"),  # rho_b = m / (4/3 pi a b^2) (spheroid.m:36 solved for rho_b)
+        ParameterDescription("body_mass", 31.9),  # kg, remus100.m:3 (given); read with body_density_method "computed"
+        ParameterDescription("body_density", 1054.7872613500267),  # given value, read with "given": mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35
         ParameterDescription("body_center_of_gravity", [0, 0, 0.02]),  # remus100.m:137 r_bG
         ParameterDescription("roll_added_inertia_ratio", 0.3),  # remus100.m:136 r44
         ParameterDescription("added_mass_form", "lamb_spheroid"),  # imlay61.m 31-59
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
-        ParameterDescription("current_form", "none"),  # still water
+        ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
 
     def __init__(self):
@@ -109,16 +122,22 @@ class SpheroidAuv(VehicleModel3D):
 
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
-        if form not in CURRENT_FORMS:
-            raise CompositionError(f"SpheroidAuv: current_form must be one of {sorted(CURRENT_FORMS)}, got {form!r}")
-        current_inputs = () if form == "none" else CURRENT_INPUTS
+        density_method = context.get_parameter("body_density_method")
+        if density_method not in BODY_DENSITY_METHODS:
+            raise CompositionError(f"SpheroidAuv: body_density_method must be one of {BODY_DENSITY_METHODS}, "
+                                   f"got {density_method!r}")
+        own_inputs = current_inputs(context, "SpheroidAuv", CompositionError)
 
         def compute(pose, velocity, current):
             known = {"pose": pose, "velocity": velocity, **current}
             parts = Parts(context, "SpheroidAuv", known)
-            parts.run("site", site_at_latitude(), SITE_AT_LATITUDE_PARAMETERS)  # (gravity.m 11-12; remus100.m 96-97)
+            site, site_parameters = select_site(parts)  # (gravity.m 11-12; remus100.m 96-97; otter.m 90-91)
+            parts.run("site", site(), site_parameters)
             parts.run("hull form", prolate_spheroid_main_dimensions(), PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS)
-            parts.run("rigid body", homogeneous_spheroid(), homogeneous_spheroid_parameters())  # (spheroid.m 35-42)
+            if density_method == "computed":
+                parts.run("body density", spheroid_body_density(), SPHEROID_BODY_MASS_PARAMETERS)  # (spheroid.m 36)
+            parts.run("rigid body", homogeneous_spheroid(),
+                      homogeneous_spheroid_parameters(density_given=density_method == "given"))  # (spheroid.m 35-42)
             added_mass, added_mass_parameters = parts.select("added_mass_form", ADDED_MASS_FORMS)
             parts.run("added mass", added_mass(), added_mass_parameters())
             parts.run("current", CURRENT_FORMS[form]())
@@ -129,7 +148,7 @@ class SpheroidAuv(VehicleModel3D):
                          coriolis_matrix=known["rigid_body_coriolis_matrix"] + known["added_mass_coriolis_matrix"],
                          current_velocity=current_velocity, current_acceleration=current_acceleration, known=known)
 
-        self._assembly = VehicleAssembly(context, "SpheroidAuv", compute, current_inputs)
+        self._assembly = VehicleAssembly(context, "SpheroidAuv", compute, own_inputs)
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):

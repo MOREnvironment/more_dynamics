@@ -97,12 +97,14 @@ def test_gradient_through_a_current_input_equals_a_central_difference():
 # Options: forms, refusals
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("parameter, value", [("current_form", "full_attitude"), ("coriolis_form", "none"),
-                                              ("added_mass_form", "database")])
+@pytest.mark.parametrize("parameter, value", [("current_form", "heading_only"), ("coriolis_form", "none"),
+                                              ("added_mass_form", "database"), ("site_form", "geodetic"),
+                                              ("body_density_method", "measured")])
 def test_refuses_an_unknown_form_and_names_the_choices(parameter, value):
     p = vc.plugins()
     with pytest.raises(p.CompositionError, match=parameter):
         vc.remus(vehicle_params={parameter: value})
+
 
 
 def test_the_coriolis_form_changes_only_the_added_mass_coriolis_term():
@@ -128,12 +130,12 @@ def test_refuses_an_empty_slot_and_names_it():
 
 
 def test_refuses_a_hydrodynamics_child_whose_input_no_quantity_gives():
-    """The ITTC surge resistance needs a wetted surface; none of the three types gives one, and the message names
-    the slot, the plugin and the quantity."""
+    """A hydrodynamics child that reads a quantity no part of the vehicle gives is refused, naming the slot, the
+    plugin and the quantity: the submerged hull loads read a weight and a centre of buoyancy, which the surface
+    restoring does not give."""
     p = vc.plugins()
-    with pytest.raises(p.CompositionError, match=r"slot hydrodynamics \(SurfaceHullLoads\): input 'wetted_surface'"):
-        vc.otter(hydrodynamics=(p.SurfaceHullLoads, {**vc.pick(p.SurfaceHullLoads, vc.OTTER),
-                                                      "surge_resistance": "ittc"}))
+    with pytest.raises(p.CompositionError, match=r"slot hydrodynamics \(AuvHullLoads\): input '[a-z_]+'.*no vehicle quantity"):
+        vc.otter(hydrodynamics=p.AuvHullLoads)
 
 
 def test_refuses_a_command_in_the_hydrodynamics_slot():
@@ -328,9 +330,12 @@ def _monohull(**vehicle_params):
                             hydrostatics=(p.SurfaceRestoring, {"hull_count": 1}), hydrodynamics=p.SurfaceHullLoads)
 
 
-def test_monohull_builds_on_its_defaults_and_takes_no_input():
+def test_monohull_builds_on_its_defaults_and_takes_the_current_as_input():
+    """The default current form is the full-attitude one, whose three values are the vehicle's first inputs; still
+    water takes none."""
     vessel = _monohull()
-    assert vc.input_names(vessel) == []
+    assert vc.input_names(vessel) == list(vc.CURRENT_NAMES)
+    assert vc.input_names(_monohull(current_form="none")) == []
     assert set(vc.plugins().Monohull.COMPONENTS) == {"hydrostatics", "hydrodynamics", "actuators"}
 
 

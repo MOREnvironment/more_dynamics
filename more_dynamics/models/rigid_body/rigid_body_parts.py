@@ -14,10 +14,16 @@ Author:    Enio Krizman
 Date:      2026-10-08
 """
 
+import math
+
+import casadi as ca
+
+from more_transformations.more_casadi_transformations import Parameter
+
 from more_dynamics.models.rigid_body.kinetics import rigid_body_casadi
 from more_dynamics.models.rigid_body.mass_properties import rigid_body_parameters
 
-from more_dynamics.models.shared.wiring import restrict, with_passthrough
+from more_dynamics.models.shared.wiring import function_from, restrict, with_passthrough
 
 RIGID_BODY_OUTPUTS = ["M_RB", "C_RB", "mass", "center_of_gravity", "inertia"]
 
@@ -30,6 +36,24 @@ _HULL_WITH_POINT_PAYLOAD_OWN = ("hull_mass", "payload_mass", "hull_center_of_gra
                                "payload_position", "radii_of_gyration")
 
 
+SPHEROID_BODY_MASS_PARAMETERS = (
+    Parameter("body_mass", (1, 1), "kg", "body mass m of the vehicle", 0.0, minimum_exclusive=True),
+)
+
+
+def spheroid_body_density():
+    """``(body_mass, semi_major_axis, semi_minor_axis) -> body_density``: the mean density of the homogeneous
+    spheroid that has the given mass, ``rho_b = m / (4/3 pi a b^2)`` (the volume of a prolate spheroid, MSS
+    ``spheroid.m`` 36, ``m = rho_b 4/3 pi a b^2`` solved for ``rho_b``; the mass of ``remus100.m`` 3 is a given)."""
+    body_mass = ca.SX.sym("body_mass")
+    semi_major_axis = ca.SX.sym("semi_major_axis")
+    semi_minor_axis = ca.SX.sym("semi_minor_axis")
+    volume = 4.0 / 3.0 * math.pi * semi_major_axis * semi_minor_axis**2  # (spheroid.m 36)
+    return function_from("spheroid_body_density", {
+        "body_mass": body_mass, "semi_major_axis": semi_major_axis, "semi_minor_axis": semi_minor_axis},
+        {"body_density": body_mass / volume})
+
+
 def homogeneous_spheroid():
     """Mass and inertia from a homogeneous prolate spheroid (spheroid.m
     35-42)."""
@@ -37,11 +61,14 @@ def homogeneous_spheroid():
                     "homogeneous_spheroid")
 
 
-def homogeneous_spheroid_parameters():
+def homogeneous_spheroid_parameters(*, density_given=True):
     """The part's own declared parameters (``_HOMOGENEOUS_SPHEROID_OWN``); its
-    remaining inputs are vehicle couplings, not plugin parameters."""
+    remaining inputs are vehicle couplings, not plugin parameters. With
+    ``density_given=False`` ``body_density`` is not declared: the vehicle
+    computes it (``spheroid_body_density``) and the part reads it by name."""
     by_name = {d.name: d for d in rigid_body_parameters("spheroid")}
-    return tuple(by_name[n] for n in _HOMOGENEOUS_SPHEROID_OWN)
+    names = _HOMOGENEOUS_SPHEROID_OWN if density_given else tuple(n for n in _HOMOGENEOUS_SPHEROID_OWN if n != "body_density")
+    return tuple(by_name[n] for n in names)
 
 
 def hull_with_point_payload():

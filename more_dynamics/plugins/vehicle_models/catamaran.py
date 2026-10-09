@@ -14,7 +14,7 @@ the children's payloads (``plugins/shared/vehicle_graph.py``).
 State ``[eta; nu]`` after the actuators' states: NED position, ZYX Euler
 angles, BODY FRD velocity, SI units. Inputs: the current (``current_speed``,
 ``current_direction``, ``current_vertical_speed``) when ``current_form`` is
-not ``"none"``, then the commands of the actuators in list order.
+not ``"none"`` (the default is ``"full_attitude"``), then the commands of the actuators in list order.
 
 Primitives: ``gravity``, ``water_density``, ``kinematic_viscosity``; the hull
 (``length``, ``beam``, ``pontoon_beam``, ``pontoon_lateral_offset``,
@@ -33,16 +33,24 @@ Options, each with its fidelity and what raises it:
   identified matrix).
 * ``coriolis_form``: ``"kirchhoff_full"`` (every term of ``C_A``, default) or
   ``"munk_couplings_removed"`` (MSS shortcut, comparison form).
-* ``current_form``: ``"none"``, ``"yaw_rate_terms"`` or
-  ``"full_rotation_rate"`` (MSS ``otter.m`` 113-118). Raise: a measured
-  current profile.
+* ``current_form``: ``"full_attitude"`` (default: the current constant in NED
+  taken into the body axes with the full attitude and rotation rate, Fossen
+  2011, eqs. 8.138-8.141, 8.157, pp. 221-225), ``"none"``,
+  ``"yaw_rate_terms"`` or ``"full_rotation_rate"`` (MSS ``otter.m`` 113-118;
+  the last two are MSS shortcuts). Raise: a measured current profile. Every
+  form but ``"none"`` adds the three current inputs first.
+* ``site_form``: ``"given"`` (default; ``gravity`` and ``water_density``,
+  ``otter.m`` 90-91) or ``"latitude"`` (WGS-84 normal gravity at
+  ``latitude``, ``gravity.m`` 11-12; the default latitude is the MSS site of
+  ``remus100.m`` 96-97).
 
 Defaults are the Otter (MSS ``otter.m``), each citing its line.
 
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
-    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120.
+    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120; eqs. 8.138-8.141,
+    8.157, pp. 221-225 (the current in the body axes).
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/USV/models/otter.m 90-98,
     104-107, 113-118, 121-128, 152-159, 261-263.
 [HullVessel] Mandic, L. more_dynamics ``HullVessel`` (hull_vessel.py): the
@@ -59,21 +67,14 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
-from more_dynamics.models.current.current import (
-    horizontal_current_full_rotation_rate, horizontal_current_yaw_rate_terms, no_current)
 from more_dynamics.models.hull_form.hull_form import TWIN_PONTOONS_PARAMETERS, twin_pontoons
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
-from more_dynamics.models.site.site import SITE_GIVEN_PARAMETERS, site_given
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
 
 ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
-CURRENT_FORMS = {"none": no_current, "yaw_rate_terms": horizontal_current_yaw_rate_terms,
-                 "full_rotation_rate": horizontal_current_full_rotation_rate}
-CURRENT_INPUTS = (("current_speed", 1, "horizontal current speed, m/s"),
-                  ("current_direction", 1, "current set, NED, from north, clockwise, rad"),
-                  ("current_vertical_speed", 1, "vertical current speed, NED, down positive, m/s"))
 HULL_ALIASES = {"hull_beam": "pontoon_beam", "hull_block_coefficient": "pontoon_block_coefficient",
                 "hull_waterplane_coefficient": "pontoon_waterplane_coefficient",
                 "hull_lateral_offset": "pontoon_lateral_offset"}
@@ -89,6 +90,8 @@ class Catamaran(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
+        ParameterDescription("site_form", "given"),  # otter.m 90-91; gravity.m 11-12 for "latitude"
+        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827), the MSS site; read with site_form "latitude"
         ParameterDescription("gravity", 9.81),  # otter.m 90-91
         ParameterDescription("water_density", 1025.0),  # otter.m 90-91
         ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
@@ -106,7 +109,7 @@ class Catamaran(VehicleModel3D):
         ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # otter.m 152-157
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
-        ParameterDescription("current_form", "none"),  # still water
+        ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
 
     def __init__(self):
@@ -114,14 +117,13 @@ class Catamaran(VehicleModel3D):
 
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
-        if form not in CURRENT_FORMS:
-            raise CompositionError(f"Catamaran: current_form must be one of {sorted(CURRENT_FORMS)}, got {form!r}")
-        current_inputs = () if form == "none" else CURRENT_INPUTS
+        own_inputs = current_inputs(context, "Catamaran", CompositionError)
 
         def compute(pose, velocity, current):
             known = {"pose": pose, "velocity": velocity, **current}
             parts = Parts(context, "Catamaran", known)
-            parts.run("site", site_given(), SITE_GIVEN_PARAMETERS)  # (otter.m 90-91)
+            site, site_parameters = select_site(parts)  # (gravity.m 11-12; remus100.m 96-97; otter.m 90-91)
+            parts.run("site", site(), site_parameters)
             parts.run("hull form", twin_pontoons(), TWIN_PONTOONS_PARAMETERS)  # (otter.m 92-93, 104-107)
             for alias, name in HULL_ALIASES.items():
                 known[alias] = known[name]
@@ -136,7 +138,7 @@ class Catamaran(VehicleModel3D):
                          coriolis_matrix=known["rigid_body_coriolis_matrix"] + known["added_mass_coriolis_matrix"],
                          current_velocity=current_velocity, current_acceleration=current_acceleration, known=known)
 
-        self._assembly = VehicleAssembly(context, "Catamaran", compute, current_inputs)
+        self._assembly = VehicleAssembly(context, "Catamaran", compute, own_inputs)
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):

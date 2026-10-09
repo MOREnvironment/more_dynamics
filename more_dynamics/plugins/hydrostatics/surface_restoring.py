@@ -9,8 +9,14 @@ The hull geometry (``length``, ``hull_beam``, ``hull_block_coefficient``,
 ``hull_waterplane_coefficient``, ``hull_lateral_offset`` for two hulls) and
 the mass, density, gravity and centre of gravity are the vehicle's
 quantities, read by name; the plugin declares only what is its own. Outputs
-beside the force: ``displaced_volume``, ``draft``, ``restoring_matrix`` (``G``
+beside the force: ``displaced_volume``, ``draft``, ``wetted_surface``, ``restoring_matrix`` (``G``
 at the origin of the point P) and ``restoring_matrix_at_flotation``.
+
+``wetted_surface`` (the wetted area of the hulls at that draft, read by the
+hull loads' ITTC surge resistance) follows ``wetted_surface_method``:
+``"computed"`` is the Mumford approximation of the hulls (MSS ``XuuITTC.m``
+38), ``"given"`` takes the parameter ``wetted_surface``. Raise: the wetted
+surface from the hull lines.
 
 Defaults are the Otter (MSS ``otter.m`` 177-179, 192): ``hull_count`` 2,
 ``longitudinal_inertia_factor`` 0.8, ``longitudinal_center_of_flotation``
@@ -22,7 +28,8 @@ References
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eq. 4.25, p. 65 (through the surface block,
     which cites ch. 4 line by line).
-[MSS] Fossen, T. I. MSS, MIT, CRAFT/USV/models/otter.m 121-122, 172-193 @ cc07579.
+[MSS] Fossen, T. I. MSS, MIT, CRAFT/USV/models/otter.m 121-122, 172-193 and
+    LIBRARY/modeling/XuuITTC.m 38 @ cc07579.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -31,8 +38,12 @@ from rpp_plugin_types.more_dynamics import HydrostaticsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_dynamics.models.restoring.restoring_parts import SURFACE_RESTORING_PARAMETERS, surface_restoring
+from more_dynamics.models.restoring.restoring_parts import (
+    SURFACE_RESTORING_PARAMETERS, WETTED_SURFACE_PARAMETER, surface_restoring)
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name
+
+
+WETTED_SURFACE_METHODS = ("computed", "given")
 
 
 class SurfaceRestoring(HydrostaticsModel):
@@ -41,6 +52,8 @@ class SurfaceRestoring(HydrostaticsModel):
         ParameterDescription("longitudinal_inertia_factor", 0.8),  # otter.m 179 (I_L = 0.8 ...)
         ParameterDescription("longitudinal_center_of_flotation", -0.2),  # otter.m 177, 192
         ParameterDescription("reference_point", [0.0, 0.0, 0.0]),  # the body-frame origin (CO)
+        ParameterDescription("wetted_surface_method", "computed"),  # S = n 1.025 L (C_b B + 1.7 T), XuuITTC.m:38 (Mumford)
+        ParameterDescription("wetted_surface", 1.77),  # m^2, given value, read with "given": the Mumford value at the Otter set (otter.m 92-107, mass 80 kg, XuuITTC.m:38)
     ]
 
     def __init__(self) -> None:
@@ -50,7 +63,12 @@ class SurfaceRestoring(HydrostaticsModel):
         hull_count = context.get_parameter("hull_count")
         if hull_count not in (1, 2):
             raise ValueError(f"hull_count must be 1 or 2, got {hull_count!r}")
-        self._model = frozen_block(context, surface_restoring(hull_count), SURFACE_RESTORING_PARAMETERS)
+        method = context.get_parameter("wetted_surface_method")
+        if method not in WETTED_SURFACE_METHODS:
+            raise ValueError(f"wetted_surface_method must be one of {WETTED_SURFACE_METHODS}, got {method!r}")
+        given = method == "given"
+        declared = SURFACE_RESTORING_PARAMETERS + ((WETTED_SURFACE_PARAMETER,) if given else ())
+        self._model = frozen_block(context, surface_restoring(hull_count, wetted_surface_given=given), declared)
 
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:

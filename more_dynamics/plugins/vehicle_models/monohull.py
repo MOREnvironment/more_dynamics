@@ -24,7 +24,10 @@ strip as ``section_beam``). The rigid body is the hull mass plus an optional
 point payload (``payload_mass`` 0 is a bare hull), the added mass the scaled
 derivatives of the same form as the catamaran (MSS ``otter.m`` 152-159), and
 the options are those of the catamaran: ``added_mass_form``,
-``coriolis_form``, ``current_form``, each with its fidelity.
+``coriolis_form``, ``current_form`` (default ``"full_attitude"``: the current in the
+body axes with the full attitude, Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225; MSS
+shortcuts ``"yaw_rate_terms"``, ``"full_rotation_rate"``, still water ``"none"``) and
+``site_form`` (``"given"``, default, or ``"latitude"``), each with its fidelity.
 
 Defaults are those of the NTNU Mariner 5 USV Grethe (Maritime Robotics build
 40402, Pioner 17 ft hull), from the Grethe parameter file
@@ -36,7 +39,8 @@ files, unverified): to be identified from logs, and none is a measurement.
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
-    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120.
+    and Motion Control. Wiley. Eq. 2.40, p. 26; eq. 6.48, p. 120; eqs. 8.138-8.141,
+    8.157, pp. 221-225 (the current in the body axes).
 [F003] Maritime Robotics, NTNU Mariner 5 USV Combined FAT/SAT, rev 1.5, signed
     8 Apr 2021. p. 2 (length, beam, draft, weight of the boat).
 [M001] Maritime Robotics, Mariner 5 USV User Manual rev 1.0, Apr 2021. p. 7
@@ -57,21 +61,14 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
-from more_dynamics.models.current.current import (
-    horizontal_current_full_rotation_rate, horizontal_current_yaw_rate_terms, no_current)
 from more_dynamics.models.hull_form.hull_form import SINGLE_HULL_PARAMETERS, single_hull
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
-from more_dynamics.models.site.site import SITE_GIVEN_PARAMETERS, site_given
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
 
 ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
-CURRENT_FORMS = {"none": no_current, "yaw_rate_terms": horizontal_current_yaw_rate_terms,
-                 "full_rotation_rate": horizontal_current_full_rotation_rate}
-CURRENT_INPUTS = (("current_speed", 1, "horizontal current speed, m/s"),
-                  ("current_direction", 1, "current set, NED, from north, clockwise, rad"),
-                  ("current_vertical_speed", 1, "vertical current speed, NED, down positive, m/s"))
 
 
 class Monohull(VehicleModel3D):
@@ -84,6 +81,8 @@ class Monohull(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
+        ParameterDescription("site_form", "given"),  # otter.m 90-91; gravity.m 11-12 for "latitude"
+        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827), the MSS site; read with site_form "latitude"
         ParameterDescription("gravity", 9.81),  # estimate: grethe_mariner5.yaml hydrostatics.gravity ("standard")
         ParameterDescription("water_density", 1025.0),  # estimate: grethe_mariner5.yaml hydrostatics.water_density ("standard sea water")
         ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
@@ -99,7 +98,7 @@ class Monohull(VehicleModel3D):
         ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
-        ParameterDescription("current_form", "none"),  # still water
+        ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
 
     def __init__(self):
@@ -107,14 +106,13 @@ class Monohull(VehicleModel3D):
 
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
-        if form not in CURRENT_FORMS:
-            raise CompositionError(f"Monohull: current_form must be one of {sorted(CURRENT_FORMS)}, got {form!r}")
-        current_inputs = () if form == "none" else CURRENT_INPUTS
+        own_inputs = current_inputs(context, "Monohull", CompositionError)
 
         def compute(pose, velocity, current):
             known = {"pose": pose, "velocity": velocity, **current}
             parts = Parts(context, "Monohull", known)
-            parts.run("site", site_given(), SITE_GIVEN_PARAMETERS)
+            site, site_parameters = select_site(parts)  # (gravity.m 11-12; remus100.m 96-97; otter.m 90-91)
+            parts.run("site", site(), site_parameters)
             parts.run("hull form", single_hull(), SINGLE_HULL_PARAMETERS)
             parts.run("rigid body", hull_with_point_payload(), hull_with_point_payload_parameters())  # (otter.m 94-98, 122-128)
             added_mass, added_mass_parameters = parts.select("added_mass_form", ADDED_MASS_FORMS)
@@ -127,7 +125,7 @@ class Monohull(VehicleModel3D):
                          coriolis_matrix=known["rigid_body_coriolis_matrix"] + known["added_mass_coriolis_matrix"],
                          current_velocity=current_velocity, current_acceleration=current_acceleration, known=known)
 
-        self._assembly = VehicleAssembly(context, "Monohull", compute, current_inputs)
+        self._assembly = VehicleAssembly(context, "Monohull", compute, own_inputs)
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):

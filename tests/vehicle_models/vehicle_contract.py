@@ -100,6 +100,7 @@ def remus_values(values=None):
     kinematic viscosity."""
     v = dict(REMUS if values is None else values)
     v["diameter"] = v["beam"]
+    v.setdefault("body_mass", REMUS_FILE["one_value"]["mass"])  # remus100.m:3, the given mass; the density follows
     v["latitude"] = REMUS_FILE["gravity"]["latitude_rad"]
     v["kinematic_viscosity"] = KINEMATIC_VISCOSITY
     return v

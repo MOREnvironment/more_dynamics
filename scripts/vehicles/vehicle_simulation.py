@@ -7,9 +7,10 @@ the configurations of ``.rppws/script_descriptions/vehicle_simulation.json``.
 
     python vehicle_simulation.py <workspace> --rpp-configuration remus100 --surge-speed 1.5 --duration 20
 
-The integrator (CVODES) needs the derivative of the vehicle's dynamics: the
-slender-body lift of the REMUS hull has none at exactly zero relative
-velocity, so a REMUS run starts with a surge speed.
+The integrator (CVODES) needs the derivative of the vehicle's dynamics; the
+hull loads of the REMUS 100 are guarded (``smooth_speed``) so it is finite at
+rest and a run may start from rest; ``--surge-speed`` gives an initial surge
+speed.
 
 It needs rpp's registry with ``more_dynamics`` registered
 (``rpp library register ./more_dynamics --link``).

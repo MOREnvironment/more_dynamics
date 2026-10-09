@@ -67,7 +67,9 @@ def _parameter_file():
 def _parameter_set(stage):
     entries = _parameter_file()["parameters"]
     keep = ("hull",) if stage == HULL else ("hull", "actuators")
-    return {n: e["value"] for n, e in entries.items() if e["stage"] in keep}
+    values = {n: e["value"] for n, e in entries.items() if e["stage"] in keep}
+    values["body_mass"] = _parameter_file()["one_value"]["mass"]  # remus100.m:3, given; the density is computed from it
+    return values
 
 
 def _trajectory_tolerances():
@@ -85,12 +87,12 @@ _ours_to_mss = vc.ours_to_mss
 _BUILT = {}
 
 
-def _builder(stage, munk_kept=False, values=None, tmp_path=None):
+def _builder(stage, munk_kept=False, values=None, tmp_path=None, vehicle_params=None):
     """The vehicle of the stage with the chosen added-mass Coriolis form: the frozen parameter set (built once) or a
-    perturbed ``values``."""
+    perturbed ``values`` (with the vehicle's own choices in ``vehicle_params``)."""
     def make():
         return vc.remus(full=stage == FULL, coriolis="kirchhoff_full" if munk_kept else "munk_couplings_removed",
-                        values=_parameter_set(stage) if values is None else values)
+                        values=_parameter_set(stage) if values is None else values, vehicle_params=vehicle_params)
     if values is not None:
         return make()
     key = (stage, munk_kept)
@@ -372,6 +374,7 @@ def test_G3_trajectory_equals_matlab_rk4_run(name):
 
 
 PERTURBATIONS = [
+    ("body_mass", lambda v: v * 1.01),
     ("body_density", lambda v: v * 1.01),
     ("body_center_of_gravity", lambda v: [v[0], v[1], v[2] + 0.01]),
     ("time_constants", lambda v: [2 * v[0], v[1], v[2]]),
@@ -386,8 +389,10 @@ def test_G4_perturbed_parameter_is_caught_by_G1(name, change, tmp_path):
     p[name] = change(p[name])
     table = _read_csv(DERIVATIVE_FILE)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])
-    xdot, _ = _evaluate(_builder(HULL, values=p, tmp_path=tmp_path), _columns(table, "x", 12), current,
-                        tau_ext=_columns(table, "tau", 6))
+    # the density is read only when it is chosen; the mass only when the density is computed from it
+    given = {"body_density_method": "given"} if name == "body_density" else None
+    xdot, _ = _evaluate(_builder(HULL, values=p, tmp_path=tmp_path, vehicle_params=given),
+                        _columns(table, "x", 12), current, tau_ext=_columns(table, "tau", 6))
     assert np.abs(xdot - _columns(table, "xdot", 12)).max() > 10 * G1_TOLERANCE
 
 
@@ -432,7 +437,7 @@ def test_one_density_reaches_every_block(stage, tmp_path):
     u = _columns(table, "ui", 3) if stage == FULL else None
     one = _evaluate(_builder(stage), x, current, tau_ext=tau, u=u)[0]
     scaled = dict(p)
-    for key in ("water_density", "body_density"):
+    for key in ("water_density", "body_mass"):  # the body density is computed from the mass and the geometry
         scaled[key] *= 2
     two = _evaluate(_builder(stage, values=scaled, tmp_path=tmp_path), x, current,
                     tau_ext=(2 * tau if tau is not None else None), u=u)[0]

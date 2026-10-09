@@ -59,7 +59,8 @@ def test_the_script_description_lists_one_configuration_per_named_vehicle():
 def test_remus_100_from_the_workspace_equals_the_plugins_on_their_defaults():
     p = vc.plugins()
     built = _build("remus100")
-    reference = vc.build_context(p.SpheroidAuv, {}, hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
+    reference = vc.build_context(p.SpheroidAuv, {"current_form": "none"},  # the named part is gated in still water
+                                 hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                                  actuators=[p.FinPairsDeflectionOnly, p.Propeller])
     assert type(built).__name__ == "SpheroidAuv"
     assert vc.input_names(built) == vc.input_names(reference) == ["fin_deflection_command", "shaft_speed_command"]
