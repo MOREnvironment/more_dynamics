@@ -2,7 +2,7 @@
 
 **Frozen** files: a changed byte in a CSV or in `grethe_parameters.json` needs a decision record. The generator is pure Python + numpy (no CasADi, no `more_dynamics` import, no `MSS_DIR`/`MATLAB_BIN`): it is a second, independent implementation of the cited equations (G5 against the published anchors — Fossen 2011 and Radojčić et al. 2014 — and a G2 check against the library's own existing formulas where they already match, e.g. rigid body, Coriolis, metacentric restoring, Hoerner cross-flow, ITTC friction). There is no MSS model of Grethe (she is not a Fossen/MSS vehicle), so this is not a second-implementation-against-MATLAB check like the REMUS 100 and Otter references: it stands on the published equations alone.
 
-Run: `python3 generate_grethe_references.py` in this folder; a re-run is checked with `cmp` against the committed files (deterministic arithmetic, no external dependency).
+Run: `python3 generate_grethe_references.py` in this folder; a re-run is checked with `cmp` against the committed files (deterministic arithmetic, no `MSS_DIR`/`MATLAB_BIN`; `skew` is taken from `more_transformations`, as every library generator does, AGENTS.md Transforms -- not run with `-I`, U8b).
 
 Made 2026-10-09, library commit `5a527af` (branch `generic-models-port`, the commit the R9 porter handed off against).
 

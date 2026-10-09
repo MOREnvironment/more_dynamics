@@ -8,10 +8,12 @@ consistency (symmetry, skew-symmetry, passivity) the way ``a64_math_check.py``
 checked the library itself (`agents-more/20_sources/monohull_structure_for_grethe.md`
 Section 7).
 
-Run:  python3 -I generate_grethe_references.py
+Run:  python3 generate_grethe_references.py
       writes every CSV/JSON beside this file; a re-run is checked with ``cmp``
-      against the committed files (no external dependency: deterministic
-      arithmetic, no MSS_DIR, no MATLAB_BIN).
+      against the committed files (deterministic arithmetic, no MSS_DIR, no
+      MATLAB_BIN; the one dependency is more_transformations' ``skew``, as
+      every library generator takes it, AGENTS.md Transforms -- not run with
+      ``-I``, U8b).
 
 Sources (numbers and forms, rule 4 — none typed from memory without a citation)
 ---------------------------------------------------------------------------
@@ -65,9 +67,10 @@ NU_WATER = 1.0e-6  # Fossen 2011, p. 125, below eq. 6.85 (20 degC); cylinderDrag
 # ---------------------------------------------------------------------------
 
 def skew(v):
-    """S(v) a = v x a (Fossen 2011, eq. 2.10, p. 20; Smtrx.m 11-13)."""
-    x, y, z = v
-    return np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    """S(v) a = v x a (Fossen 2011, eq. 2.10, p. 20; Smtrx.m 11-13), from
+    more_transformations (U8b, owner 2026-10-09, E-62; AGENTS.md Transforms)."""
+    from more_transformations.matrix_transforms import MatrixTransforms
+    return MatrixTransforms.skew(v)
 
 
 def h_matrix(r):
