@@ -45,6 +45,43 @@ def lamb_spheroid_parameters():
     return (by_name["roll_added_inertia_ratio"],)
 
 
+GIVEN_DERIVATIVE_ADDED_MASS_NAMES = ("Xudot", "Yvdot", "Ypdot", "Yrdot", "Zwdot", "Zqdot", "Kvdot", "Kpdot", "Krdot",
+                                     "Mwdot", "Mqdot", "Nvdot", "Npdot", "Nrdot")
+
+
+def given_derivative_added_mass_parameters():
+    """The 14 published nondimensional acceleration derivatives, each its own
+    declared parameter (rule 16: primitives, not a re-derivation)."""
+    return tuple(Parameter(f"nondim_{n}", (1, 1), "1", f"nondimensional {n} (npsauv.m 166-171)")
+                for n in GIVEN_DERIVATIVE_ADDED_MASS_NAMES)
+
+
+def given_derivative_added_mass():
+    """``M_A`` of a body whose added mass is given as published nondimensional
+    acceleration derivatives (not computed from a hull form): the sparse
+    symmetric matrix of ``npsauv.m`` 166-172, de-scaled by Fossen's
+    prime-scaling (Appendix D.2) with ``r3 = 1/2 rho L^3`` and
+    ``Tinv = diag(1,1,1,L,L,L)``. Couplings ``length``, ``water_density``."""
+    names = [f"nondim_{n}" for n in GIVEN_DERIVATIVE_ADDED_MASS_NAMES]
+    s = {n: ca.SX.sym(n) for n in names}
+    d = {n: s[f"nondim_{n}"] for n in GIVEN_DERIVATIVE_ADDED_MASS_NAMES}
+    length = ca.SX.sym("length")
+    water_density = ca.SX.sym("water_density")
+    zero = ca.SX(0)
+    nondim_matrix = -ca.vertcat(  # (npsauv.m 166-171)
+        ca.horzcat(d["Xudot"], zero, zero, zero, zero, zero),
+        ca.horzcat(zero, d["Yvdot"], zero, d["Ypdot"], zero, d["Yrdot"]),
+        ca.horzcat(zero, zero, d["Zwdot"], zero, d["Zqdot"], zero),
+        ca.horzcat(zero, d["Kvdot"], zero, d["Kpdot"], zero, d["Krdot"]),
+        ca.horzcat(zero, zero, d["Mwdot"], zero, d["Mqdot"], zero),
+        ca.horzcat(zero, d["Nvdot"], zero, d["Npdot"], zero, d["Nrdot"]))
+    r3 = 0.5 * water_density * length ** 3  # (Fossen's prime-scaling, Appendix D.2; npsauv.m 119)
+    t_inv = ca.diag(ca.vertcat(1.0, 1.0, 1.0, length, length, length))  # (npsauv.m 117)
+    m_a = r3 * t_inv @ nondim_matrix @ t_inv  # (npsauv.m 172)
+    return function_from("given_derivative_added_mass", {**s, "length": length, "water_density": water_density},
+                         {"M_A": m_a})
+
+
 def scaled_derivatives():
     """``M_A = -diag(c [A11, m_hull, m_hull, I11, I22, I33])`` from the hull's
     own couplings (otter.m 152-159)."""

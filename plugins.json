@@ -80,6 +80,16 @@
             "Name": "PrescribedWrench",
             "Path": "more_dynamics/plugins/force_producers/prescribed_wrench.py",
             "Type": "file"
+        },
+        {
+            "Name": "DerivativeAuv",
+            "Path": "more_dynamics/plugins/vehicle_models/derivative_auv.py",
+            "Type": "file"
+        },
+        {
+            "Name": "CoefficientHullLoads",
+            "Path": "more_dynamics/plugins/hydrodynamics/coefficient_hull_loads.py",
+            "Type": "file"
         }
     ],
     "PluginTypes": [

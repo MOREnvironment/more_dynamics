@@ -18,7 +18,7 @@ import math
 
 import casadi as ca
 
-from more_transformations.more_casadi_transformations import Parameter
+from more_transformations.more_casadi_transformations import MatrixTransforms, Parameter
 
 from more_dynamics.models.rigid_body.kinetics import rigid_body_casadi
 from more_dynamics.models.rigid_body.mass_properties import rigid_body_parameters
@@ -69,6 +69,49 @@ def homogeneous_spheroid_parameters(*, density_given=True):
     by_name = {d.name: d for d in rigid_body_parameters("spheroid")}
     names = _HOMOGENEOUS_SPHEROID_OWN if density_given else tuple(n for n in _HOMOGENEOUS_SPHEROID_OWN if n != "body_density")
     return tuple(by_name[n] for n in names)
+
+
+FULL_TENSOR_RIGID_BODY_PARAMETERS = (
+    Parameter("body_mass", (1, 1), "kg", "body mass m", 0.0, minimum_exclusive=True),
+    Parameter("inertia_diagonal", (3, 1), "kg*m^2", "[Ix, Iy, Iz] about the CO", 0.0, minimum_exclusive=True),
+    Parameter("inertia_products", (3, 1), "kg*m^2",
+             "[Ixy, Iyz, Ixz] about the CO; I = [[Ix,-Ixy,-Ixz],[-Ixy,Iy,-Iyz],[-Ixz,-Iyz,Iz]] (npsauv.m 159-161)"),
+    Parameter("body_center_of_gravity", (3, 1), "m", "CO -> CG r_g, body axes (FRD)"),
+)
+
+
+def full_tensor_rigid_body():
+    """``M_RB`` only, of a body whose full inertia tensor about the CO is
+    given directly (not a diagonal spheroid or hull_with_payload form):
+    ``M_RB = [[m I3, -m S(r_g)], [m S(r_g), I_o]]`` (Fossen 2011, eq. 3.44,
+    p. 52, the general-origin form; MSS ``npsauv.m`` 159-164).
+
+    No ``C_RB``: the NPS AUV II's own equations (``npsauv.m`` 241-274) embed
+    the rigid-body Coriolis-centripetal terms directly in the hydrodynamic
+    force, evaluated with the relative velocity and no separate ``-C nu_r``
+    term in the equation of motion (unlike ``remus100.m`` 257-258) —
+    ``coefficient_loads`` reproduces them there, bug-for-bug with MSS (a
+    candidate MSS sign inconsistency in the pitch moment is flagged there,
+    not fixed: rule 15)."""
+    body_mass = ca.SX.sym("body_mass")
+    inertia_diagonal = ca.SX.sym("inertia_diagonal", 3)
+    inertia_products = ca.SX.sym("inertia_products", 3)  # [Ixy, Iyz, Ixz]
+    r_g = ca.SX.sym("body_center_of_gravity", 3)
+    Ixy, Iyz, Ixz = inertia_products[0], inertia_products[1], inertia_products[2]
+    inertia = ca.vertcat(  # I_o, about the CO (npsauv.m 159-161)
+        ca.horzcat(inertia_diagonal[0], -Ixy, -Ixz),
+        ca.horzcat(-Ixy, inertia_diagonal[1], -Iyz),
+        ca.horzcat(-Ixz, -Iyz, inertia_diagonal[2]))
+    s_r = MatrixTransforms.skew(r_g)
+    m_rb = ca.vertcat(  # (Fossen 2011, eq. 3.44, p. 52; npsauv.m 163-164)
+        ca.horzcat(body_mass * ca.SX.eye(3), -body_mass * s_r),
+        ca.horzcat(body_mass * s_r, inertia))
+    return function_from(
+        "full_tensor_rigid_body",
+        {"body_mass": body_mass, "inertia_diagonal": inertia_diagonal, "inertia_products": inertia_products,
+         "body_center_of_gravity": r_g},
+        {"M_RB": m_rb, "mass": body_mass, "center_of_gravity": r_g,
+         "inertia_diagonal": inertia_diagonal, "inertia_products": inertia_products})
 
 
 def hull_with_point_payload():
