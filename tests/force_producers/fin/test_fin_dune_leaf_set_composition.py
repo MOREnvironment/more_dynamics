@@ -51,7 +51,7 @@ from fin_parts_contract import (
 
 
 def _vsim_block(fin_count, values):
-    from more_dynamics.models.force_producers import vsim_fins_casadi, vsim_fins_parameters
+    from more_dynamics.models.fin.vsim_fins import vsim_fins_casadi, vsim_fins_parameters
     from more_transformations.more_casadi_transformations import freeze
 
     return freeze(vsim_fins_casadi(fin_count=fin_count), vsim_fins_parameters(fin_count=fin_count), values)

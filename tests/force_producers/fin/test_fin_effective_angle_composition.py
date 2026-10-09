@@ -210,7 +210,7 @@ def test_open_part_parameters_are_named_by_slot_in_a_set():
              "interference": part("interference", "none"), "section": part("section", "quadratic_drag")}
     open_fin = freeze(s.lifting_fin_casadi(parts), s.lifting_fin_parameters(),
                       s.check_lifting_fin_values(geometry([-0.75, 0, 0], NEG_Y, 0.013, E_X)))
-    m = module("force_producer_set")
+    m = module("shared.force_producer_set")
     block = m.force_producer_set_casadi([open_fin, open_fin], 2)
     assert "producers[0].section.lift_slope" in block.name_in()
     assert "producers[1].section.lift_slope" in block.name_in()

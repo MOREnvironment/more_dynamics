@@ -199,7 +199,7 @@ def test_set_refuses_a_producer_without_a_fed_input(missing):
     syms = {n: ca.SX.sym(n, rows) for n, rows in inputs.items()}
     bad = ca.Function("bad", list(syms.values()), [ca.SX.zeros(6), ca.SX(0, 1)], list(syms), ["tau", "state_dot"])
     with pytest.raises(ValueError) as error:
-        module("force_producer_set").force_producer_set_casadi([_deflection_only_fin(), bad], 2)
+        module("shared.force_producer_set").force_producer_set_casadi([_deflection_only_fin(), bad], 2)
     assert "producers[1]" in str(error.value) and missing in str(error.value), str(error.value)
 
 

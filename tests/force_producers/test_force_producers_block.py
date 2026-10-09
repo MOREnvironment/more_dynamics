@@ -29,7 +29,7 @@ Added 2026-10-06, section 7 at the end of this file:
 * Outboard: the reverse-sign fix is pinned; throttle mode gets its G4; the
   default path's reverse branch (signed J, reverse factors) gets a test.
 * Transforms: no local rotation or cross product in
-  ``models/force_producers``; rotations and skews come from
+  the force-producer model folders; rotations and skews come from
   ``more_transformations`` (numpy) and ``more_casadi_transformations``
   (graph).
 * The allocation (thrust from the requested wrench, ``B_prop``) belongs to
@@ -145,7 +145,7 @@ DATA_DIR = Path(__file__).resolve().parent / "data"
 # (a file of this repository).
 EXTERNAL_ROOTS = {"source-sim/MSS/": "MSS_DIR"}
 TESTS_ROOT = Path(__file__).resolve().parents[1]   # "tests/..." paths: this repository
-PACKAGE = "more_dynamics.models.force_producers"
+PACKAGE = "more_dynamics.models"
 
 G1_TOLERANCE = 1e-9   # G1: block vs MATLAB running MSS, absolute
 G2_TOLERANCE = 1e-10  # G2: block vs a transcription, absolute
@@ -317,9 +317,10 @@ def _gravity(mu):
     return g0 * (1 + k1 * np.sin(mu) ** 2) / np.sqrt(1 - e2 * np.sin(mu) ** 2)
 
 
-# modules under PACKAGE: the thruster and propulsor blocks sit in their own sub-folders
-MODULE_PATH = {"differential_thruster": "thrusters.differential_thruster", "outboard_motor": "thrusters.outboard_motor",
-               "propeller": "propulsor.propeller", "wageningen_kt_kq": "propulsor.wageningen_kt_kq"}
+# modules under PACKAGE: each block sits in the folder of its physics
+MODULE_PATH = {"differential_thruster": "thruster.differential_thruster", "outboard_motor": "outboard.outboard_motor",
+               "propeller": "propeller.propeller", "wageningen_kt_kq": "propeller.wageningen_kt_kq",
+               "fins": "fin.fins", "vsim_fins": "fin.vsim_fins", "_common": "shared.force_producer_common"}
 
 
 def _contract(name):
@@ -1288,13 +1289,14 @@ TRANSFORMS_CASADI = "more_transformations.more_casadi_transformations"
 
 def _force_producer_modules():
     package = Path(importlib.import_module(PACKAGE).__file__).resolve().parent
-    files = [path for folder in (package, package / "thrusters", package / "propulsor")
-             for path in folder.glob("*.py")]
+    files = [package / "fin" / "fins.py", package / "fin" / "vsim_fins.py",
+             package / "shared" / "force_producer_common.py"]
+    files += [path for folder in ("thruster", "outboard", "propeller") for path in (package / folder).glob("*.py")]
     return {path.stem: ast.parse(path.read_text()) for path in sorted(files)}
 
 
 def test_transforms_no_local_rotation_or_skew_in_force_producers():
-    """No module of models/force_producers defines a rotation, skew,
+    """No force-producer model module defines a rotation, skew,
     H, T, J or gravity of its own."""
     local = {(name, node.name) for name, tree in _force_producer_modules().items()
              for node in ast.walk(tree)
@@ -1567,7 +1569,7 @@ def test_gradient_of_tau_with_respect_to_a_parameter(name):
 
 
 def test_blocks_import_no_numpy():
-    """No module of models/force_producers imports numpy or scipy, or the
+    """No force-producer model module imports numpy or scipy, or the
     numpy ``more_transformations`` modules (AST scan of every file)."""
     for name, tree in _force_producer_modules().items():
         for node in ast.walk(tree):

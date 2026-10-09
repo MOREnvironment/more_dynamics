@@ -1,14 +1,14 @@
 {
-    "ScriptPath": "scripts/vehicles/simulate_vehicle.py",
+    "ScriptPath": "scripts/vehicles/vehicle_simulation.py",
     "Language": "python",
     "Configurations": {
         "remus100": {
-            "Description": "REMUS 100 AUV, torpedo class (Prestero 2001 and MSS remus100.m values)",
+            "Description": "REMUS 100 AUV, spheroid class (Prestero 2001 and MSS remus100.m values)",
             "Components": {
                 "vessels": [
                     {
-                        "Id": "24d92e9a-fa68-528a-8278-5cdc22cbb17b",
-                        "PluginName": "more_dynamics::MarineCraft6DOF"
+                        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+                        "PluginName": "more_dynamics::SpheroidAuv"
                     }
                 ]
             }
@@ -18,8 +18,8 @@
             "Components": {
                 "vessels": [
                     {
-                        "Id": "9e3c87b5-9998-5d85-86d8-7bfdf6a80222",
-                        "PluginName": "more_dynamics::MarineCraft6DOF"
+                        "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
+                        "PluginName": "more_dynamics::Catamaran"
                     }
                 ]
             }

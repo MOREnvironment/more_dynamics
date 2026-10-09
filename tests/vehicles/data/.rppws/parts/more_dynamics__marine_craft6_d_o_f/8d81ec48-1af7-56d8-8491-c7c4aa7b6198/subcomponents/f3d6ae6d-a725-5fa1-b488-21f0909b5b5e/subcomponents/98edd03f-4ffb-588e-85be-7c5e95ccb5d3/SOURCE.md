@@ -1,1 +1,0 @@
-CircularCylinderReynolds: physics form | drag coefficient of a circular cylinder against Reynolds number with the aspect-ratio correction (cylinderDrag.m 78-110) | assumes 1e-6 m^2/s viscosity | raise: a tank-measured section drag

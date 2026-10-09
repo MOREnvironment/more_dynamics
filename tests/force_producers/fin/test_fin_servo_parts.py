@@ -158,7 +158,7 @@ def test_servo_refuses_values_outside_their_ranges(form):
     ("none", False, "on_output", "angle_limit"),
 ])
 def test_invalid_switch_combinations_are_refused(dynamics, rate_limit, angle_limit, word):
-    servo_module = module("fin.servo.servo")
+    servo_module = module("servo.servo")
     with pytest.raises(ValueError, match=word):
         servo_module.servo_parameters(dynamics=dynamics, rate_limit=rate_limit, angle_limit=angle_limit)
     with pytest.raises(ValueError, match=word):
@@ -246,7 +246,7 @@ def test_lag_rate_angle_with_distant_limits_equals_the_unlimited_lag():
     since neither limit ever binds."""
     from more_transformations.more_casadi_transformations import freeze
 
-    servo_module = module("fin.servo.servo")
+    servo_module = module("servo.servo")
     far = {"max_deflection": 1.0e6, "max_rate": 1.0e9, "time_constant": 0.2}
     limited = _servo("lag_rate_angle", **far)
     unlimited_block = servo_module.servo_casadi(dynamics="first_order_lag", rate_limit=False, angle_limit="none")

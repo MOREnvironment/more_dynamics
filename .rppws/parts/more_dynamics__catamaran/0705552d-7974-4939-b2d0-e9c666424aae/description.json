@@ -1,0 +1,31 @@
+{
+    "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
+    "Name": "Otter",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::Catamaran",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "d085cc51-da7c-40f3-8781-83092ae723e4",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SurfaceRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "1483de2a-82ba-482a-8cc8-6733d024777d",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::SurfaceHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}

@@ -1,0 +1,17 @@
+{
+    "Id": "b9fb9332-1405-466f-9f26-61596e9264d7",
+    "Name": "REMUS 100 propeller",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Propeller",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

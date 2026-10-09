@@ -7,12 +7,12 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 
-from more_dynamics.models.force_producers.prescribed_wrench import prescribed_wrench
-from more_dynamics.plugins.shared.payload_io import OPEN_PARAMETERS, PayloadBuilder
+from more_dynamics.models.shared.prescribed_wrench import prescribed_wrench
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder
 
 
 class PrescribedWrench(ForceProducer):
-    PARAMETERS = [OPEN_PARAMETERS]
+    PARAMETERS = []
 
     def __init__(self) -> None:
         self._model = None

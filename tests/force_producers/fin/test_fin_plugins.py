@@ -1,29 +1,27 @@
-"""The fin parts, the servo, the lifting fin and the force-producer set as
-plugins of Luka's form, built from ``.rppws`` trees by rpp's own builder.
+"""The fin, the fin pairs and the propeller as plugins of Luka's form
+(``ForceProducer``), built with rpp's own ``ComponentContext`` inside a REMUS
+100 vehicle.
 
-* Every plugin of the fin family is listed in ``plugins.json``, one class per
-  file, every parameter with a default; the defaults are the printed numbers
-  they cite; the two parts waiting on a source refuse to initialise saying so.
-* Linked parts (``IsLinked``): a fin kept as one top-level part and linked
-  into a vehicle's force-producer list gives the same vehicle as the fin
-  written in place; its servo state precedes the vehicle's twelve states, its
-  command is the vehicle's last input, its wrench inside the vehicle equals
-  the model-layer ``lifting_fin_casadi`` assembled from the same parts and
+* Every force-producer plugin of ours is listed in ``plugins.json``, one class
+  per file, every parameter with a default; the defaults are the printed
+  numbers they cite; the two forms waiting on a source refuse to initialise
+  saying so.
+* The ``Fin`` plugin inside a vehicle: its servo state precedes the vehicle's
+  twelve states, its command is the vehicle's last input, its wrench equals the
+  model-layer ``lifting_fin_casadi`` assembled from the same forms and
   numbers, and its servo derivative equals the servo model's.
-* The servo plugin's four settings (the lag, the rate limit and the angle
-  limit on or off) equal the servo model with the same selectors; settings the
-  model refuses are refused when the vehicle is built.
-* The REMUS 100 rudder and stern plane as two ``LiftingFin`` compositions in a
-  ``ForceProducerSet`` equal the landed ``FinPairsDeflectionOnly`` part on the
-  frozen MSS rows (and the MATLAB wrench of those rows, scaled to the vehicle's
-  one water density).
-* A fin refuses a part that does not fit its slot, a child parameter left
-  open, and a part waiting on a source; a set refuses a command map of the
-  wrong shape; the plugin layer holds no trace of the retired part base.
+* The servo's four settings (the lag, the rate limit and the angle limit on or
+  off) equal the servo model with the same selectors; settings the model
+  refuses are refused when the vehicle is built.
+* The REMUS 100 rudder and stern plane as two ``Fin`` plugins equal the landed
+  ``FinPairsDeflectionOnly`` plugin on the frozen MSS rows (and the MATLAB
+  wrench of those rows).
+* A fin refuses an unknown form and a form waiting on a source; the plugin
+  layer holds no trace of the retired part base.
 
 Reference numbers: the frozen MSS rows and the printed Prestero values of
 ``tests/force_producers/fin/data`` and the REMUS parameter file of
-``tests/vehicles/data``.
+``tests/vehicle_models/data``.
 
 References
 ----------
@@ -53,34 +51,24 @@ from fin_parts_contract import (E_X, E_Y, G1_TOLERANCE, G2_TOLERANCE, SERVO_SETT
                                 max_diff, mss_columns, mss_constant, mss_fins, part, part_declared, prestero_value,
                                 producer_set, rng, tau)
 
-LIBRARY = Path(__file__).resolve().parents[2].parent
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "vehicles"))
+LIBRARY = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "vehicle_models"))
 import vehicle_contract as vc  # noqa: E402
-from vehicle_contract import make_trees  # noqa: E402
 
-FIN_PLUGINS = {
-    "Servo": "force_producers/fin/servo/servo", "FinInflowRigidPoint": "force_producers/fin/inflow/rigid_point",
-    "FinInflowTranslational": "force_producers/fin/inflow/translational",
-    "FinFlowAngleSmallAngle": "force_producers/fin/flow_angle/small_angle", "FinFlowAngleNone": "force_producers/fin/flow_angle/none",
-    "FinInterferenceNone": "force_producers/fin/interference/none",
-    "FinInterferenceSlenderBody": "force_producers/fin/interference/slender_body",
-    "FinSectionQuadraticDrag": "force_producers/fin/section/quadratic_drag",
-    "FinSectionLinearSection": "force_producers/fin/section/linear_section",
-    "FinSectionLiftingLine": "force_producers/fin/section/lifting_line",
-    "LiftingFin": "force_producers/fin/lifting_fin", "ForceProducerSet": "force_producers/force_producer_set"}
-WAITING = {"FinInterferenceSlenderBody": "Pitts 1957", "FinSectionLiftingLine": "lifting-line induced drag"}
+FORCE_PRODUCER_PLUGINS = {"Fin": "force_producers/fin", "FinPairsDeflectionOnly": "force_producers/fin_pairs_deflection_only",
+                          "Propeller": "force_producers/propeller", "PrescribedWrench": "force_producers/prescribed_wrench"}
 DEG = np.pi / 180.0
 # the servo numbers of the plugin defaults (Sarhadi 2026, Fig. 4, p. 4)
 SERVO_NUMBERS = {"time_constant": 0.1, "max_deflection": 20.0 * DEG, "max_rate": 30.0 * DEG}
-RHO = make_trees.REMUS["water_density"]
+RHO = vc.REMUS["water_density"]
 
 
 def _classes():
-    vc.builder()
+    vc.plugins()
     registry = json.loads((LIBRARY / "plugins.json").read_text())
     entries = {e["Name"]: e["Path"] for e in registry["Plugins"]}
     found = {}
-    for name, path in FIN_PLUGINS.items():
+    for name, path in FORCE_PRODUCER_PLUGINS.items():
         assert entries.get(name) == f"more_dynamics/plugins/{path}.py", (name, entries.get(name))
         module = importlib.import_module(entries[name][:-3].replace("/", "."))
         found[name] = getattr(module, name)
@@ -88,12 +76,12 @@ def _classes():
 
 
 # --------------------------------------------------------------------------
-# The plugin family
+# The plugins
 # --------------------------------------------------------------------------
-def test_every_fin_plugin_is_listed_and_has_a_class_and_one_class_per_file():
+def test_every_force_producer_plugin_is_listed_and_has_a_class_and_one_class_per_file():
     classes = _classes()
-    assert set(classes) == set(FIN_PLUGINS)
-    for name, path in FIN_PLUGINS.items():
+    assert set(classes) == set(FORCE_PRODUCER_PLUGINS)
+    for name, path in FORCE_PRODUCER_PLUGINS.items():
         text = (LIBRARY / "more_dynamics" / "plugins" / f"{path}.py").read_text()
         assert text.count("\nclass ") == 1, name
 
@@ -109,24 +97,32 @@ def _default(cls, name):
 
 
 def test_defaults_are_the_printed_numbers_they_cite():
-    classes = _classes()
-    fin, servo = classes["LiftingFin"], classes["Servo"]
+    fin = _classes()["Fin"]
     assert _default(fin, "fin_position") == [prestero_value("fin_position_x"), 0.0, 0.0]  # Table A.5, p. 103
     assert _default(fin, "fin_area") == prestero_value("fin_area")
-    for section in ("FinSectionQuadraticDrag", "FinSectionLinearSection"):
-        assert _default(classes[section], "lift_slope") == prestero_value("lift_slope")
+    assert _default(fin, "lift_slope") == prestero_value("lift_slope")
     for name, value in SERVO_NUMBERS.items():  # Sarhadi 2026, Fig. 4, p. 4
-        assert abs(_default(servo, name) - value) <= 1e-15, name
-    assert [_default(servo, n) for n in ("dynamics", "rate_limit", "angle_limit")] == \
+        assert abs(_default(fin, name) - value) <= 1e-15, name
+    assert [_default(fin, f"servo_{n}") for n in ("dynamics", "rate_limit", "angle_limit")] == \
         [SERVO_SETTINGS["lag_rate_angle"][n] for n in ("dynamics", "rate_limit", "angle_limit")]
 
 
-@pytest.mark.parametrize("name, source", sorted(WAITING.items()))
-def test_a_part_waiting_on_a_source_refuses_to_initialise_saying_so(name, source):
-    cls = _classes()[name]
-    assert [d.name for d in cls.PARAMETERS] == []
-    with pytest.raises(NotImplementedError, match=f"waiting on source: {source}"):
-        cls().initialize(None)
+@pytest.mark.parametrize("slot, form, source", [
+    ("section", "lifting_line", "lifting-line induced drag"),
+    ("interference", "slender_body", "Pitts 1957"),
+])
+def test_a_form_waiting_on_a_source_refuses_to_initialise_saying_so(slot, form, source):
+    fin = _classes()["Fin"]
+    with pytest.raises(NotImplementedError, match=f"waits on source: {source}"):
+        vc.context_of(fin, {slot: form}).initialize()
+
+
+@pytest.mark.parametrize("slot, form", [("inflow", "wake"), ("flow_angle", "large_angle"), ("section", "stall"),
+                                        ("interference", "none_such")])
+def test_a_fin_refuses_an_unknown_form_and_names_the_choices(slot, form):
+    fin = _classes()["Fin"]
+    with pytest.raises(ValueError, match=f"Fin: {slot} must be one of"):
+        vc.context_of(fin, {slot: form}).initialize()
 
 
 def test_the_plugin_layer_holds_no_trace_of_the_retired_part_base():
@@ -137,25 +133,23 @@ def test_the_plugin_layer_holds_no_trace_of_the_retired_part_base():
                                          "proportional_force_fin", "ProportionalForceFin")):
             offenders.append(str(path.relative_to(LIBRARY)))
     assert not offenders, offenders
-    retired = [p for p in ("fin_part_plugin", "proportional_force_fin", "fin_inflow_rigid_point",
-                           "fin_section_quadratic_drag") if (LIBRARY / "more_dynamics" / "plugins" /
-                                                            "force_producers" / f"{p}.py").exists()]
-    assert not retired, retired
+    plugins = LIBRARY / "more_dynamics" / "plugins"
+    assert not (plugins / "vehicles").exists() and not (plugins / "force_producers" / "fin").exists()
 
 
 # --------------------------------------------------------------------------
-# Vehicle helpers
+# Vehicle helpers: the REMUS hull with a wrench and one Fin
 # --------------------------------------------------------------------------
+def _hull_with_fin(fin_params=None):
+    p = vc.plugins()
+    return vc.remus(coriolis="munk_couplings_removed", current="none",
+                    actuators=[p.PrescribedWrench, (p.Fin, fin_params or {})])
+
+
 def _evaluate(vessel, x, u):
-    """The vehicle's state derivative and its named output entries at stacked ``x`` and ``u``."""
+    """The vehicle's state derivative and its named signals at stacked ``x`` and ``u``."""
     graph = vc.graph_of(vessel)
-    return np.asarray(graph.step(x, u)).ravel(), vc.output_entries(vessel, x, u)
-
-
-def _states(vessel, vehicle_state):
-    """The vehicle's stacked state: the children's states (zeros) then the twelve vehicle states."""
-    n = sum(d.size for d in vessel.graph().stateDescription) - 12
-    return np.concatenate([np.zeros(n), vehicle_state])
+    return np.asarray(graph.step(x, u)).ravel(), vessel.signals(x, u)
 
 
 def _random_states(n, child=0):
@@ -166,13 +160,13 @@ def _random_states(n, child=0):
 
 
 def _fin_input(command):
-    """Inputs of a hull-plus-one-fin vehicle: three current inputs (still water), the wrench, the fin command."""
-    return np.concatenate([np.zeros(3), np.zeros(6), [command]])
+    """Inputs of a hull-plus-one-fin vehicle: the wrench, the fin command."""
+    return np.concatenate([np.zeros(6), [command]])
 
 
 def _reference_fin(servo="lag_rate_angle"):
-    """The model-layer fin of ``make_trees.prestero_fin``: the plugin defaults' servo, rigid-point inflow, small-angle
-    flow angle, no interference, quadratic-drag section."""
+    """The model-layer fin of the plugin defaults: the lag servo, rigid-point inflow, small-angle flow angle, no
+    interference, quadratic-drag section."""
     declared = {"max_deflection", "max_rate", "time_constant"}
     return fin_from_forms(
         {"servo": servo, "inflow": "rigid_point", "flow_angle": "small_angle", "interference": "none",
@@ -183,66 +177,49 @@ def _reference_fin(servo="lag_rate_angle"):
 
 
 # --------------------------------------------------------------------------
-# Linked parts (IsLinked)
+# The fin in a vehicle
 # --------------------------------------------------------------------------
-def test_a_linked_fin_is_a_force_producer_with_its_servo_state_before_the_vehicle_states():
-    vessel = vc.build("remus100_hull_fin_linked")
+def test_a_fin_is_an_actuator_with_its_servo_state_before_the_vehicle_states():
+    vessel = _hull_with_fin()
     graph = vessel.graph()
     assert [(d.name, d.size) for d in graph.stateDescription] == [("servo_state", 1), ("state", 12)]
-    assert vc.input_names(vessel)[-2:] == ["desired_wrench", "fin_angle_command"]
-    assert vc.input_names(vessel)[-1] == "fin_angle_command"
-    assert [d.name for d in graph.outputDescription][:2] == ["output", "force_producers.1.generated_force"]
+    assert vc.input_names(vessel) == ["desired_wrench", "fin_angle_command"]
 
 
-def test_a_linked_fin_gives_the_same_vehicle_as_the_fin_written_in_place():
-    linked, inline = vc.build("remus100_hull_fin_linked"), vc.build("remus100_hull_fin_inline")
-    worst = 0.0
-    for x, command in _random_states(25, child=1):
-        u = _fin_input(command)
-        a, b = _evaluate(linked, x, u), _evaluate(inline, x, u)
-        worst = max(worst, max_diff(a[0], b[0]), max_diff(a[1]["force_producers.1.generated_force"],
-                                                          b[1]["force_producers.1.generated_force"]))
-    assert worst == 0.0
-
-
-def test_the_fin_wrench_in_the_vehicle_is_the_model_layer_fin_on_the_same_parts():
-    vessel = vc.build("remus100_hull_fin_linked")
+def test_the_fin_wrench_in_the_vehicle_is_the_model_layer_fin_on_the_same_forms():
+    vessel = _hull_with_fin()
     fin = _reference_fin()
     worst = 0.0
     for x, command in _random_states(20, child=1):
         _, out = _evaluate(vessel, x, _fin_input(command))
         reference = tau(fin, command, x[1 + 6:1 + 12], RHO, state=x[:1])  # nu_r = nu in still water
-        worst = max(worst, max_diff(out["force_producers.1.generated_force"], reference))
+        worst = max(worst, max_diff(out["actuators.1.generated_force"], reference))
     assert worst <= G2_TOLERANCE, worst
 
 
 def test_the_servo_derivative_in_the_vehicle_is_the_servo_models():
-    vessel = vc.build("remus100_hull_fin_linked")
+    vessel = _hull_with_fin()
     servo = part("servo", "lag_rate_angle", SERVO_NUMBERS)
     worst = 0.0
     for x, command in _random_states(20, child=1):
         xdot, out = _evaluate(vessel, x, _fin_input(command))
         reference = call(servo, command=command, servo_state=x[:1])
         worst = max(worst, abs(xdot[0] - reference["servo_state_dot"][0]),
-                    abs(out["force_producers.1.deflection"][0] - reference["deflection"][0]))
+                    abs(out["actuators.1.deflection"][0] - reference["deflection"][0]))
     assert worst <= 1e-14, worst
 
 
 # --------------------------------------------------------------------------
 # The servo's switches
 # --------------------------------------------------------------------------
-def _vehicle_with_servo(tmp_path, **settings):
-    fin = make_trees.prestero_fin()
-    fin["children"]["servo"] = make_trees.node("Servo", settings)
-    tree = make_trees.torpedo("MunkCouplingsRemoved", diagnostics=make_trees.FIN_DIAGNOSTICS,
-                              producers=[make_trees.node("PrescribedWrench"), fin])
-    return vc.build_variant(tmp_path, tree)
+def _servo_settings(settings):
+    return {f"servo_{key}": value for key, value in settings.items()}
 
 
 @pytest.mark.parametrize("name", sorted(SERVO_SETTINGS))
-def test_each_servo_setting_equals_the_servo_model_with_the_same_selectors(name, tmp_path):
+def test_each_servo_setting_equals_the_servo_model_with_the_same_selectors(name):
     settings = SERVO_SETTINGS[name]
-    vessel = _vehicle_with_servo(tmp_path, **settings)
+    vessel = _hull_with_fin(_servo_settings(settings))
     lag = settings["dynamics"] == "first_order_lag"
     declared = {d.name for d in part_declared("servo", name)}
     servo = part("servo", name, {k: v for k, v in SERVO_NUMBERS.items() if k in declared})
@@ -252,7 +229,7 @@ def test_each_servo_setting_equals_the_servo_model_with_the_same_selectors(name,
         command *= 2.0  # beyond the 20 degree limit now and then
         xdot, out = _evaluate(vessel, x, _fin_input(command))
         reference = call(servo, command=command, servo_state=x[:1] if lag else [])
-        worst = max(worst, abs(out["force_producers.1.deflection"][0] - reference["deflection"][0]))
+        worst = max(worst, abs(out["actuators.1.deflection"][0] - reference["deflection"][0]))
         if lag:
             worst = max(worst, abs(xdot[0] - reference["servo_state_dot"][0]))
     assert worst <= 1e-14, worst
@@ -263,65 +240,81 @@ def test_each_servo_setting_equals_the_servo_model_with_the_same_selectors(name,
     ({"dynamics": "none", "rate_limit": False, "angle_limit": "on_output"}, "angle_limit"),
     ({"angle_limit": "on_both"}, "angle_limit"),
 ])
-def test_a_servo_setting_the_model_refuses_is_refused_when_the_vehicle_is_built(settings, word, tmp_path):
+def test_a_servo_setting_the_model_refuses_is_refused_when_the_vehicle_is_built(settings, word):
     with pytest.raises(Exception, match=word):
-        _vehicle_with_servo(tmp_path, **settings)
+        _hull_with_fin(_servo_settings(settings))
 
 
 # --------------------------------------------------------------------------
-# A fin set against the landed fin pairs, on the frozen MSS rows
+# Two fins against the landed fin pairs, on the frozen MSS rows
 # --------------------------------------------------------------------------
 def _rows():
     ref = mss_fins()
     return ref, np.column_stack([ref["ui1"], ref["ui2"]]), mss_columns(ref, "nu_r", 6), mss_columns(ref, "tau", 6)
 
 
-def _forces(vessel, commands, nu_r):
-    """The first force producer's wrench of a hull-plus-fins vehicle in still water, one row per command."""
-    key = "force_producers.0.generated_force"
-    return np.array([_evaluate(vessel, np.concatenate([np.zeros(6), v]), np.concatenate([np.zeros(3), c]))[1][key]
-                     for c, v in zip(commands, nu_r)])
+def _two_ideal_fins(values):
+    """The rudder and the stern plane of REMUS 100 as two ``Fin`` plugins (ideal servo, translational inflow, no
+    flow angle, no interference, quadratic-drag section): the deflection-only fin pairs of ``remus100.m`` 228-245."""
+    def fin(prefix, lift_axis):
+        return {"fin_position": [values[f"{prefix}_position"], 0.0, 0.0], "chord_axis": [1.0, 0.0, 0.0],
+                "lift_axis": lift_axis, "fin_area": values[f"{prefix}_area"], "servo_dynamics": "none",
+                "servo_rate_limit": False, "servo_angle_limit": "on_command",
+                "max_deflection": values["max_deflection"], "inflow": "translational", "flow_angle": "none",
+                "interference": "none", "section": "quadratic_drag",
+                "lift_slope": values[f"{prefix}_lift_coefficient"]}
+    p = vc.plugins()
+    return [(p.Fin, fin("rudder", [0.0, -1.0, 0.0])), (p.Fin, fin("stern_plane", [0.0, 0.0, -1.0]))]
 
 
-def test_the_rudder_and_stern_plane_as_lifting_fins_in_a_set_equal_the_fin_pairs_part_on_the_mss_rows():
-    """The gate trees' REMUS 100 (one geometry for the whole vehicle): a set of two ``LiftingFin`` equals
-    ``FinPairsDeflectionOnly`` on the commands and velocities of the frozen MSS rows."""
-    pairs, fin_set = vc.build("remus100_fin_pairs"), vc.build("remus100_fin_set")
-    assert vc.input_names(pairs)[-1] == "fin_deflection_command"
-    assert vc.input_names(fin_set)[-1] == "force_producer_command"
+def _pairs(values):
+    p = vc.plugins()
+    return [(p.FinPairsDeflectionOnly, vc.pick(p.FinPairsDeflectionOnly, values))]
+
+
+def _wrench(vessel, commands, nu_r, keys):
+    """The summed wrench of the named actuators of a hull-plus-fins vehicle in still water, one row per command."""
+    rows = []
+    for c, v in zip(commands, nu_r):
+        signals = vessel.signals(np.concatenate([np.zeros(6), v]), c)
+        rows.append(sum(signals[key] for key in keys))
+    return np.array(rows)
+
+
+def test_the_rudder_and_stern_plane_as_two_fins_equal_the_fin_pairs_plugin_on_the_mss_rows():
+    values = vc.remus_values()
+    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=_pairs(values))
+    fins = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=_two_ideal_fins(values))
+    assert vc.input_names(pairs) == ["fin_deflection_command"] and vc.input_names(fins) == [
+        "fin_angle_command", "fin_angle_command"]
     _, commands, nu_r, _ = _rows()
-    assert max_diff(_forces(pairs, commands, nu_r), _forces(fin_set, commands, nu_r)) <= G2_TOLERANCE
+    a = _wrench(pairs, commands, nu_r, ["actuators.0.generated_force"])
+    b = _wrench(fins, commands, nu_r, ["actuators.0.generated_force", "actuators.1.generated_force"])
+    assert max_diff(a, b) <= G2_TOLERANCE
 
 
-def test_the_fin_set_equals_the_matlab_wrench_of_the_mss_rows_with_the_mss_fin_positions(tmp_path):
-    """The same two trees with the fin positions of the MATLAB rows (``remus100.m`` computes them from its own
+def test_the_two_fins_equal_the_matlab_wrench_of_the_mss_rows_with_the_mss_fin_positions():
+    """The same compositions with the fin positions of the MATLAB rows (``remus100.m`` computes them from its own
     hull length; the vehicle's consistent set uses ``-L/2``): the wrench equals ``tau`` of every row."""
     ref, commands, nu_r, expected = _rows()
-    values = {**make_trees.REMUS, "rudder_position": mss_constant(ref, "x_r"),
+    values = {**vc.remus_values(), "rudder_position": mss_constant(ref, "x_r"),
               "stern_plane_position": mss_constant(ref, "x_s")}
     assert values["water_density"] == mss_constant(ref, "rho")
-    pairs = make_trees.torpedo("MunkCouplingsRemoved", values=values, diagnostics=("force_producers.0.generated_force",),
-                               producers=[make_trees.remus_part("FinPairsDeflectionOnly", {
-                                   k: values[k] for k in ("rudder_area", "stern_plane_area", "rudder_lift_coefficient",
-                                                          "stern_plane_lift_coefficient", "rudder_position",
-                                                          "stern_plane_position", "max_deflection")})])
-    fin_set = make_trees.torpedo("MunkCouplingsRemoved", values=values,
-                                 diagnostics=("force_producers.0.generated_force",),
-                                 producers=[make_trees.fin_pair_set(values)])
-    for name, tree in (("pairs", pairs), ("set", fin_set)):
-        vessel = vc.build_variant(tmp_path / name, tree)
-        assert max_diff(_forces(vessel, commands, nu_r), expected) <= G1_TOLERANCE, name
+    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", values=values, actuators=_pairs(values))
+    fins = vc.remus(coriolis="munk_couplings_removed", current="none", values=values,
+                    actuators=_two_ideal_fins(values))
+    assert max_diff(_wrench(pairs, commands, nu_r, ["actuators.0.generated_force"]), expected) <= G1_TOLERANCE
+    assert max_diff(_wrench(fins, commands, nu_r, ["actuators.0.generated_force", "actuators.1.generated_force"]),
+                    expected) <= G1_TOLERANCE
 
 
-def test_a_set_of_lag_fins_stacks_their_states_and_equals_the_model_layer_set(tmp_path):
-    lag = make_trees.prestero_fin()
-    second = make_trees.prestero_fin()
-    second["params"].update({"fin_position": [-0.7, 0.0, 0.0], "lift_axis": [0.0, 0.0, -1.0]})
-    tree = make_trees.torpedo("MunkCouplingsRemoved", diagnostics=("force_producers.0.generated_force",), producers=[
-        make_trees.node("ForceProducerSet", {"command_count": 2, "command_map": [[1.0, 0.0], [0.0, 1.0]]}, [],
-                        {"producers": [lag, second]})])
-    vessel = vc.build_variant(tmp_path, tree)
-    assert [(d.name, d.size) for d in vessel.graph().stateDescription] == [("producer_state", 2), ("state", 12)]
+def test_two_lag_fins_stack_their_states_and_equal_the_model_layer_set():
+    p = vc.plugins()
+    first = {}
+    second = {"fin_position": [-0.7, 0.0, 0.0], "lift_axis": [0.0, 0.0, -1.0]}
+    vessel = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=[(p.Fin, first), (p.Fin, second)])
+    assert [(d.name, d.size) for d in vessel.graph().stateDescription] == [
+        ("servo_state", 1), ("servo_state", 1), ("state", 12)]
     forms = {"servo": "lag_rate_angle", "inflow": "rigid_point", "flow_angle": "small_angle",
              "interference": "none", "section": "quadratic_drag"}
     values = {"servo": SERVO_NUMBERS, "section": {"lift_slope": prestero_value("lift_slope")}}
@@ -335,48 +328,8 @@ def test_a_set_of_lag_fins_stacks_their_states_and_equals_the_model_layer_set(tm
         x = np.concatenate([g.uniform(-0.3, 0.3, 2), g.uniform(-0.2, 0.2, 6), g.uniform(-2.5, 2.5, 3),
                             g.uniform(-0.5, 0.5, 3)])
         command = g.uniform(-0.6, 0.6, 2)
-        u = np.concatenate([np.zeros(3), command])
-        xdot, out = _evaluate(vessel, x, u)
+        xdot, out = _evaluate(vessel, x, command)
         ref = call(reference, command=command, state=x[:2], nu_r=x[2 + 6:2 + 12], water_density=RHO)
-        worst = max(worst, max_diff(out["force_producers.0.generated_force"], ref["tau"]),
+        worst = max(worst, max_diff(out["actuators.0.generated_force"] + out["actuators.1.generated_force"], ref["tau"]),
                     max_diff(xdot[:2], ref["state_dot"]))
     assert worst <= G2_TOLERANCE, worst
-
-
-# --------------------------------------------------------------------------
-# Refusals
-# --------------------------------------------------------------------------
-def _vehicle_with_fin(tmp_path, change):
-    fin = make_trees.prestero_fin()
-    change(fin)
-    tree = make_trees.torpedo("MunkCouplingsRemoved", producers=[make_trees.node("PrescribedWrench"), fin])
-    return vc.build_variant(tmp_path, tree)
-
-
-def test_a_fin_refuses_a_part_that_does_not_fit_its_slot(tmp_path):
-    with pytest.raises(Exception, match="slot servo"):
-        _vehicle_with_fin(tmp_path, lambda fin: fin["children"].update(servo=make_trees.node("FinInflowTranslational")))
-
-
-def test_a_fin_refuses_a_child_parameter_left_open(tmp_path):
-    def open_slope(fin):
-        fin["children"]["section"]["params"]["open_parameters"] = ["lift_slope"]
-    with pytest.raises(Exception, match="open"):
-        _vehicle_with_fin(tmp_path, open_slope)
-
-
-@pytest.mark.parametrize("slot, plugin, source", [
-    ("section", "FinSectionLiftingLine", "lifting-line induced drag"),
-    ("interference", "FinInterferenceSlenderBody", "Pitts 1957"),
-])
-def test_a_fin_with_a_part_waiting_on_a_source_is_refused_saying_so(slot, plugin, source, tmp_path):
-    with pytest.raises(Exception, match=f"waiting on source: {source}"):
-        _vehicle_with_fin(tmp_path, lambda fin: fin["children"].update({slot: make_trees.node(plugin)}))
-
-
-def test_a_set_refuses_a_command_map_of_the_wrong_shape(tmp_path):
-    tree = make_trees.torpedo("MunkCouplingsRemoved", producers=[make_trees.node(
-        "ForceProducerSet", {"command_count": 2, "command_map": [[1.0, 0.0, 0.0]]}, [],
-        {"producers": [make_trees.prestero_fin(), make_trees.prestero_fin()]})])
-    with pytest.raises(Exception, match="command_map"):
-        vc.build_variant(tmp_path, tree)

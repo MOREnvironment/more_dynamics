@@ -1,0 +1,17 @@
+{
+    "Id": "876c181c-9ee3-46fc-b6f2-fd5df82b206d",
+    "Name": "REMUS 100 fin pairs",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::FinPairsDeflectionOnly",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

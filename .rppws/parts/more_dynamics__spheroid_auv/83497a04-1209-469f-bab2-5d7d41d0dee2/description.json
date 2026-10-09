@@ -1,0 +1,49 @@
+{
+    "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+    "Name": "REMUS 100",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::SpheroidAuv",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "2725578e-9b0c-48ef-bf2d-bdbe0b30f58b",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SubmergedRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "a42a922e-db9f-4a4e-a03c-e7eba022a67b",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::AuvHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "actuators": [
+            {
+                "Id": "876c181c-9ee3-46fc-b6f2-fd5df82b206d",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::FinPairsDeflectionOnly",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            },
+            {
+                "Id": "b9fb9332-1405-466f-9f26-61596e9264d7",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propeller",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ]
+    },
+    "ParentComponentInfo": null
+}

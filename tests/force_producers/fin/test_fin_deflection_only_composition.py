@@ -110,7 +110,7 @@ def test_G4_stern_plane_area_plus_1_percent_is_detected():
 
 
 def test_G2_two_fin_set_equals_todays_fins_block():
-    from more_dynamics.models.force_producers import fins_casadi, fins_parameters
+    from more_dynamics.models.fin.fins import fins_casadi, fins_parameters
     from more_transformations.more_casadi_transformations import freeze
 
     n = mss_numbers()

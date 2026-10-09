@@ -69,7 +69,14 @@ class PayloadBuilder:
         self._inputs, self._states, self._outputs, self._state_dot = [], [], [], None
 
     def input(self, name, shape, description=""):
+        """A named input; asking again for the same name and shape gives the one symbol (several models of one
+        plugin read the same quantity)."""
         rows, cols = (shape, 1) if isinstance(shape, int) else shape
+        for known, symbol, _ in self._inputs:
+            if known == name:
+                if symbol.size() != (rows, cols):
+                    raise ValueError(f"input {name!r} asked as {rows}x{cols} and as {symbol.size1()}x{symbol.size2()}")
+                return symbol
         symbol = ca.SX.sym(name, rows, cols)
         self._inputs.append((name, symbol, description))
         return symbol

@@ -11,7 +11,7 @@ named by what they compute, never by where they were read; the source is in
 the citation. Several force producers (fins, one-fin leaves) are summed by
 one generic ``ForceProducerSet`` behind a command map.
 
-Model layer (``more_dynamics.models.force_producers``)
+Model layer (``more_dynamics.models``: ``fin``, ``servo``)
 ------------------------------------------------------
 * A part form ``<form>`` lives in its own module (``PART_MODULES``) and
   exposes ``<form>_parameters() -> tuple[Parameter, ...]`` and
@@ -70,7 +70,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-PACKAGE = "more_dynamics.models.force_producers"
+PACKAGE = "more_dynamics.models"
 DATA_DIR = Path(__file__).resolve().parent / "data"
 PARENT_DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
@@ -93,10 +93,10 @@ SERVO_SETTINGS = {
 
 # (slot, form) -> module under PACKAGE. Forms of the waiting list have no module yet.
 PART_MODULES = {
-    ("servo", "ideal"): "fin.servo.servo",
-    ("servo", "no_limits"): "fin.servo.servo",
-    ("servo", "lag_rate_angle"): "fin.servo.servo",
-    ("servo", "output_saturated"): "fin.servo.servo",
+    ("servo", "ideal"): "servo.servo",
+    ("servo", "no_limits"): "servo.servo",
+    ("servo", "lag_rate_angle"): "servo.servo",
+    ("servo", "output_saturated"): "servo.servo",
     ("inflow", "translational"): "fin.inflow.translational",
     ("inflow", "rigid_point"): "fin.inflow.rigid_point",
     ("flow_angle", "none"): "fin.flow_angle.none",
@@ -116,8 +116,8 @@ WAITING_REASON = ("waiting on the second-fidelity source reading (Pitts 1957 sle
                   "factors, the lifting-line induced drag): form and parameter names not fixed")
 
 SKELETON_MODULE = "fin.lifting_fin"
-SET_MODULE = "force_producer_set"
-LEAF_MODULE = "fin_parts.proportional_force_fin"
+SET_MODULE = "shared.force_producer_set"
+LEAF_MODULE = "fin.proportional_force_fin"
 
 SLOTS = ("servo", "inflow", "flow_angle", "interference", "section")
 # type -> (coupling inputs {name: rows, None = any}, outputs {name: rows, None = any})
