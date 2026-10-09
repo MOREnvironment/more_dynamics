@@ -36,6 +36,21 @@ comment). **Document** values are read off a cited page; **estimate** values
 are starting points with no document behind them (earlier Grethe parameter
 files, unverified): to be identified from logs, and none is a measurement.
 
+``added_mass_mass_basis`` (E-101 Q5 a) chooses the mass the added-mass
+derivatives scale with (``models/added_mass``): ``"hull"`` (the hull mass
+alone, today's default, MSS ``otter.m`` 152-159 and A-64 Section 3.1 gap 6)
+or ``"displaced"`` (the rigid body's own mass, hull plus payload -- a vehicle
+with a payload displaces more water, and the added mass should follow). The
+plugin default stays ``"hull"`` so the Otter-style gates this type is also
+tested against are unaffected; Grethe's own composition selects
+``"displaced"``.
+
+``waterline_length``/``waterline_beam`` (A-64 Section 3.3 row R11) are
+declared so a composition can record the waterline dimensions distinct from
+the overall ``length``/``beam`` (0.0 = not given); **not yet wired** into
+the hull form, restoring, cross-flow or resistance (``SOURCE.md`` of the
+Grethe reference data: "the future basis, once ... wired") -- a later job.
+
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
@@ -63,12 +78,14 @@ from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import SINGLE_HULL_PARAMETERS, single_hull
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
+from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name
 from more_dynamics.plugins.shared.vehicle_graph import (
-    INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
+    INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly, call_model)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
 
 ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
+ADDED_MASS_MASS_BASES = ("hull", "displaced")
 
 
 class Monohull(VehicleModel3D):
@@ -88,6 +105,8 @@ class Monohull(VehicleModel3D):
         ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
         ParameterDescription("length", 5.2),  # document: grethe_mariner5.yaml hull.length (F003 p2; M001 p7)
         ParameterDescription("beam", 2.15),  # document: grethe_mariner5.yaml hull.beam (F003 p2; M001 p7; D002 p1)
+        ParameterDescription("waterline_length", 0.0),  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired, docstring
+        ParameterDescription("waterline_beam", 0.0),  # m; 0 = not given (drawing estimate 1.97 m); not yet wired, docstring
         ParameterDescription("hull_block_coefficient", 0.233),  # estimate: grethe_mariner5.yaml hydrostatics.block_coefficient (a mass knob: 806 / (1025 * 5.2 * 2.15 * 0.3) = 0.234)
         ParameterDescription("hull_waterplane_coefficient", 0.8),  # estimate: grethe_mariner5.yaml hydrostatics.waterplane_coefficient
         ParameterDescription("hull_mass", 806.0),  # document: grethe_mariner5.yaml mass.mass_delivered (F003 p2); the field mass (USBL mount, payload) is a gap
@@ -97,6 +116,7 @@ class Monohull(VehicleModel3D):
         ParameterDescription("radii_of_gyration", [0.35, 0.25, 0.25]),  # estimate: grethe_mariner5.yaml mass.radii_of_gyration_scale (fractions of [B, L, L])
         ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
+        ParameterDescription("added_mass_mass_basis", "hull"),  # "hull" keeps the Otter-style gates green; Grethe selects "displaced" (E-101 Q5 a)
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
@@ -115,8 +135,23 @@ class Monohull(VehicleModel3D):
             parts.run("site", site(), site_parameters)
             parts.run("hull form", single_hull(), SINGLE_HULL_PARAMETERS)
             parts.run("rigid body", hull_with_point_payload(), hull_with_point_payload_parameters())  # (otter.m 94-98, 122-128)
+            mass_basis = context.get_parameter("added_mass_mass_basis")
+            if mass_basis not in ADDED_MASS_MASS_BASES:
+                raise CompositionError(
+                    f"Monohull: added_mass_mass_basis must be one of {ADDED_MASS_MASS_BASES}, got {mass_basis!r}")
             added_mass, added_mass_parameters = parts.select("added_mass_form", ADDED_MASS_FORMS)
-            parts.run("added mass", added_mass(), added_mass_parameters())  # (otter.m 152-159)
+            frozen_added_mass = frozen_block(context, added_mass(), added_mass_parameters())  # (otter.m 152-159)
+            # added_mass_mass_basis = "displaced" (E-101 Q5 a): the added mass scales with the rigid body's own
+            # mass (hull + payload), not the hull mass alone -- a local substitution for this one call only, so
+            # "hull_mass" itself (known["hull_mass"]) stays the true hull mass for every other reader.
+            added_mass_known = known if mass_basis == "hull" else {**known, "hull_mass": known["mass"]}
+            out = call_model(frozen_added_mass, added_mass_known, "Monohull: added mass")
+            for name in frozen_added_mass.name_out():
+                key = payload_name(name)
+                if key in known:
+                    raise CompositionError(f"Monohull: added mass gives {key!r}, produced already "
+                                           "(one quantity, one value)")
+                known[key] = out[name]
             parts.run("current", CURRENT_FORMS[form]())
             current_velocity, current_acceleration = known["current_velocity"], known["current_acceleration"]
             known["relative_velocity"] = velocity - current_velocity  # nu_r = nu - nu_c (otter.m 116)

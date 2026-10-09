@@ -14,10 +14,13 @@ centre of gravity apart (``r_bb``, ``r_bg``).
 Surface: ``nabla = m / rho``, ``T = nabla / (n C_b L B_hull)`` (MSS
 ``otter.m`` 121-122 for two hulls) fed into the surface restoring block
 (``gravity`` given by the site). The wetted surface of the hulls at that draft
-is an output too: the Mumford approximation ``S = n 1.025 L (C_b B_hull +
-1.7 T)`` of a displacement hull (MSS ``XuuITTC.m`` 38, which attributes it to
-Mumford; the original not read), summed over the ``n`` hulls without
-interference between them, or given as a value (``wetted_surface_given``).
+is an output too, by ``wetted_surface_method``: ``"computed"`` is the Mumford
+approximation ``S = n 1.025 L (C_b B_hull + 1.7 T)`` of a displacement hull
+(MSS ``XuuITTC.m`` 38, which attributes it to Mumford; the original not read),
+summed over the ``n`` hulls without interference between them; ``"given"``
+takes the parameter ``wetted_surface``; ``"regression_table"`` reads
+``S / nabla^(2/3)`` from the published Radojcic et al. (2014) regression at
+its own hydrostatic (zero-speed) term (``models/shared/ra14_residual_resistance.py``).
 Raise: the wetted surface from the hull lines.
 
 References
@@ -42,6 +45,7 @@ from more_transformations.more_casadi_transformations import Parameter
 from more_dynamics.models.restoring.submerged import submerged_hydrostatics_casadi
 from more_dynamics.models.restoring.surface import surface_hydrostatics_casadi
 
+from more_dynamics.models.shared import ra14_residual_resistance
 from more_dynamics.models.shared.wiring import function_from
 
 BUOYANCY_METHODS = ("neutral", "from_volume", "given")
@@ -103,14 +107,22 @@ WETTED_SURFACE_PARAMETER = Parameter("wetted_surface", (1, 1), "m^2", "wetted su
 MUMFORD_AREA_FACTOR = 1.025  # (XuuITTC.m 38)
 MUMFORD_DRAFT_FACTOR = 1.7  # (XuuITTC.m 38)
 
+WETTED_SURFACE_METHODS = ("computed", "given", "regression_table")
 
-def surface_restoring(hull_count, *, wetted_surface_given=False):
+
+def surface_restoring(hull_count, *, wetted_surface_method="computed"):
     """``nabla = m / rho``, ``T = nabla / (n C_b L B_hull)`` (otter.m 121-122) fed into the surface restoring block
     (``hull_count`` 1 or 2, gravity given by the site). The hull geometry (``length``, ``hull_beam``,
     ``hull_block_coefficient``, ``hull_waterplane_coefficient``, ``hull_lateral_offset`` for two hulls) and the
-    mass, density, gravity and centre of gravity are the vehicle's quantities. The output ``wetted_surface`` is
-    the Mumford approximation of the ``hull_count`` hulls at the equilibrium draft, or the given input of that name
-    when ``wetted_surface_given``."""
+    mass, density, gravity and centre of gravity are the vehicle's quantities. The output ``wetted_surface`` is,
+    by ``wetted_surface_method`` (one of ``WETTED_SURFACE_METHODS``): the Mumford approximation of the
+    ``hull_count`` hulls at the equilibrium draft (``"computed"``), the given input of that name (``"given"``), or
+    the RA14 regression's hydrostatic value (``"regression_table"``, module docstring; one hull only -- the
+    regression has no multi-hull form, so ``hull_count`` must be 1)."""
+    if wetted_surface_method not in WETTED_SURFACE_METHODS:
+        raise ValueError(f"wetted_surface_method must be one of {WETTED_SURFACE_METHODS}, got {wetted_surface_method!r}")
+    if wetted_surface_method == "regression_table" and hull_count != 1:
+        raise ValueError("wetted_surface_method='regression_table' has no multi-hull form, got hull_count=2")
     block = surface_hydrostatics_casadi(hull_count=hull_count, gravity_source="value")
     names = ("mass", "water_density", "gravity", "length", "hull_beam", "hull_block_coefficient",
              "hull_waterplane_coefficient")
@@ -132,9 +144,12 @@ def surface_restoring(hull_count, *, wetted_surface_given=False):
     if hull_count == 2:
         args["hull_lateral_offset"] = s["hull_lateral_offset"]
     out = block(**args)
-    if wetted_surface_given:
+    if wetted_surface_method == "given":
         s["wetted_surface"] = ca.SX.sym("wetted_surface")
         wetted_surface = s["wetted_surface"]
+    elif wetted_surface_method == "regression_table":
+        wetted_surface = ra14_residual_resistance.wetted_surface_coefficient(
+            displaced_volume, s["length"]) * displaced_volume ** (2.0 / 3.0)
     else:  # S = n 1.025 L (C_b B + 1.7 T) per hull (XuuITTC.m 38, Mumford)
         wetted_surface = hull_count * MUMFORD_AREA_FACTOR * s["length"] * (
             s["hull_block_coefficient"] * s["hull_beam"] + MUMFORD_DRAFT_FACTOR * draft)

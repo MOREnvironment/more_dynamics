@@ -15,8 +15,10 @@ at the origin of the point P) and ``restoring_matrix_at_flotation``.
 ``wetted_surface`` (the wetted area of the hulls at that draft, read by the
 hull loads' ITTC surge resistance) follows ``wetted_surface_method``:
 ``"computed"`` is the Mumford approximation of the hulls (MSS ``XuuITTC.m``
-38), ``"given"`` takes the parameter ``wetted_surface``. Raise: the wetted
-surface from the hull lines.
+38), ``"given"`` takes the parameter ``wetted_surface``, ``"regression_table"``
+is the published Radojcic et al. (2014) hydrostatic (zero-speed) wetted-surface
+regression (one hull only; ``models/restoring/restoring_parts.py``). Raise:
+the wetted surface from the hull lines.
 
 Defaults are the Otter (MSS ``otter.m`` 177-179, 192): ``hull_count`` 2,
 ``longitudinal_inertia_factor`` 0.8, ``longitudinal_center_of_flotation``
@@ -43,7 +45,7 @@ from more_dynamics.models.restoring.restoring_parts import (
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name
 
 
-WETTED_SURFACE_METHODS = ("computed", "given")
+WETTED_SURFACE_METHODS = ("computed", "given", "regression_table")
 
 
 class SurfaceRestoring(HydrostaticsModel):
@@ -66,9 +68,8 @@ class SurfaceRestoring(HydrostaticsModel):
         method = context.get_parameter("wetted_surface_method")
         if method not in WETTED_SURFACE_METHODS:
             raise ValueError(f"wetted_surface_method must be one of {WETTED_SURFACE_METHODS}, got {method!r}")
-        given = method == "given"
-        declared = SURFACE_RESTORING_PARAMETERS + ((WETTED_SURFACE_PARAMETER,) if given else ())
-        self._model = frozen_block(context, surface_restoring(hull_count, wetted_surface_given=given), declared)
+        declared = SURFACE_RESTORING_PARAMETERS + ((WETTED_SURFACE_PARAMETER,) if method == "given" else ())
+        self._model = frozen_block(context, surface_restoring(hull_count, wetted_surface_method=method), declared)
 
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:

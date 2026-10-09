@@ -35,6 +35,13 @@ MSS attributes the surge added mass to Söding (1982), not read here.
   declared parameter ``kinematic_viscosity`` (Fossen 2011, eqs. 6.82-6.85,
   p. 125, with ``C_R = 0``; ``forceSurgeDamping.m`` 69-74 at ``ac77394``;
   ``XuuITTC.m`` 32-39), evaluated at the current speed;
+* ``"ittc_residual"``: ``Xuu = -1/2 rho S ((1 + k) C_f + C_R(Fn_V))``
+  (Fossen 2011, eq. 6.82's own decomposition, p. 125): the same ITTC friction
+  line as ``"ittc"`` plus a residual-resistance prior ``C_R`` from the
+  published Radojcic et al. (2014) regression (RA14 Appendix 1, p. 24),
+  Froude-scaled to the hull from its own 100000 lb basis
+  (``models/shared/ra14_residual_resistance.py``); 0 below the regression's
+  stated validity ``Fn_V = 0.6`` (A-64 hidden assumption 3, same module);
 * ``"exp_ittc"``: the ship law of MSS release 2.0.2 (``osv.m`` 182-185,
   ``hydroVessel.m`` 88-89 at ``cc07579``), ``D_nl,11 = exp(-k_u |u_r|) D11 -
   Xuu |u_r|``, ``X = -D_nl,11 u_r`` (``osv.m`` 204), with ``D11 = M(1,1) /
@@ -118,6 +125,11 @@ References
     https://github.com/cybergalactic/MSS, MIT licence, revision ``ac77394``
     (2026-10-05): ``LIBRARY/modeling/forceSurgeDamping.m`` 57-82 (revision
     of 2025-09-23; the file is deleted in later revisions).
+[RA14] Radojcic, D., Zgradic, A., Kalajdzic, M., Simic, A. (2014). Resistance
+    prediction for hard chine hulls in the pre-planing regime. Polish
+    Maritime Research 21(2):9-26. Appendix 1, p. 24; basis, p. 11; validity,
+    p. 17 (through ``models/shared/ra14_residual_resistance.py``, which
+    cites it in full).
 
 Author:    Enio Krizman
 Date:      2026-10-07
@@ -125,6 +137,8 @@ Date:      2026-10-07
 
 import casadi as ca
 from more_transformations.more_casadi_transformations import Parameter, check_values, symbols
+
+from more_dynamics.models.shared import ra14_residual_resistance
 
 # C_f = 0.075 / (log10 Rn - 2)^2 (Fossen 2011, eq. 6.83, p. 125;
 # forceSurgeDamping.m 73 at ac77394; XuuITTC.m 36).
@@ -134,14 +148,15 @@ ITTC_LOG10_OFFSET = 2.0
 # forceSurgeDamping.m 71 (ac77394): added to Rn inside the logarithm (MSS line only).
 MSS_REYNOLDS_OFFSET = 1e-10
 
-SURGE_FORMS = ("ittc", "max_thrust", "exp_ittc")
+SURGE_FORMS = ("ittc", "ittc_residual", "max_thrust", "exp_ittc")
 SURGE_BLENDS = ("symmetric", "mss_tanh")
 ITTC_REYNOLDS_BOUNDS = ("floor", "mss_offset")
-_ITTC_FORMS = ("ittc", "exp_ittc")
+_ITTC_FORMS = ("ittc", "ittc_residual", "exp_ittc")
 
 # Named outputs per form, in order.
 SURGE_DAMPING_OUTPUTS = {
     "ittc": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
+    "ittc_residual": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
     "max_thrust": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
     "exp_ittc": ("tau", "linear_coefficient", "quadratic_coefficient", "surge_damping_coefficient"),
 }
@@ -183,6 +198,7 @@ _REYNOLDS_FLOOR = Parameter(
 
 _COUPLINGS = {
     "ittc": (_MASS, _WETTED_SURFACE),
+    "ittc_residual": (_MASS, _WETTED_SURFACE),
     "max_thrust": (_MASS,),
     "exp_ittc": (_MASS_MATRIX, _WETTED_SURFACE),
 }
@@ -190,6 +206,8 @@ _COUPLINGS = {
 _DECLARATIONS = {
     "ittc": (_LENGTH, _WATER_DENSITY, _TIME_CONSTANT, _FORM_FACTOR, _CROSSOVER_SPEED,
              _KINEMATIC_VISCOSITY, _SURGE_ADDED_MASS_FACTOR),
+    "ittc_residual": (_LENGTH, _WATER_DENSITY, _TIME_CONSTANT, _FORM_FACTOR, _CROSSOVER_SPEED,
+                      _KINEMATIC_VISCOSITY, _SURGE_ADDED_MASS_FACTOR),
     "max_thrust": (
         _LENGTH,
         _WATER_DENSITY,
@@ -268,8 +286,20 @@ def _ittc_quadratic_coefficient(p, c, u_r):
     return -0.5 * p["water_density"] * c["wetted_surface"] * (1 + p["form_factor"]) * friction
 
 
+def _ittc_residual_quadratic_coefficient(p, c, u_r):
+    """``C_T = (1+k) C_F + C_R`` (Fossen 2011, eq. 6.82's own decomposition,
+    p. 125): the ITTC friction line of ``_ittc_quadratic_coefficient`` plus
+    the RA14 residual term (``models/shared/ra14_residual_resistance.py``),
+    same sign convention (``Xuu < 0``)."""
+    friction = _ittc_quadratic_coefficient(p, c, u_r)
+    displaced_volume = c["mass"] / p["water_density"]
+    residual = ra14_residual_resistance.residual_coefficient(displaced_volume, p["length"], u_r)
+    return friction - 0.5 * p["water_density"] * c["wetted_surface"] * residual
+
+
 def _blended(nu_r, c, p, surge_form, surge_blend):
-    """``"ittc"`` and ``"max_thrust"``: ``forceSurgeDamping.m`` 57-82 at ``ac77394``."""
+    """``"ittc"``, ``"ittc_residual"`` and ``"max_thrust"``:
+    ``forceSurgeDamping.m`` 57-82 at ``ac77394``."""
     u_r = nu_r[0]
     mass, length, rho = c["mass"], p["length"], p["water_density"]
     displaced_volume = mass / rho  # (addedMassSurge.m 32)
@@ -279,6 +309,8 @@ def _blended(nu_r, c, p, surge_form, surge_blend):
     linear_coefficient = -(mass - surge_acceleration_derivative) / p["time_constant"]
     if surge_form == "ittc":
         quadratic_coefficient = _ittc_quadratic_coefficient(p, c, u_r)
+    elif surge_form == "ittc_residual":
+        quadratic_coefficient = _ittc_residual_quadratic_coefficient(p, c, u_r)
     else:
         quadratic_coefficient = -p["max_thrust"] / p["max_speed"] ** 2  # (forceSurgeDamping.m 66 @ ac77394)
     # symmetric |u_r| by default; u_r as forceSurgeDamping.m 79 (ac77394) with "mss_tanh"
