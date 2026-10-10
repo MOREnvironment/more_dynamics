@@ -22,7 +22,7 @@ Equations (keys in References):
   126-127).
 
 Lift and drag act in the x-z plane. Deviations from MSS: MSS hard-codes
-``rho = 1026`` (``forceLiftDrag.m`` 26) and ``e = 0.3`` (``coeffLiftDrag.m``
+the density 1026 (``forceLiftDrag.m`` 26) and ``e = 0.3`` (``coeffLiftDrag.m``
 54); here both are parameters. Inputs outside their domain (a non-positive
 span, area, efficiency or density, a negative ``C_D0``) are refused by the
 declared ranges, naming the input.

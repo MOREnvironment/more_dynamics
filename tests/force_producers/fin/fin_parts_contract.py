@@ -8,8 +8,8 @@ A fin is one skeleton, ``LiftingFin``, with five typed sockets (servo,
 inflow, flow angle, interference, section). Each socket holds one part; a
 part is one CasADi function. Alternative physics are separate part modules,
 named by what they compute, never by where they were read; the source is in
-the citation. Several force producers (fins, one-fin leaves) are summed by
-one generic ``ForceProducerSet`` behind a command map.
+the citation. Several fins are summed behind a command map by the test
+fixture ``producer_set`` below.
 
 Model layer (``more_dynamics.models``: ``fin``, ``servo``)
 ------------------------------------------------------
@@ -34,25 +34,6 @@ Model layer (``more_dynamics.models``: ``fin``, ``servo``)
   every still-open part parameter as ``"<slot>.<name>"``; outputs ``tau``
   (6, N and N m about the CO, BODY), ``state_dot``, ``deflection``,
   ``angle_of_attack``.
-* ``force_producer_set``: ``force_producer_set_parameters(producers,
-  command_count)`` (``command_map``, sum of the producers' command sizes x
-  ``command_count``) and ``force_producer_set_casadi(producers,
-  command_count)``; every producer has inputs starting ``command, state,
-  nu_r, water_density`` and outputs starting ``tau, state_dot`` (else
-  ``ValueError`` naming the producer's index). The set's inputs:
-  ``command``, ``state`` (stacked in list order), ``nu_r``,
-  ``water_density`` (one, fed to every producer), ``command_map``, then the
-  producers' open inputs as ``"producers[i].<name>"``; outputs ``tau`` (the
-  sum) and ``state_dot`` (stacked).
-* ``fin_parts.proportional_force_fin``: one fin of DUNE's simulator law (force
-  proportional to the deflection and to the speed squared along a fixed
-  direction, DUNE's moment arms), the per-fin leaf of the existing
-  ``vsim_fins`` block. ``proportional_force_fin_parameters()``
-  (``max_force`` 3x1 N, ``fin_position`` 3x1 m, ``max_deflection`` rad > 0)
-  and ``proportional_force_fin_casadi()`` with the producer interface; it
-  takes ``water_density`` and does not use it (DUNE's force gain holds its
-  own density).
-
 The vehicle feeds ``nu_r`` and ``water_density`` (owner's answers of
 2026-10-08: the velocity input by convention after the commands; the
 density fed as an input, declared by no part).
@@ -116,8 +97,6 @@ WAITING_REASON = ("waiting on the second-fidelity source reading (Pitts 1957 sle
                   "factors, the lifting-line induced drag): form and parameter names not fixed")
 
 SKELETON_MODULE = "fin.lifting_fin"
-SET_MODULE = "shared.force_producer_set"
-LEAF_MODULE = "fin.proportional_force_fin"
 
 SLOTS = ("servo", "inflow", "flow_angle", "interference", "section")
 # type -> (coupling inputs {name: rows, None = any}, outputs {name: rows, None = any})
@@ -155,9 +134,6 @@ SKELETON_DECLARED = {"fin_position": ((3, 1), "m", None, False),
                      "chord_axis": ((3, 1), "1", None, False),
                      "lift_axis": ((3, 1), "1", None, False),
                      "fin_area": ((1, 1), "m^2", 0.0, True)}
-LEAF_DECLARED = {"max_force": ((3, 1), "N", None, False),
-                 "fin_position": ((3, 1), "m", None, False),
-                 "max_deflection": ((1, 1), "rad", 0.0, True)}
 
 # Unit axes of BODY (FRD)
 E_X = [1.0, 0.0, 0.0]
@@ -241,24 +217,33 @@ def geometry(position, lift_axis, area, chord_axis=E_X):
 
 
 def producer_set(producers, command_map):
-    """A ``ForceProducerSet`` with its command map frozen in."""
-    from more_transformations.more_casadi_transformations import freeze
+    """The wrench sum of several force producers behind a command map, as a test fixture (Fossen 2011, eq. 12.226,
+    p. 400, superposition of applied wrenches): the producers' commands are ``command_map @ command`` in list
+    order, their states are stacked in list order, one density is fed to every producer. Inputs ``command``,
+    ``state``, ``nu_r``, ``water_density``; outputs ``tau`` (the sum) and ``state_dot`` (stacked)."""
+    import casadi as ca
 
-    s = module(SET_MODULE)
     command_map = np.asarray(command_map, dtype=float)
-    k = command_map.shape[1]
-    block = s.force_producer_set_casadi(producers, k)
-    return freeze(block, s.force_producer_set_parameters(producers, k), {"command_map": command_map.tolist()})
-
-
-def leaf(values=None):
-    from more_transformations.more_casadi_transformations import freeze
-
-    m = module(LEAF_MODULE)
-    block = m.proportional_force_fin_casadi()
-    if values is None:
-        return block
-    return freeze(block, m.proportional_force_fin_parameters(), values)
+    rows = sum(producer.size1_in("command") for producer in producers)
+    if command_map.shape[0] != rows:
+        raise ValueError(f"command_map has {command_map.shape[0]} rows, the producers take {rows} commands")
+    states = sum(producer.size1_in("state") for producer in producers)
+    command, state = ca.SX.sym("command", command_map.shape[1]), ca.SX.sym("state", states)
+    nu_r, density = ca.SX.sym("nu_r", 6), ca.SX.sym("water_density")
+    mapped = ca.DM(command_map) @ command
+    forces, rates = [], []
+    command_offset = state_offset = 0
+    for producer in producers:
+        nc, ns = producer.size1_in("command"), producer.size1_in("state")
+        out = producer(command=mapped[command_offset:command_offset + nc], state=state[state_offset:state_offset + ns],
+                       nu_r=nu_r, water_density=density)
+        forces.append(out["tau"])
+        rates.append(out["state_dot"])
+        command_offset += nc
+        state_offset += ns
+    return ca.Function("producer_set", [command, state, nu_r, density],
+                       [sum(forces, ca.SX.zeros(6, 1)), ca.vertcat(*rates) if rates else ca.SX.zeros(0, 1)],
+                       ["command", "state", "nu_r", "water_density"], ["tau", "state_dot"])
 
 
 # --------------------------------------------------------------------------

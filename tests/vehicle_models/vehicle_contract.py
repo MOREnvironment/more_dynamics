@@ -2,7 +2,9 @@
 own ``ComponentContext`` (as Luka's and Matko's tests build a plugin), its
 hydrostatics, hydrodynamics and actuators as child contexts, and read its
 payload. A vehicle is one plugin with its own parameters; REMUS 100 and the
-Otter differ only in the parameter values and the children handed to it. The
+Otter differ only in the parameter values and the children handed to it,
+the ``site`` child (the water density, the gravity and the viscosity) among
+them. The
 reference numbers live under ``tests/vehicle_models/data``.
 
 The plugins subclass rpp's generated plugin types, so the tests need rpp
@@ -26,6 +28,7 @@ REGISTER_MESSAGE = ("rpp's generated plugin types for more_dynamics are not avai
                     "`rpp library register ./more_dynamics --link` (workspace/ as the working folder)")
 KINEMATIC_VISCOSITY = 1e-6  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s
 CURRENT_NAMES = ("current_speed", "current_direction", "current_vertical_speed")
+SITE_NAMES = ("site_form", "latitude", "gravity", "water_density", "kinematic_viscosity")  # the site's, not the vehicle's
 
 REMUS_FILE = json.loads((DATA / "remus100" / "remus100_parameters_consistent.json").read_text())
 REMUS = {name: entry["value"] for name, entry in REMUS_FILE["parameters"].items()}
@@ -44,6 +47,7 @@ def plugins():
             from more_dynamics.plugins.vehicle_models.monohull import Monohull
             from more_dynamics.plugins.vehicle_models.catamaran import Catamaran
             from more_dynamics.plugins.vehicle_models.derivative_auv import DerivativeAuv
+            from more_dynamics.plugins.site.site import Site
             from more_dynamics.plugins.hydrostatics.submerged_restoring import SubmergedRestoring
             from more_dynamics.plugins.hydrostatics.surface_restoring import SurfaceRestoring
             from more_dynamics.plugins.hydrodynamics.auv_hull_loads import AuvHullLoads
@@ -81,10 +85,12 @@ def child(item):
     return context_of(cls, params)
 
 
-def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, actuators=()):
-    """The initialised context of a vehicle: ``hydrostatics`` and ``hydrodynamics`` are a class or a
-    ``(class, parameters)``, ``actuators`` a list of them. Returns the vehicle plugin."""
-    children = {"hydrostatics": [child(hydrostatics)], "hydrodynamics": [child(hydrodynamics)],
+def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, actuators=(), site=None):
+    """The initialised context of a vehicle: ``site``, ``hydrostatics`` and ``hydrodynamics`` are a class or a
+    ``(class, parameters)`` (``site`` default: the ``Site`` plugin with its own defaults), ``actuators`` a list of
+    them. Returns the vehicle plugin."""
+    children = {"site": [child(plugins().Site if site is None else site)],
+                "hydrostatics": [child(hydrostatics)], "hydrodynamics": [child(hydrodynamics)],
                 "actuators": [child(a) for a in actuators]}
     context = context_of(vehicle_class, params, children)
     context.initialize()
@@ -95,6 +101,13 @@ def pick(cls, values, names=None):
     """The entries of ``values`` that ``cls`` declares as parameters (only ``names`` when given)."""
     declared = {d.name for d in cls.PARAMETERS}
     return {n: values[n] for n in (names or declared) if n in declared and n in values}
+
+
+def with_site(site_values, vehicle_params):
+    """``(site parameters, vehicle parameters)``: the names of ``SITE_NAMES`` a test passes among a vehicle's
+    parameters belong to the site child and are handed to it over ``site_values``."""
+    vehicle_params = dict(vehicle_params or {})
+    return {**site_values, **{n: vehicle_params.pop(n) for n in SITE_NAMES if n in vehicle_params}}, vehicle_params
 
 
 def remus_values(values=None):
@@ -108,18 +121,26 @@ def remus_values(values=None):
     return v
 
 
+def remus_site(values=None):
+    """The ``Site`` parameters of the REMUS 100 set: gravity from the latitude, its water density and viscosity."""
+    v = remus_values(values)
+    return {"site_form": "latitude", "latitude": v["latitude"], "water_density": v["water_density"],
+            "kinematic_viscosity": v["kinematic_viscosity"]}
+
+
 def remus(*, full=False, coriolis="kirchhoff_full", current="yaw_rate_terms", values=None, actuators=None,
           vehicle_params=None):
     """REMUS 100: the hull alone (a prescribed wrench, ``full=False``) or with the fin pairs and the propeller.
     ``values`` replaces the frozen parameter set (a perturbed set in a test)."""
     p = plugins()
     v = remus_values(values)
+    site_p, vehicle_params = with_site(remus_site(values), vehicle_params)
     vehicle_p = {**pick(p.SpheroidAuv, v), **({"coriolis_form": coriolis} if coriolis else {}),
-                 "current_form": current, **(vehicle_params or {})}
+                 "current_form": current, **vehicle_params}
     if actuators is None:
         actuators = ([(p.FinPairsDeflectionOnly, pick(p.FinPairsDeflectionOnly, v)), (p.Propeller, pick(p.Propeller, v))]
                      if full else [p.PrescribedWrench])
-    return build_context(p.SpheroidAuv, vehicle_p,
+    return build_context(p.SpheroidAuv, vehicle_p, site=(p.Site, site_p),
                          hydrostatics=(p.SubmergedRestoring, pick(p.SubmergedRestoring, v, ("center_of_buoyancy",))),
                          hydrodynamics=(p.AuvHullLoads, pick(p.AuvHullLoads, v)), actuators=actuators)
 
@@ -129,9 +150,12 @@ def otter(*, current="none", hydrostatics=None, hydrodynamics=None, actuators=()
     p = plugins()
     o = dict(OTTER)
     o["kinematic_viscosity"] = KINEMATIC_VISCOSITY
-    vehicle_p = {**pick(p.Catamaran, o), "current_form": current, **(vehicle_params or {})}
+    site_p, vehicle_params = with_site(
+        {"site_form": "given", "gravity": o["gravity"], "water_density": o["water_density"],
+         "kinematic_viscosity": o["kinematic_viscosity"]}, vehicle_params)
+    vehicle_p = {**pick(p.Catamaran, o), "current_form": current, **vehicle_params}
     return build_context(
-        p.Catamaran, vehicle_p,
+        p.Catamaran, vehicle_p, site=(p.Site, site_p),
         hydrostatics=hydrostatics or (p.SurfaceRestoring, {**pick(p.SurfaceRestoring, o), "hull_count": 2}),
         hydrodynamics=hydrodynamics or (p.SurfaceHullLoads, pick(p.SurfaceHullLoads, o)), actuators=actuators)
 

@@ -8,10 +8,12 @@ layer's (``models/equation_of_motion``).
 What it adds to ``HullVessel``: a child's input is connected **by the name
 and size in its ``inputDescription``** to a quantity the vehicle type
 computed from its own parameters (``pose``, ``velocity``,
-``relative_velocity``, ``mass_matrix``, ``water_density`` ...), or to an
-output of an earlier child (hydrostatics before hydrodynamics before the
-actuators); a missing or mis-sized one is refused, naming the slot and the
-child's plugin. An actuator input that is no vehicle quantity is a command:
+``relative_velocity``, ``mass_matrix`` ...), to an output of the ``site``
+slot (``water_density``, ``gravity``, ``kinematic_viscosity``: a stateless
+graph with no input, evaluated before the vehicle type computes anything, so
+that its own blocks read the same values), or to an output of an earlier
+child (hydrostatics before hydrodynamics before the actuators); a missing or
+mis-sized one is refused, naming the slot and the child's plugin. An actuator input that is no vehicle quantity is a command:
 the vehicle's inputs, in list order, after the current inputs the type asks
 for. No ``sensors`` slot: the output is the 12 vessel states; sensors attach
 outside the vehicle.
@@ -48,6 +50,9 @@ from more_dynamics.models.equation_of_motion import marine_craft_6dof_casadi
 from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name
 
 INTEGRATION_STEP = ParameterDescription("integration_max_step", 0.05)  # s, SIMremus100.m 60 (h = 0.05)
+
+
+SITE_OUTPUTS = ("water_density", "gravity", "kinematic_viscosity")  # what the site slot must give, each of size 1
 
 
 class CompositionError(ValueError):
@@ -125,17 +130,34 @@ def _split(descriptions, vector, label, plugin):
     return out
 
 
+def _site_outputs(site):
+    """``({name: expression}, plugin name)`` of the ``site`` slot: a graph with no input and no state whose outputs
+    include ``water_density``, ``gravity`` and ``kinematic_viscosity`` (each one value)."""
+    name = type(site).__name__
+    graph = RppCasadiGraph(site.graph())
+    if graph.payload.inputDescription or graph.num_states or graph.step is not None:
+        raise CompositionError(f"slot site ({name}): a site model takes no input and declares no states")
+    outputs = _split(graph.payload.outputDescription, graph.output(ca.SX.zeros(0, 1), ca.SX(0, 1)), "site", name)
+    for quantity in SITE_OUTPUTS:
+        if quantity not in outputs or outputs[quantity].numel() != 1:
+            raise CompositionError(f"slot site ({name}): must give {quantity!r} as one value "
+                                   f"(gives {sorted(outputs)})")
+    return {key: ca.vec(value) for key, value in outputs.items()}, name
+
+
 class VehicleAssembly:
     """The assembled vehicle: its payload pieces, a numeric RK4 step and ``signals`` for reading any named
     quantity back (tests, diagnostics); built once in ``initialize``."""
 
     def __init__(self, context: ComponentContext, plugin: str, compute, current_inputs=()):
         self.plugin = plugin
+        site = context.get_component("site")
         hydrostatics = context.get_component("hydrostatics")
         hydrodynamics = context.get_component("hydrodynamics")
-        for slot, child in (("hydrostatics", hydrostatics), ("hydrodynamics", hydrodynamics)):
+        for slot, child in (("site", site), ("hydrostatics", hydrostatics), ("hydrodynamics", hydrodynamics)):
             if child == []:
                 raise CompositionError(f"{plugin}: slot {slot!r} is empty: a vehicle needs a {slot} model")
+        site_values, site_plugin = _site_outputs(site)
         actuators = list(context.get_component("actuators"))
 
         self._max_step = float(context.get_parameter("integration_max_step"))
@@ -167,12 +189,13 @@ class VehicleAssembly:
             inputs.append(current[name])
             input_descriptions.append(IODescription(size, name=name, description=description))
 
-        craft = compute(pose, velocity, current)
+        craft = compute(pose, velocity, current, site_values)
         known = {"pose": pose, "velocity": velocity, **craft.known}
         known.setdefault("relative_velocity", velocity - craft.current_velocity)  # nu_r = nu - nu_c
         known["mass_matrix"] = craft.mass_matrix  # M = M_RB + M_A (Fossen 2011, eq. 6.48, p. 120)
         origin = {name: f"{plugin}" for name in known}
-        visible = {}
+        origin.update({name: f"slot site ({site_plugin})" for name in site_values})
+        visible = {f"site.{name}": value for name, value in site_values.items()}
         force = ca.SX.zeros(6)
         state_dots = []
 

@@ -3,8 +3,8 @@ form of ``HullVessel`` (``hull_vessel.py``): its own parameters (the hull, the
 mass with a centre of gravity and radii of gyration, the added-mass
 derivatives), the rigid body, the added mass, the Coriolis terms and the
 current computed here from the model functions of ``models/``, and the slots
-``hydrostatics``, ``hydrodynamics`` and ``actuators`` (a list of force
-producers) taken from the composition. The graph is the equation of motion of
+``site`` (the water and the gravity), ``hydrostatics``, ``hydrodynamics`` and
+``actuators`` (a list of force producers) taken from the composition. The graph is the equation of motion of
 a craft in a current over the children's payloads
 (``plugins/shared/vehicle_graph.py``).
 
@@ -26,8 +26,9 @@ derivatives of the same form as the catamaran (MSS ``otter.m`` 152-159), and
 the options are those of the catamaran: ``added_mass_form``,
 ``coriolis_form``, ``current_form`` (default ``"full_attitude"``: the current in the
 body axes with the full attitude, Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225; MSS
-shortcuts ``"yaw_rate_terms"``, ``"full_rotation_rate"``, still water ``"none"``) and
-``site_form`` (``"given"``, default, or ``"latitude"``), each with its fidelity.
+shortcuts ``"yaw_rate_terms"``, ``"full_rotation_rate"``, still water ``"none"``), each with its
+fidelity. The water density, the gravity and the kinematic viscosity are not parameters of the hull:
+they come from the ``site`` slot (``plugins/site/site.py``).
 
 Default values and their provenance (the key is in each comment; **document**
 values are read off a cited page, **estimate** values are starting points
@@ -80,7 +81,7 @@ from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_pay
 from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly, call_model)
-from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
 
 ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
@@ -91,17 +92,13 @@ class Monohull(VehicleModel3D):
 
     COMPONENTS = {
         "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
         "hydrostatics": "more_dynamics::HydrostaticsModel",
         "hydrodynamics": "more_dynamics::HydrodynamicsModel",
     }
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("site_form", "given"),  # otter.m 90-91; gravity.m 11-12 for "latitude"
-        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827), the MSS site; read with site_form "latitude"
-        ParameterDescription("gravity", 9.81),  # estimate: grethe_mariner5.yaml hydrostatics.gravity ("standard")
-        ParameterDescription("water_density", 1025.0),  # estimate: grethe_mariner5.yaml hydrostatics.water_density ("standard sea water")
-        ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
         ParameterDescription("length", 5.2),  # document: grethe_mariner5.yaml hull.length (F003 p2; M001 p7)
         ParameterDescription("beam", 2.15),  # document: grethe_mariner5.yaml hull.beam (F003 p2; M001 p7; D002 p1)
         ParameterDescription("waterline_length", 0.0),  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired, docstring
@@ -127,11 +124,9 @@ class Monohull(VehicleModel3D):
         form = context.get_parameter("current_form")
         own_inputs = current_inputs(context, "Monohull", CompositionError)
 
-        def compute(pose, velocity, current):
-            known = {"pose": pose, "velocity": velocity, **current}
+        def compute(pose, velocity, current, site):
+            known = {"pose": pose, "velocity": velocity, **current, **site}
             parts = Parts(context, "Monohull", known)
-            site, site_parameters = select_site(parts)  # (gravity.m 11-12; remus100.m 96-97; otter.m 90-91)
-            parts.run("site", site(), site_parameters)
             parts.run("hull form", single_hull(), SINGLE_HULL_PARAMETERS)
             parts.run("rigid body", hull_with_point_payload(), hull_with_point_payload_parameters())  # (otter.m 94-98, 122-128)
             mass_basis = context.get_parameter("added_mass_mass_basis")

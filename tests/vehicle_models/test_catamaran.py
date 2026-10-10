@@ -43,11 +43,11 @@ def test_catamaran_is_one_plugin_and_uses_the_cross_flow_strip_of_the_torpedo_wi
     """The two surface hulls and the torpedo share the strip integral; the section law differs by plugin."""
     from more_dynamics.models.cross_flow.cross_flow_strip import (
         cross_flow_strip_circular_cylinder_reynolds, cross_flow_strip_rectangular_section_hoerner)
-    assert set(vc.plugins().Catamaran.COMPONENTS) == {"hydrostatics", "hydrodynamics", "actuators"}
+    assert set(vc.plugins().Catamaran.COMPONENTS) == {"site", "hydrostatics", "hydrodynamics", "actuators"}
     assert cross_flow_strip_circular_cylinder_reynolds().name_in() != cross_flow_strip_rectangular_section_hoerner().name_in()
     declared = {d.name for d in vc.plugins().Catamaran.PARAMETERS}
     assert set(vc.OTTER) - {"longitudinal_inertia_factor", "longitudinal_center_of_flotation", "max_forward_thrust",
-                            "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity"} <= declared
+                            "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity"} - set(vc.SITE_NAMES) <= declared
 
 
 def test_every_default_equals_the_frozen_otter_value():

@@ -23,11 +23,6 @@ e.g. Grethe's).
 
 | Parameter | Default | Unit | Source | Named part | Kind |
 |---|---|---|---|---|---|
-| `site_form` | `latitude` | - | `remus100.m` 96-97 | REMUS 100 (MSS) | selector |
-| `latitude` | 1.1073560310932362 | rad | `remus100.m` 96-97 (mu = deg2rad(63.446827)) | REMUS 100 (MSS) | document |
-| `gravity` | 9.81 | m/s^2 | `mssConstants.m`:14 @ `49e03e3` (MSS 2.0.5) | REMUS 100 (MSS) | document |
-| `water_density` | 1026 | kg/m^3 | `remus100.m`:98 | REMUS 100 (MSS) | document |
-| `kinematic_viscosity` | 1e-06 | m^2/s | `cylinderDrag.m` 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | - (water property) | document |
 | `length` | 1.6 | m | `remus100.m`:131 (L_auv) | REMUS 100 (MSS) | document |
 | `diameter` | 0.19 | m | `remus100.m`:132 (D_auv) | REMUS 100 (MSS) | document |
 | `body_density_method` | `computed` | - | `spheroid.m`:36 solved for rho_b | REMUS 100 (MSS) | selector |
@@ -43,11 +38,6 @@ e.g. Grethe's).
 
 | Parameter | Default | Unit | Source | Named part | Kind |
 |---|---|---|---|---|---|
-| `site_form` | `given` | - | `otter.m` 90-91 | Otter (MSS) | selector |
-| `latitude` | 1.1073560310932362 | rad | `remus100.m` 96-97 (the shared MSS site; unread with `site_form="given"`) | REMUS 100 (MSS) | document |
-| `gravity` | 9.81 | m/s^2 | `otter.m` 90-91 | Otter (MSS) | document |
-| `water_density` | 1025.0 | kg/m^3 | `otter.m` 90-91 | Otter (MSS) | document |
-| `kinematic_viscosity` | 1e-06 | m^2/s | `cylinderDrag.m` 78-80; Fossen 2011, p. 125, below eq. 6.85 | - (water property) | document |
 | `length` | 2.0 | m | `otter.m` 92-93, 104-107 | Otter (MSS) | document |
 | `beam` | 1.08 | m | `otter.m` 92-93, 104-107 | Otter (MSS) | document |
 | `pontoon_beam` | 0.25 | m | `otter.m` 104-107 | Otter (MSS) | document |
@@ -75,11 +65,6 @@ own `SOURCE.md`).
 
 | Parameter | Default | Unit | Source | Named part | Kind |
 |---|---|---|---|---|---|
-| `site_form` | `given` | - | `otter.m` 90-91 (plugin default, not Grethe-specific) | - (physics default) | selector |
-| `latitude` | 1.1073560310932362 | rad | `remus100.m` 96-97 (the shared MSS site; unread with `site_form="given"`) | REMUS 100 (MSS) | document |
-| `gravity` | 9.81 | m/s^2 | `grethe_mariner5.yaml hydrostatics.gravity` ("standard") | Grethe | estimate |
-| `water_density` | 1025.0 | kg/m^3 | standard sea water | Grethe | document |
-| `kinematic_viscosity` | 1e-06 | m^2/s | Fossen 2011, p. 125, below eq. 6.85 (20 degC) | - (water property) | document |
 | `length` | 5.2 | m | F003 p2, M001 p7 (overall length) | Grethe | document |
 | `beam` | 2.15 | m | F003 p2, M001 p7, D002 p1 | Grethe | document |
 | `waterline_length` | 0.0 (not given; 4.63 m is the drawing estimate) | m | D002 p1 drawing measurement at T = 0.30 m; not yet wired | Grethe | estimate |
@@ -105,8 +90,6 @@ number here is read from MSS's instrumented workspace, cited to its line.
 
 | Parameter | Default | Unit | Source | Named part | Kind |
 |---|---|---|---|---|---|
-| `gravity` | 9.81 | m/s^2 | `npsauv.m`:105 (given directly, not from a site) | NPS AUV II (MSS) | document |
-| `water_density` | 1025 | kg/m^3 | `npsauv.m`:105 | NPS AUV II (MSS) | document |
 | `length` | 5.3 | m | `npsauv.m`:105 | NPS AUV II (MSS) | document |
 | `body_mass` | 5443.425076452599 | kg | W / g (`npsauv.m`:109), W at `npsauv.m`:108 | NPS AUV II (MSS) | derived |
 | `inertia_diagonal` | [2038, 13587, 13587] | kg*m^2 | `npsauv.m`:110 | NPS AUV II (MSS) | document |
@@ -117,10 +100,31 @@ number here is read from MSS's instrumented workspace, cited to its line.
 | `center_of_buoyancy` | [0, 0, 0] | m | `npsauv.m`:107 (r_bb) | NPS AUV II (MSS) | document |
 | `derivative_scaling` | `nondimensional` | - | `npsauv.m` 116-124 (Fossen prime-scaling) | NPS AUV II (MSS) | selector |
 | `current_form` | `yaw_rate_terms` | - | `npsauv.m` 83-90 (the gate's own MSS form) | NPS AUV II (MSS) | selector |
-| `site_form` | `given` | - | `npsauv.m`:105 (no latitude in this reference) | NPS AUV II (MSS) | selector |
-| `latitude` | 0.0 | rad | unread with `site_form="given"` (declared for the shared form) | - | gap |
-| `kinematic_viscosity` | 1e-06 | m^2/s | unread by this vehicle's own graph (site's own input) | - | gap |
 | `nondim_*` (93 published nondimensional derivatives) | per-derivative, see `npsauv.m` 126-156 | nondimensional (prime system) | `npsauv.m` 126-156 | NPS AUV II (MSS) | document |
+
+## `more_dynamics::Site` (`plugins/site/site.py`)
+
+The one place of the water density, the gravity and the kinematic viscosity: no vehicle type declares them
+(E-104, E-108). A vehicle takes them from the component in its `site` slot; every named part holds its own
+private `Site` with the values below, and a scenario links one `Site` into several vehicles (the
+`shared_site` configuration of `vehicle_simulation.json`). The plugin's own defaults are the Otter's.
+
+| Parameter | Default | Unit | Source | Named part | Kind |
+|---|---|---|---|---|---|
+| `site_form` | `given` | - | `otter.m` 90-91; `gravity.m` 11-12 for `latitude` | Otter (MSS) | selector |
+| `latitude` | 1.1073560310932362 | rad | `remus100.m` 96-97 (mu = deg2rad(63.446827)); read with `site_form="latitude"` | REMUS 100 (MSS) | document |
+| `gravity` | 9.81 | m/s^2 | `mssConstants.m`:14 @ `49e03e3` (MSS 2.0.5); `otter.m` 90-91; read with `site_form="given"` | Otter (MSS) | document |
+| `water_density` | 1025.0 | kg/m^3 | `otter.m` 90-91 | Otter (MSS) | document |
+| `kinematic_viscosity` | 1e-06 | m^2/s | `cylinderDrag.m` 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | - (water property) | document |
+
+Values of each named part's own `Site` (the part's description lists it under its `site` slot):
+
+| Named part | `site_form` | `latitude` | `gravity` | `water_density` | `kinematic_viscosity` | Source |
+|---|---|---|---|---|---|---|
+| REMUS 100 (MSS) | `latitude` | 1.1073560310932362 | (from latitude) | 1026 | 1e-06 | `remus100.m`:96-98 (the part's former own values) |
+| Otter (MSS) | `given` | (unread) | 9.81 | 1025.0 | 1e-06 | `otter.m` 90-91 |
+| Grethe | `given` | (unread) | 9.81 (estimate: `grethe_mariner5.yaml`) | 1025.0 (standard sea water) | 1e-06 | A-43 M5 |
+| NPS AUV II (MSS) | `given` | (unread) | 9.81 | 1025 | 1e-06 | `npsauv.m`:105 (when U6e lands the part) |
 
 ## `more_dynamics::Fin` (`plugins/force_producers/fin.py`)
 
@@ -254,6 +258,7 @@ named part itself is not yet landed in `.rppws`, `test_named_part_nps_auv_ii_exi
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes (this job) |
 | Grethe | `.rppws/parts/more_dynamics__monohull/` (U8b leftover, this job) | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
 | NPS AUV II (MSS) | not yet landed (U6e) | n/a |
+| Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `…__catamaran/09d55b0c-…`, `…/287972df-…` (R11: two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
 
 HullVessel (Luka's `plugins/vehicle_models/hull_vessel.py`, `.rppws/parts/more_dynamics__hull_vessel/`)
 and JetNozzle (`.rppws/parts/more_dynamics__jet_nozzle/`) are Luka's own files (E-28, E-91) and

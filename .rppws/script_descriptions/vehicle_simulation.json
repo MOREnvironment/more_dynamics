@@ -34,9 +34,24 @@
                     }
                 ]
             }
+        },
+        "shared_site": {
+            "Description": "Two boats in the same water: both link the one Site component 'Scenario site' (edit it once, both follow)",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "09d55b0c-9ff2-4021-965c-dd4cc4b7aebf",
+                        "PluginName": "more_dynamics::Catamaran"
+                    },
+                    {
+                        "Id": "287972df-972f-417c-953c-c834363fcd46",
+                        "PluginName": "more_dynamics::Catamaran"
+                    }
+                ]
+            }
         }
     },
-    "ActiveConfiguration": "remus100",
+    "ActiveConfiguration": "grethe",
     "Spec": {
         "vessels": "List[more_dynamics::VehicleModel3D]"
     }

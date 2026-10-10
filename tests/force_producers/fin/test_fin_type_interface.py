@@ -177,43 +177,9 @@ def test_skeleton_accepts_a_rotated_orthonormal_frame():
 # --------------------------------------------------------------------------
 # Set and vehicle feed
 # --------------------------------------------------------------------------
-def test_set_signature_has_one_density():
-    fin_set = producer_set([_deflection_only_fin(), _deflection_only_fin(lift=NEG_Z)], np.eye(2))
-    assert fin_set.name_in() == PRODUCER_INPUTS, fin_set.name_in()
-    assert fin_set.name_out()[:2] == PRODUCER_OUTPUTS
-    assert sum(name.endswith("water_density") for name in fin_set.name_in()) == 1
-
-
 def test_one_fed_density_scales_every_lifting_fin():
     fin_set = producer_set([_deflection_only_fin(), _deflection_only_fin((-0.7, 0, 0), NEG_Z)], np.eye(2))
     g = rng()
     for command, nu_r in zip(g.uniform(-0.4, 0.4, (50, 2)), g.uniform(-2, 2, (50, 6))):
         a, b = tau(fin_set, command, nu_r, 1000.0), tau(fin_set, command, nu_r, 1030.0)
         assert max_diff(b, 1.03 * a) <= 1e-12 * max(1.0, float(np.max(np.abs(b))))
-
-
-@pytest.mark.parametrize("missing", ["nu_r", "water_density"])
-def test_set_refuses_a_producer_without_a_fed_input(missing):
-    inputs = {"command": 1, "state": 0, "nu_r": 6, "water_density": 1}
-    inputs.pop(missing)
-    syms = {n: ca.SX.sym(n, rows) for n, rows in inputs.items()}
-    bad = ca.Function("bad", list(syms.values()), [ca.SX.zeros(6), ca.SX(0, 1)], list(syms), ["tau", "state_dot"])
-    with pytest.raises(ValueError) as error:
-        module("shared.force_producer_set").force_producer_set_casadi([_deflection_only_fin(), bad], 2)
-    assert "producers[1]" in str(error.value) and missing in str(error.value), str(error.value)
-
-
-def test_set_refuses_a_command_map_of_the_wrong_shape():
-    with pytest.raises(ValueError, match="command_map"):
-        producer_set([_deflection_only_fin(), _deflection_only_fin(lift=NEG_Z)], np.ones((3, 2)))
-
-
-def test_set_stacks_states_in_list_order():
-    lag = {"max_deflection": 0.35, "max_rate": 5.0, "time_constant": 0.1}
-    first = _deflection_only_fin(servo="lag_rate_angle", servo_values=lag)
-    second = _deflection_only_fin((-0.7, 0, 0), NEG_Z, servo="ideal")
-    third = _deflection_only_fin((-0.7, 0, 0), E_Y, servo="lag_rate_angle", servo_values={**lag, "time_constant": 0.2})
-    fin_set = producer_set([first, second, third], np.eye(3))
-    assert fin_set.size_in("state") == (2, 1)
-    out = call(fin_set, command=[0.2, 0.1, -0.3], state=[0.0, 0.0], nu_r=[1.5, 0, 0, 0, 0, 0], water_density=1026.0)
-    assert max_diff(out["state_dot"], [0.2 / 0.1, -0.3 / 0.2]) <= 1e-12

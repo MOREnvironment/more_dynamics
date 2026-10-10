@@ -292,7 +292,7 @@ def test_marked_copies_rebuild_their_mss_files():
 def test_the_vehicle_is_one_plugin_with_the_slots_of_hull_vessel():
     """``SpheroidAuv`` takes exactly Luka's slots minus the sensors; there is no vehicle-named model folder."""
     p = plugins()
-    assert set(p.SpheroidAuv.COMPONENTS) == {"hydrostatics", "hydrodynamics", "actuators"}
+    assert set(p.SpheroidAuv.COMPONENTS) == {"site", "hydrostatics", "hydrodynamics", "actuators"}
     assert p.SpheroidAuv.COMPONENTS["actuators"] == "List[more_dynamics::ForceProducer]"
     import more_dynamics
     models = Path(more_dynamics.__file__).parent / "models"
@@ -304,14 +304,14 @@ def test_the_vehicle_is_one_plugin_with_the_slots_of_hull_vessel():
 def test_each_parameter_has_one_owner(stage):
     """One quantity, one place: no parameter name is declared by two plugins of the composition."""
     p = plugins()
-    classes = [p.SpheroidAuv, p.SubmergedRestoring, p.AuvHullLoads] + (
+    classes = [p.SpheroidAuv, p.Site, p.SubmergedRestoring, p.AuvHullLoads] + (
         [p.FinPairsDeflectionOnly, p.Propeller] if stage == FULL else [p.PrescribedWrench])
     owners = {}
     for cls in classes:
         for d in cls.PARAMETERS:
             owners.setdefault(d.name, []).append(cls.__name__)
     assert all(len(v) == 1 for v in owners.values()), {k: v for k, v in owners.items() if len(v) > 1}
-    assert owners["water_density"] == ["SpheroidAuv"] and owners["length"] == ["SpheroidAuv"]
+    assert owners["water_density"] == ["Site"] and owners["length"] == ["SpheroidAuv"]
     assert owners["body_density"] == ["SpheroidAuv"] and owners["center_of_buoyancy"] == ["SubmergedRestoring"]
 
 
@@ -508,7 +508,7 @@ def test_a_parameter_the_composition_leaves_out_takes_the_plugin_default():
     composition that sets only the two form choices gives the same vehicle."""
     p = plugins()
     bare = vc.build_context(p.SpheroidAuv, {"coriolis_form": "munk_couplings_removed", "current_form": "yaw_rate_terms"},
-                            hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
+                            site=(p.Site, vc.remus_site()), hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                             actuators=[p.PrescribedWrench])
     table = _read_csv(HULL_DERIVATIVE_FILE)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])[:50]

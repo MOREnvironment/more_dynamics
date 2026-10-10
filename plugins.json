@@ -90,12 +90,21 @@
             "Name": "CoefficientHullLoads",
             "Path": "more_dynamics/plugins/hydrodynamics/coefficient_hull_loads.py",
             "Type": "file"
+        },
+        {
+            "Name": "Site",
+            "Path": "more_dynamics/plugins/site/site.py",
+            "Type": "file"
         }
     ],
     "PluginTypes": [
         {
             "Name": "VehicleModel2D",
             "Path": "more_dynamics/plugin_types/vehicle_model.capnp",
+            "Type": "file"
+        },
+        {
+            "Path": "more_dynamics/plugin_types/site_model.capnp",
             "Type": "file"
         }
     ]

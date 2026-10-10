@@ -8,10 +8,6 @@ from __future__ import annotations
 
 
 class ComponentParameters:
-    site_form = "given"  # A-43 M5/header: gravity and water_density given directly
-    gravity = 9.81  # estimate: grethe_mariner5.yaml hydrostatics.gravity ("standard"), A-43 header
-    water_density = 1025.0  # published: standard sea water (A-43 M5)
-    kinematic_viscosity = 1e-06  # Fossen 2011, p. 125, below eq. 6.85 (20 degC)
     length = 5.2  # document: A-43 M1, F003 p2, M001 p7 (overall length)
     beam = 2.15  # document: A-43 M2, F003 p2, M001 p7, D002 p1
     waterline_length = 0.0  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired

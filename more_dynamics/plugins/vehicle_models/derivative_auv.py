@@ -6,8 +6,9 @@ parts (Lamb spheroid added mass, Prestero lift/drag) — the given-derivatives
 route an identified vehicle's own model later takes (E-69, E-103). As Luka's
 ``VehicleModel3D`` in the form of ``HullVessel``/``SpheroidAuv``: its own
 parameters, the rigid body and the added mass computed here from
-``models/``, and the slots ``hydrostatics``, ``hydrodynamics`` and
-``actuators`` taken from the composition.
+``models/``, and the slots ``site`` (the water and the gravity),
+``hydrostatics``, ``hydrodynamics`` and ``actuators`` taken from the
+composition.
 
 **No rigid-body Coriolis matrix of its own.** Unlike ``remus100.m``/
 ``otter.m``, ``npsauv.m`` applies no separate ``-C(nu) nu_r`` term in its
@@ -32,15 +33,13 @@ list order.
 
 Primitives (rule 16: derived quantities are computed, except where
 ``npsauv.m`` gives a quantity directly and no defining equation of this
-vehicle's own recomputes it): ``gravity`` (given, as ``npsauv.m`` 105, not
-derived from ``latitude``: unlike ``remus100.m``, this reference does not
-compute it from a site), ``water_density``, ``length`` (``npsauv.m`` 105),
+vehicle's own recomputes it): ``length`` (``npsauv.m`` 105),
 ``body_mass`` and the full inertia tensor (``inertia_diagonal``,
 ``inertia_products``, ``npsauv.m`` 106, 110-111), ``body_center_of_gravity``
 (``npsauv.m`` 106). ``weight`` and ``buoyancy`` are declared too (``npsauv.m``
 108, the test contract): both equal ``body_mass * gravity`` for this
 reference (neutral buoyancy, checked: 5443.425... * 9.81 = 53400.0 to the
-file's precision) and are read by the hydrostatics child through its own
+file's precision, the gravity of the ``site`` slot being 9.81 as ``npsauv.m`` 105 gives it) and are read by the hydrostatics child through its own
 ``mass``/``gravity`` couplings (``SubmergedRestoring``'s default
 ``buoyancy_method = "neutral"``), not recomputed here; they are declared on
 the vehicle because ``npsauv.m`` gives them as its own primitives (``W``,
@@ -108,7 +107,7 @@ from more_dynamics.models.coefficient_loads.coefficient_loads import HULL_ONLY_D
 from more_dynamics.models.rigid_body.rigid_body_parts import FULL_TENSOR_RIGID_BODY_PARAMETERS, full_tensor_rigid_body
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
-from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
 
 # npsauv.m 126-156: every published nondimensional derivative, by line.
 _ACTUATOR_COUPLED_DERIVATIVES = {
@@ -158,14 +157,13 @@ class DerivativeAuv(VehicleModel3D):
 
     COMPONENTS = {
         "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
         "hydrostatics": "more_dynamics::HydrostaticsModel",
         "hydrodynamics": "more_dynamics::HydrodynamicsModel",
     }
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("gravity", 9.81),  # m/s^2, npsauv.m:105 (given directly, not from a site)
-        ParameterDescription("water_density", 1025),  # kg/m^3, npsauv.m:105 rho
         ParameterDescription("length", 5.3),  # m, npsauv.m:105 L
         ParameterDescription("body_mass", 5443.425076452599),  # kg, W / g (npsauv.m:109), W at npsauv.m:108
         ParameterDescription("inertia_diagonal", [2038, 13587, 13587]),  # kg*m^2, npsauv.m:110 [Ix, Iy, Iz]
@@ -176,9 +174,6 @@ class DerivativeAuv(VehicleModel3D):
         ParameterDescription("center_of_buoyancy", [0, 0, 0]),  # m, npsauv.m:107 r_bb
         ParameterDescription("derivative_scaling", "nondimensional"),  # npsauv.m:116-124 (Fossen prime-scaling)
         ParameterDescription("current_form", "yaw_rate_terms"),  # npsauv.m:83-90 (the gate's own MSS form)
-        ParameterDescription("site_form", "given"),  # npsauv.m:105 g = 9.81 (no latitude in this reference)
-        ParameterDescription("latitude", 0.0),  # rad; unread with site_form "given" (declared for the shared form)
-        ParameterDescription("kinematic_viscosity", 1e-06),  # m^2/s; unread by this vehicle's own graph (site's own input)
         *[ParameterDescription(f"nondim_{name}", value) for name, value in _DERIVATIVE_VALUES.items()],
     ]
 
@@ -190,11 +185,9 @@ class DerivativeAuv(VehicleModel3D):
         own_inputs = current_inputs(context, "DerivativeAuv", CompositionError)
         _check_inertia(context)
 
-        def compute(pose, velocity, current):
-            known = {"pose": pose, "velocity": velocity, **current}
+        def compute(pose, velocity, current, site):
+            known = {"pose": pose, "velocity": velocity, **current, **site}
             parts = Parts(context, "DerivativeAuv", known)
-            site, site_parameters = select_site(parts)  # (npsauv.m 105; otter.m 90-91)
-            parts.run("site", site(), site_parameters)
             known["length"] = ca.SX(context.get_parameter("length"))  # npsauv.m:105 L (vehicle coupling, not a site/hull-form quantity here)
             parts.run("rigid body", full_tensor_rigid_body(), FULL_TENSOR_RIGID_BODY_PARAMETERS)
             parts.run("added mass", given_derivative_added_mass(), given_derivative_added_mass_parameters())

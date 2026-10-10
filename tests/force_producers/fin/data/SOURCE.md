@@ -1,4 +1,4 @@
-# Frozen reference — fin parts and fin compositions (skeleton `LiftingFin`, set `ForceProducerSet`)
+# Frozen reference — fin parts and fin compositions (skeleton `LiftingFin`)
 
 **Frozen** files: a changed byte needs a decision record; a new MSS revision that changes an output adds a file `*_mss_<revision>.csv` beside the old one. The generator lives here, finds MSS only through `MSS_DIR` (MATLAB through `MATLAB_BIN`) and writes under `OUT_DIR` (default `<tempdir>/more_mss_references/`), never into this folder; a re-run is checked with `cmp` against the file of the same name here. `tests/force_producers/fin/test_fin_parts_reference_data.py` checks every hash below.
 
@@ -10,7 +10,6 @@
 | `generate_remus100_fins_mss.m` | the generator (runs `remus100.m` as written; a copy instrumented at run time in tempdir only returns its workspace; no MSS line typed) | — | `cbb83e1010c81429114093cbe5db94fe2ef2d674bf8a7549229e67ba79c5e87e` |
 | `prestero_2001_remus_fins.json` | numbers typed from the printed pages of Prestero (2001), each with its table and page: ρ (Table A.1, p. 102); S_fin, b_fin, x_finpost, AR_e, ã, c_Lα (Table A.5, p. 103); the twelve control-fin coefficients (Table C.10, p. 111); half a unit of the last printed digit | typed 2026-10-08 from the saved PDF (`source-sim/0_literature/1_vehicle_models/Prestero_2001_REMUS_6DOF_Model_Verification_MIT_WHOI.pdf`, PDF pages 103, 104, 112) | `fa1f9e0df946d877601e27b951df88f84aba013b9bef8952d0958c8eae967694` |
 
-Also read by these tests, frozen in the parent folder: `../parameter_sets.json` (`vsim_fins`: DUNE's LAUV fin forces and positions, `etc/common/vsim-models.ini` 54–62) for the set of one-fin leaves.
 
 ## Typed numbers and their pages (rule: no number from memory)
 

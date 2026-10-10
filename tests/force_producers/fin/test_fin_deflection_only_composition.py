@@ -1,7 +1,7 @@
 """Gate tests of the deflection-only fin composition: ``LiftingFin`` with
 servo ``ideal``, inflow ``translational``, flow angle ``none``,
-interference ``none``, section ``quadratic_drag``; fins grouped by a
-``ForceProducerSet``.
+interference ``none``, section ``quadratic_drag``; fins summed behind a command
+map by the contract's ``producer_set`` fixture.
 
 Written 2026-10-08, before the parts exist (contract: ``fin_parts_contract``).
 The skeleton's own equations (the only physics it holds):

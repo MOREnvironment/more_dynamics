@@ -51,10 +51,12 @@ def _states(n, seed):
 
 def test_the_script_description_lists_one_configuration_per_named_vehicle():
     description = json.loads(DESCRIPTION.read_text())
-    assert set(description["Configurations"]) == set(NAMED)
+    assert set(description["Configurations"]) == set(NAMED) | {"shared_site"}  # the last is a scenario, not a vehicle
     assert description["Spec"] == {"vessels": "List[more_dynamics::VehicleModel3D]"}
     assert (LIBRARY / description["ScriptPath"]).is_file()
     for key, configuration in description["Configurations"].items():
+        if key == "shared_site":
+            continue  # two boats linking one site: test_site_slot.py
         assert len(configuration["Components"]["vessels"]) == 1
         part_id = configuration["Components"]["vessels"][0]["Id"]
         # the part's own description.json carries the E-106 name, found by id (rule 20, R10)
@@ -65,9 +67,12 @@ def test_the_script_description_lists_one_configuration_per_named_vehicle():
 
 
 def test_remus_100_from_the_workspace_equals_the_plugins_on_their_defaults():
+    """The plugins on their defaults, the site being the part's own (gravity from the latitude, 1026 kg/m^3: the
+    ``Site`` plugin's default is another set)."""
     p = vc.plugins()
     built = _build("remus100")
     reference = vc.build_context(p.SpheroidAuv, {"current_form": "none"},  # the named part is gated in still water
+                                 site=(p.Site, {"site_form": "latitude", "water_density": 1026}),
                                  hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                                  actuators=[p.FinPairsDeflectionOnly, p.Propeller])
     assert type(built).__name__ == "SpheroidAuv"
@@ -130,6 +135,8 @@ def test_every_parameter_file_names_only_parameters_its_plugin_declares():
     checked = 0
     for description in sorted(RPPWS.joinpath("parts").rglob("description.json")):
         record = json.loads(description.read_text())
+        if "LinkedComponentId" in record:
+            continue  # a link to a component whose own folder is checked
         name = record["PluginName"].split("::")[1]
         if name in ("HullVessel", "JetNozzle", "LinearSurfaceHydrostatics", "LinearSurfaceHydrodynamics"):
             continue  # Luka's parts keep his files

@@ -1,0 +1,40 @@
+{
+    "Id": "287972df-972f-417c-953c-c834363fcd46",
+    "Name": "Scenario boat B",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::Catamaran",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "caa8f4da-acc9-4626-bf39-0d746962b94d",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SurfaceRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "afcf861e-1e40-4ac6-9add-d71b7a9dade7",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::SurfaceHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "site": {
+            "Id": "db4af6ab-a0f7-49a4-8523-8b01440b3227",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::Site",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": true
+        }
+    },
+    "ParentComponentInfo": null
+}

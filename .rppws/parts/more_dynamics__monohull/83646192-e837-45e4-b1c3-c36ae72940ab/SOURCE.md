@@ -18,7 +18,7 @@ No August 2026 field data is used (safeguard rule 20).
 |---|---|---|---|
 | `added_mass_mass_basis` | `displaced` | root (Monohull) | E-101 Q5 a: a vehicle with a payload displaces more water; the added mass follows |
 | `current_form` | `none` | root (Monohull) | still water: the reference data holds current fixed |
-| `site_form` | `given` | root (Monohull) | plugin default; no site derivation for Grethe |
+| `site_form` | `given` | the part's own `Site` subcomponent (`site` slot) | no site derivation for Grethe |
 | `wetted_surface_method` | `regression_table` | hydrostatics (SurfaceRestoring) | A-64 Section 3.3 R11: the published RA14 hydrostatic wetted-surface regression, one hull |
 | `manoeuvring_damping` | `linear_coupled` | hydrodynamics (SurfaceHullLoads) | A-64 Section 3.4 G0 set: `Y_v`, `N_r` from the time constants, `Y_r = N_v = 0` unidentified (E-101 Q2 a) |
 | `surge_resistance` | `ittc_residual` | hydrodynamics (SurfaceHullLoads) | E-101 Q1 a: ITTC friction plus the RA14 residual term |

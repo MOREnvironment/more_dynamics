@@ -2,9 +2,9 @@
 as Luka's ``VehicleModel3D`` in the form of ``HullVessel`` (``hull_vessel.py``):
 its own parameters (geometry, mass, centres, forms), the rigid body, the
 added mass, the Coriolis terms and the current computed here from the model
-functions of ``models/``, and the slots ``hydrostatics``, ``hydrodynamics``
-and ``actuators`` (a list of force producers) taken from the composition. The
-graph is the equation of motion of a craft in a current over the children's
+functions of ``models/``, and the slots ``site`` (the water and the gravity),
+``hydrostatics``, ``hydrodynamics`` and ``actuators`` (a list of force
+producers) taken from the composition. The graph is the equation of motion of a craft in a current over the children's
 payloads (``plugins/shared/vehicle_graph.py``).
 
     nu_r    = nu - nu_c
@@ -16,12 +16,12 @@ angles, BODY FRD velocity, SI units. Inputs: the current (``current_speed``,
 ``current_direction``, ``current_vertical_speed``) when ``current_form`` is
 not ``"none"``, then the commands of the actuators in list order.
 
-Primitives (rule: derived quantities are computed): ``latitude`` (gravity by
-WGS-84 normal gravity) or ``gravity`` (given), ``water_density``,
-``kinematic_viscosity``, ``length`` and ``diameter`` (the hull, one geometry:
+Primitives (rule: derived quantities are computed): ``length`` and ``diameter`` (the hull, one geometry:
 beam, draft, span and the semi-axes follow), ``body_mass`` and
 ``body_center_of_gravity`` (mass and inertia of the homogeneous spheroid),
-``roll_added_inertia_ratio`` (Lamb added mass).
+``roll_added_inertia_ratio`` (Lamb added mass). The water density, the gravity
+and the kinematic viscosity are not parameters of the hull: they come from
+the ``site`` slot (``plugins/site/site.py``).
 
 Options, each with its fidelity and what raises it:
 
@@ -38,9 +38,6 @@ Options, each with its fidelity and what raises it:
   ``"full_rotation_rate"`` (MSS ``otter.m`` 113-118); the last two are MSS
   shortcuts. Raise: a measured current profile. Every form but ``"none"``
   adds the three current inputs first.
-* ``site_form``: ``"latitude"`` (default; WGS-84 normal gravity at
-  ``latitude``, ``remus100.m`` 96-97) or ``"given"`` (``gravity``, 9.81 m/s^2
-  as MSS 2.0.5, ``mssConstants.m`` 14).
 * ``body_density_method``: ``"computed"`` (default; the density that gives
   ``body_mass`` on the spheroid's own volume, ``spheroid.m`` 36) or
   ``"given"`` (``body_density``). Raise: the mass from a weighing, the volume
@@ -83,7 +80,7 @@ from more_dynamics.models.rigid_body.rigid_body_parts import (
     SPHEROID_BODY_MASS_PARAMETERS, homogeneous_spheroid, homogeneous_spheroid_parameters, spheroid_body_density)
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
-from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, select_site
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
 
 ADDED_MASS_FORMS = {"lamb_spheroid": (lamb_spheroid, lamb_spheroid_parameters)}
 BODY_DENSITY_METHODS = ("computed", "given")
@@ -94,17 +91,13 @@ class SpheroidAuv(VehicleModel3D):
 
     COMPONENTS = {
         "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
         "hydrostatics": "more_dynamics::HydrostaticsModel",
         "hydrodynamics": "more_dynamics::HydrodynamicsModel",
     }
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("site_form", "latitude"),  # gravity.m 11-12; remus100.m 96-97
-        ParameterDescription("latitude", 1.1073560310932362),  # remus100.m 96-97, mu = deg2rad(63.446827); read with site_form "latitude"
-        ParameterDescription("gravity", 9.81),  # m/s^2, mssConstants.m:14 @ 49e03e3 (MSS 2.0.5); read with site_form "given"
-        ParameterDescription("water_density", 1026),  # remus100.m:98 rho = 1026, the one value (MSS: 1026 at imlay61.m:31 and forceLiftDrag.m:26, 1025 at crossFlowDrag.m:36)
-        ParameterDescription("kinematic_viscosity", 1e-06),  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
         ParameterDescription("length", 1.6),  # remus100.m:131 L_auv, passed as L at :221
         ParameterDescription("diameter", 0.19),  # remus100.m:132 D_auv, passed as B at :221
         ParameterDescription("body_density_method", "computed"),  # rho_b = m / (4/3 pi a b^2) (spheroid.m:36 solved for rho_b)
@@ -128,11 +121,9 @@ class SpheroidAuv(VehicleModel3D):
                                    f"got {density_method!r}")
         own_inputs = current_inputs(context, "SpheroidAuv", CompositionError)
 
-        def compute(pose, velocity, current):
-            known = {"pose": pose, "velocity": velocity, **current}
+        def compute(pose, velocity, current, site):
+            known = {"pose": pose, "velocity": velocity, **current, **site}
             parts = Parts(context, "SpheroidAuv", known)
-            site, site_parameters = select_site(parts)  # (gravity.m 11-12; remus100.m 96-97; otter.m 90-91)
-            parts.run("site", site(), site_parameters)
             parts.run("hull form", prolate_spheroid_main_dimensions(), PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS)
             if density_method == "computed":
                 parts.run("body density", spheroid_body_density(), SPHEROID_BODY_MASS_PARAMETERS)  # (spheroid.m 36)

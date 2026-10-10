@@ -30,7 +30,8 @@ def test_the_three_types_take_exactly_the_slots_of_hull_vessel_without_sensors()
     p = vc.plugins()
     from more_dynamics.plugins.vehicle_models.hull_vessel import HullVessel
     for cls in (p.SpheroidAuv, p.Monohull, p.Catamaran):
-        assert cls.COMPONENTS == {key: value for key, value in HullVessel.COMPONENTS.items() if key != "sensors"}, cls
+        assert cls.COMPONENTS == {**{key: value for key, value in HullVessel.COMPONENTS.items() if key != "sensors"},
+                                  "site": "more_dynamics::SiteModel"}, cls
 
 
 @pytest.mark.parametrize("make, names", [
@@ -124,9 +125,37 @@ def test_refuses_an_empty_slot_and_names_it():
     from rpp_py.parameter_handler import ParameterHandler
     params = ParameterHandler.resolve_params(p.SpheroidAuv.PARAMETERS, {})
     context = ComponentContext(instance=p.SpheroidAuv(), params=params, spec=p.SpheroidAuv.COMPONENTS,
-                               subcomponents={"hydrodynamics": [vc.child(p.AuvHullLoads)], "actuators": []})
+                               subcomponents={"site": [vc.child(p.Site)], "hydrodynamics": [vc.child(p.AuvHullLoads)],
+                                              "actuators": []})
     with pytest.raises(p.CompositionError, match="slot 'hydrostatics' is empty"):
         context.initialize()
+
+
+def test_refuses_an_empty_site_slot_and_names_it():
+    p = vc.plugins()
+    from rpp_py.context import ComponentContext
+    from rpp_py.parameter_handler import ParameterHandler
+    params = ParameterHandler.resolve_params(p.SpheroidAuv.PARAMETERS, {})
+    context = ComponentContext(instance=p.SpheroidAuv(), params=params, spec=p.SpheroidAuv.COMPONENTS,
+                               subcomponents={"hydrostatics": [vc.child(p.SubmergedRestoring)],
+                                              "hydrodynamics": [vc.child(p.AuvHullLoads)], "actuators": []})
+    with pytest.raises(p.CompositionError, match="slot 'site' is empty"):
+        context.initialize()
+
+
+def test_refuses_a_site_that_does_not_give_the_water_and_the_gravity():
+    """A site model must give ``water_density``, ``gravity`` and ``kinematic_viscosity``, each one value, and takes
+    no input and no state."""
+    p = vc.plugins()
+    with pytest.raises(p.CompositionError, match=r"slot site \(_Child\): must give 'gravity'"):
+        _assemble(_hydrodynamics([("velocity", 6)], [("hydrodynamic_force", 6)]), site=_site_payload(
+            [("water_density", 1), ("kinematic_viscosity", 1)]))
+    with pytest.raises(p.CompositionError, match=r"slot site \(_Child\): must give 'gravity' as one value"):
+        _assemble(_hydrodynamics([("velocity", 6)], [("hydrodynamic_force", 6)]), site=_site_payload(
+            [("water_density", 1), ("gravity", 3), ("kinematic_viscosity", 1)]))
+    with pytest.raises(p.CompositionError, match=r"slot site \(_Child\): a site model takes no input"):
+        _assemble(_hydrodynamics([("velocity", 6)], [("hydrodynamic_force", 6)]), site=_site_payload(
+            [("water_density", 1), ("gravity", 1), ("kinematic_viscosity", 1)], inputs=[("latitude", 1)]))
 
 
 def test_refuses_a_hydrodynamics_child_whose_input_no_quantity_gives():
@@ -186,13 +215,32 @@ def _hydrodynamics(inputs, outputs, states=()):
     return _Child(build)
 
 
-def _assemble(hydrodynamics):
-    """The Catamaran over the real surface restoring and the given hydrodynamics child."""
+def _site_payload(outputs, inputs=()):
+    """A site child written here: the named outputs (each a constant of its size) and, to be refused, inputs."""
+    from rpp_plugin_types.more_dynamics import SiteModel
+    from more_dynamics.plugins.shared.payload_io import PayloadBuilder
+
+    def build():
+        io = PayloadBuilder(SiteModel.CasadyPayload())
+        for name, size in inputs:
+            io.input(name, size)
+        for name, size in outputs:
+            io.output(name, ca.DM.ones(size, 1))
+        return io.payload()
+    return _Child(build)
+
+
+def _assemble(hydrodynamics, site=None):
+    """The Catamaran over the real site (its defaults) and surface restoring and the given hydrodynamics child."""
     p = vc.plugins()
     restoring = vc.child(p.SurfaceRestoring)
     restoring.initialize()
+    if site is None:
+        site = vc.child(p.Site)
+        site.initialize()
+        site = site.get_instance()
     vehicle = p.Catamaran()
-    vehicle.initialize(_StandIn(p.Catamaran, {"hydrostatics": restoring.get_instance(),
+    vehicle.initialize(_StandIn(p.Catamaran, {"site": site, "hydrostatics": restoring.get_instance(),
                                               "hydrodynamics": hydrodynamics, "actuators": []}))
     return vehicle
 
@@ -207,7 +255,7 @@ def test_refuses_a_mis_sized_input():
 def test_refuses_a_quantity_two_slots_produce():
     p = vc.plugins()
     child = _hydrodynamics([("velocity", 6)], [("hydrodynamic_force", 6), ("water_density", 1)])
-    with pytest.raises(p.CompositionError, match="'water_density' is produced already by Catamaran"):
+    with pytest.raises(p.CompositionError, match=r"'water_density' is produced already by slot site \(Site\)"):
         _assemble(child)
 
 
@@ -225,10 +273,10 @@ def test_refuses_a_first_output_that_is_not_a_six_value_force():
         _assemble(child)
 
 
-def test_only_the_site_quantities_are_the_vehicles_own_parameters():
-    """One quantity, one value: no plugin but the vehicle types declares a water density, a gravity or a
-    kinematic viscosity (Luka's hydrostatics and hydrodynamics plugins, which carry their own, are the stated
-    exception)."""
+def test_only_the_site_declares_the_water_and_the_gravity():
+    """One quantity, one value: no plugin but ``Site`` declares a water density, a gravity or a kinematic
+    viscosity, a latitude or a site form -- not even the vehicle types (Luka's hydrostatics and hydrodynamics
+    plugins, which carry their own, are the stated exception)."""
     import importlib
     import json
     from pathlib import Path
@@ -237,11 +285,13 @@ def test_only_the_site_quantities_are_the_vehicles_own_parameters():
     lukas = ("LinearSurfaceHydrostatics", "LinearSurfaceHydrodynamics", "CrossflowSurfaceHydrodynamics", "JetNozzle",
              "HullVessel")
     for entry in registry["Plugins"]:
-        if entry["Name"] in lukas or "/vehicle_models/" in entry["Path"]:
+        if entry["Name"] in lukas or entry["Path"] == "more_dynamics/plugins/site/site.py":
             continue
         cls = getattr(importlib.import_module(entry["Path"][:-3].replace("/", ".")), entry["Name"])
         own = {d.name for d in getattr(cls, "PARAMETERS", [])}
-        assert not own & {"water_density", "gravity", "kinematic_viscosity", "latitude"}, (entry["Name"], own)
+        assert not own & set(vc.SITE_NAMES), (entry["Name"], own)
+    declared = {d.name for d in importlib.import_module("more_dynamics.plugins.site.site").Site.PARAMETERS}
+    assert declared == set(vc.SITE_NAMES)
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +306,7 @@ def _restoring_vehicle(**restoring):
     p = vc.plugins()
     v = vc.remus_values()
     return vc.build_context(
-        p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, v), "current_form": "none"},
+        p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, v), "current_form": "none"}, site=(p.Site, vc.remus_site()),
         hydrostatics=(p.SubmergedRestoring, restoring), hydrodynamics=(p.AuvHullLoads, vc.pick(p.AuvHullLoads, v)),
         actuators=[])
 
@@ -336,7 +386,7 @@ def test_monohull_builds_on_its_defaults_and_takes_the_current_as_input():
     vessel = _monohull()
     assert vc.input_names(vessel) == list(vc.CURRENT_NAMES)
     assert vc.input_names(_monohull(current_form="none")) == []
-    assert set(vc.plugins().Monohull.COMPONENTS) == {"hydrostatics", "hydrodynamics", "actuators"}
+    assert set(vc.plugins().Monohull.COMPONENTS) == {"site", "hydrostatics", "hydrodynamics", "actuators"}
 
 
 def test_monohull_at_rest_in_still_water_at_the_equilibrium_pose_stays_at_rest():

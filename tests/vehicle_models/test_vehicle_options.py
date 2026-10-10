@@ -140,6 +140,7 @@ def test_a_change_of_the_hull_moves_every_derived_value_and_leaves_the_given_mas
              "parasitic_drag_coefficient_method": "given", "parasitic_drag_coefficient": parasitic}
     reference = vc.build_context(
         p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, vc.remus_values(longer)), "current_form": "none"},
+        site=(p.Site, vc.remus_site(longer)),
         hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, longer, ("center_of_buoyancy",))),
         hydrodynamics=(p.AuvHullLoads, given), actuators=[p.PrescribedWrench])
     computed = vc.remus(full=False, current="none", values=longer)
@@ -148,6 +149,7 @@ def test_a_change_of_the_hull_moves_every_derived_value_and_leaves_the_given_mas
     stale = {**given, "planform_area": 0.7 * 1.6 * 0.19, "parasitic_drag_coefficient": 0.05595961914206819}
     old = vc.build_context(
         p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, vc.remus_values(longer)), "current_form": "none"},
+        site=(p.Site, vc.remus_site(longer)),
         hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, longer, ("center_of_buoyancy",))),
         hydrodynamics=(p.AuvHullLoads, stale), actuators=[p.PrescribedWrench])
     assert np.abs(_lift_drag_force(computed) - _lift_drag_force(old)).max() > 1e-3
@@ -166,6 +168,7 @@ def test_the_given_methods_read_their_values_and_the_computed_ones_ignore_them()
 
     def lift(extra):
         v = vc.build_context(p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, values), "current_form": "none"},
+                             site=(p.Site, vc.remus_site(values)),
                              hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, values,
                                                                           ("center_of_buoyancy",))),
                              hydrodynamics=(p.AuvHullLoads, {**base, **extra}), actuators=[p.PrescribedWrench])
@@ -213,7 +216,7 @@ def test_site_form_given_takes_density_and_gravity_as_values():
     assert float(signals["weight"][0]) == pytest.approx(31.9 * 9.81, rel=1e-14)  # W = m g (Fossen 2011, eq. 4.1, p. 59)
 
 
-def test_site_form_latitude_is_the_default_of_the_spheroid_and_gives_the_frozen_gravity():
+def test_site_form_latitude_gives_the_frozen_gravity():
     signals = _remus().signals(REST, [0, 0, 0])
     assert float(signals["gravity"][0]) == pytest.approx(vc.REMUS_FILE["gravity"]["g"], rel=1e-14)
 
@@ -222,11 +225,13 @@ def test_the_surface_types_offer_the_latitude_form_too():
     """Normal gravity at the equator, ``mu = 0``: ``9.7803253359`` m/s^2, the first constant of MSS ``gravity.m`` 11-12
     (``INS/functions``, ``cc07579``)."""
     p = vc.plugins()
-    vessel = vc.build_context(p.Catamaran, {**vc.pick(p.Catamaran, vc.OTTER), "current_form": "none",
-                                            "site_form": "latitude", "latitude": 0.0},
+    vessel = vc.build_context(p.Catamaran, {**vc.pick(p.Catamaran, vc.OTTER), "current_form": "none"},
+                              site=(p.Site, {"site_form": "latitude", "latitude": 0.0}),
                               hydrostatics=(p.SurfaceRestoring, {"hull_count": 2}), hydrodynamics=p.SurfaceHullLoads)
     assert float(vessel.signals(REST, [])["gravity"][0]) == pytest.approx(9.7803253359, rel=1e-13)
-    assert float(vc.otter().signals(REST, [])["gravity"][0]) == vc.OTTER["gravity"]  # the default stays "given"
+    assert float(vc.otter().signals(REST, [])["gravity"][0]) == vc.OTTER["gravity"]
+    defaults = {d.name: d.default_value for d in p.Site.PARAMETERS}
+    assert defaults["site_form"] == "given"  # the site's default stays "given"
 
 
 # ---------------------------------------------------------------------------
@@ -237,8 +242,9 @@ def _monohull_of(rho, length, beam, draft, block, surge="ittc"):
     """A monohull whose equilibrium draft is ``draft``: ``m = rho C_b L B T`` (``otter.m`` 121-122)."""
     p = vc.plugins()
     return vc.build_context(
-        p.Monohull, {"water_density": rho, "length": length, "beam": beam, "hull_block_coefficient": block,
+        p.Monohull, {"length": length, "beam": beam, "hull_block_coefficient": block,
                      "hull_mass": rho * block * length * beam * draft, "current_form": "none"},
+        site=(p.Site, {"water_density": rho}),
         hydrostatics=(p.SurfaceRestoring, {"hull_count": 1}),
         hydrodynamics=(p.SurfaceHullLoads, {"surge_resistance": surge}))
 
@@ -322,7 +328,7 @@ def _marie_like(**restoring):
     p = vc.plugins()
     values = vc.remus_values()
     return vc.build_context(
-        p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, values), "current_form": "none"},
+        p.SpheroidAuv, {**vc.pick(p.SpheroidAuv, values), "current_form": "none"}, site=(p.Site, vc.remus_site(values)),
         hydrostatics=(p.SubmergedRestoring, restoring), hydrodynamics=(p.AuvHullLoads, vc.pick(p.AuvHullLoads, values)),
         actuators=[p.PrescribedWrench])
 

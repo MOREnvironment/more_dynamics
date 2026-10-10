@@ -197,20 +197,3 @@ def test_gradient_with_respect_to_an_open_section_parameter(section):
     central = (np.array(f(2.9 + h)[0], dtype=float) - np.array(f(2.9 - h)[0], dtype=float)).reshape(-1) / (2 * h)
     assert np.max(np.abs(gradient)) > 0.1
     assert max_diff(gradient, central) <= 1e-6
-
-
-def test_open_part_parameters_are_named_by_slot_in_a_set():
-    """A set exposes producer i's open input '<slot>.<name>' as
-    'producers[i].<slot>.<name>'."""
-    s = skeleton()
-    from more_transformations.more_casadi_transformations import freeze
-
-    parts = {"servo": part("servo", "ideal", {"max_deflection": MAX_DEFLECTION}),
-             "inflow": part("inflow", "translational"), "flow_angle": part("flow_angle", "none"),
-             "interference": part("interference", "none"), "section": part("section", "quadratic_drag")}
-    open_fin = freeze(s.lifting_fin_casadi(parts), s.lifting_fin_parameters(),
-                      s.check_lifting_fin_values(geometry([-0.75, 0, 0], NEG_Y, 0.013, E_X)))
-    m = module("shared.force_producer_set")
-    block = m.force_producer_set_casadi([open_fin, open_fin], 2)
-    assert "producers[0].section.lift_slope" in block.name_in()
-    assert "producers[1].section.lift_slope" in block.name_in()

@@ -14,7 +14,7 @@ instrumented workspace, not retyped from the thesis (rule 4).
 
 | Selector | Value | Why |
 |---|---|---|
-| `site_form` | `latitude` | plugin default; WGS-84 normal gravity at the MSS site |
+| `site_form` | `latitude` | the part's own `Site` subcomponent (`site` slot): WGS-84 normal gravity at the MSS site; its density 1026 and viscosity 1e-06 are held there too |
 | `added_mass_form` | `lamb_spheroid` | plugin default; ideal-fluid prolate spheroid |
 | `coriolis_form` | `kirchhoff_full` | plugin default; every added-mass Coriolis term kept |
 | `current_form` | `none` | this part is gated in still water |

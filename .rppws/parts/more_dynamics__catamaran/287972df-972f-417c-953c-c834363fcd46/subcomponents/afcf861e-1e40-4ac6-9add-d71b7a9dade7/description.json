@@ -1,0 +1,17 @@
+{
+    "Id": "afcf861e-1e40-4ac6-9add-d71b7a9dade7",
+    "Name": "Scenario boat B hydrodynamics",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::SurfaceHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "287972df-972f-417c-953c-c834363fcd46",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

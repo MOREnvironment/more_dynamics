@@ -1,0 +1,17 @@
+{
+    "Id": "2ba02380-c8f8-4fb0-a336-dd32ae9c351c",
+    "Name": "Scenario boat A hydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SurfaceRestoring",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "09d55b0c-9ff2-4021-965c-dd4cc4b7aebf",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

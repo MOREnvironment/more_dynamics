@@ -1,0 +1,14 @@
+{
+    "Id": "bf785742-e659-41f5-9e62-6e2e7ab97ea5",
+    "Name": "Scenario site",
+    "LinkedComponentId": "cdf3ce4b-0fe7-42f8-80cb-6533445c7fd8",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "09d55b0c-9ff2-4021-965c-dd4cc4b7aebf",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

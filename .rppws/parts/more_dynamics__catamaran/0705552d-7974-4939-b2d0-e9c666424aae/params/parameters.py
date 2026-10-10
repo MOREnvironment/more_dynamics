@@ -7,9 +7,6 @@ from __future__ import annotations
 
 class ComponentParameters:
     integration_max_step = 0.05  # SIMremus100.m 60 (h = 0.05 s), the step of the MSS vehicle simulations
-    gravity = 9.81  # otter.m 90-91
-    water_density = 1025.0  # otter.m 90-91
-    kinematic_viscosity = 1e-06  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
     length = 2.0  # otter.m 92-93, 104-107
     beam = 1.08  # otter.m 92-93, 104-107
     pontoon_beam = 0.25  # otter.m 104-107

@@ -171,7 +171,7 @@ def test_zero_relative_surge_is_a_genuine_fixed_point_not_fixed_here():
 def test_the_vehicle_is_one_plugin_with_the_slots_of_hull_vessel():
     """DerivativeAuv takes Luka's slots minus sensors, as SpheroidAuv does (rule 19, E-86 Q5)."""
     DerivativeAuv, _ = derivative_auv_plugins()
-    assert set(DerivativeAuv.COMPONENTS) == {"hydrostatics", "hydrodynamics", "actuators"}
+    assert set(DerivativeAuv.COMPONENTS) == {"site", "hydrostatics", "hydrodynamics", "actuators"}
     assert DerivativeAuv.COMPONENTS["actuators"] == "List[more_dynamics::ForceProducer]"
 
 
@@ -181,9 +181,10 @@ def test_parameter_names_include_the_full_inertia_tensor_and_every_derivative_ta
     DerivativeAuv, _ = derivative_auv_plugins()
     names = {d.name for d in DerivativeAuv.PARAMETERS}
     expected = {"body_mass", "inertia_diagonal", "inertia_products", "body_center_of_gravity",
-               "center_of_buoyancy", "weight", "buoyancy", "water_density", "length",
-               "derivative_scaling", "current_form", "site_form"}
+               "center_of_buoyancy", "weight", "buoyancy", "length",
+               "derivative_scaling", "current_form"}
     assert expected <= names, expected - names
+    assert not names & set(vc.SITE_NAMES), names & set(vc.SITE_NAMES)  # the water and the gravity are the site's
     derivative_names = {n for n in names if n.startswith("nondim_")}
     assert len(derivative_names) == 93
 

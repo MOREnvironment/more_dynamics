@@ -44,7 +44,6 @@ differential thruster  MATLAB CSVs (MSS ``otter.m``; template) + ``otter.m`` tra
 propeller (B-series)   MATLAB CSVs (``remus100.m``; template) + ``remus100.m`` transcription
 K_T/K_Q polynomial     MATLAB ``wageningen.m`` CSV + ``WageningData.mat`` / ``.txt``
 fins (rudder, sterns)  MATLAB ``remus100.m`` CSV + transcription
-VSIM fins              signature and physical tests only (no independent reference: gap)
 outboard motor         MATLAB K_T/K_Q on its geometry + the force law written in the test
 =====================  ====================================================================
 
@@ -100,9 +99,6 @@ path a plugin carries), so every function below takes the commands and
   ``max_deflection`` (rad), ``water_density``. Inputs ``["delta", "nu_r"]``,
   ``delta`` = (rudder, stern plane) rad, saturated inside. The default
   convention equals ``remus100.m`` 238-254.
-* ``vsim_fins``: ``vsim_fins_casadi(*, fin_count)``; parameters
-  ``max_forces``, ``positions`` (fin_count x 3), ``max_deflection``. Inputs
-  ``["delta", "nu_r"]``, ``delta`` (fin_count x 1).
 * ``outboard_motor``: two blocks. ``outboard_motor_rpm_casadi(*,
   power_limit=True, clip_advance_ratio=False)`` with parameters
   ``max_thrust``, ``max_power``, ``efficiency``, ``position``, ``max_speed``,
@@ -309,16 +305,10 @@ def _number_in(rel, number, pattern):
     return float(match.group(1))
 
 
-def _gravity(mu):
-    """gravity.m 11-12, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
-    return ECEFNEDtransform.gravity(mu, unit="rad")
-
-
 # modules under PACKAGE: each block sits in the folder of its physics
 MODULE_PATH = {"differential_thruster": "thruster.differential_thruster", "outboard_motor": "outboard.outboard_motor",
                "propeller": "propeller.propeller", "wageningen_kt_kq": "propeller.wageningen_kt_kq",
-               "fins": "fin.fins", "vsim_fins": "fin.vsim_fins", "_common": "shared.force_producer_common"}
+               "fins": "fin.fins", "_common": "shared.force_producer_common"}
 
 
 def _contract(name):
@@ -337,7 +327,7 @@ MODULE_OF = {"outboard_motor_rpm": "outboard_motor", "outboard_motor_throttle": 
 # selectors of each builder (the rest of a parameter set is numbers)
 SELECTORS = {
     "differential_thruster": (), "propeller": ("open_water_model", "clip_advance_ratio"),
-    "wageningen": ("clip_advance_ratio",), "fins": ("convention",), "vsim_fins": (),
+    "wageningen": ("clip_advance_ratio",), "fins": ("convention",),
     "outboard_motor_rpm": ("power_limit", "clip_advance_ratio"), "outboard_motor_throttle": (),
 }
 OUTPUT_FIELDS = {"coefficients_in_use": "thrust_torque_coefficients"}   # output -> constants attribute
@@ -366,8 +356,6 @@ def _build(name, params):
         declaration["open_water_coefficients"] = "polynomial" if given is None else "given"
         if given is not None:
             numbers["thrust_torque_coefficients"] = given
-    if name == "vsim_fins":
-        declaration["fin_count"] = len(numbers["max_forces"])
     declared = getattr(block, f"{name}_parameters")(**declaration)
     checker = getattr(block, f"check_{name}_values", None)
     values = checker(numbers) if checker else check_values(declared, numbers)
@@ -464,7 +452,8 @@ def _differential_csv():
 
 
 def _matlab_gravity_differential():
-    return _gravity(np.deg2rad(_number_in(GEN_DIFF, 25, r"deg2rad\(([0-9.]+)\)")))
+    from more_transformations.ecef_ned_transforms import ECEFNEDtransform  # gravity.m 11-12 (E-62)
+    return ECEFNEDtransform.gravity(np.deg2rad(_number_in(GEN_DIFF, 25, r"deg2rad\(([0-9.]+)\)")), unit="rad")
 
 
 def test_G1_block_differential_matches_matlab():
@@ -854,32 +843,6 @@ def test_MSS_fins_default_convention_equals_remus100():
 
 
 # ==========================================================================
-# 5. VSIM fins (signature and physical tests)
-# ==========================================================================
-def _vsim_parameters(scaled):
-    p = _parameter_set("vsim_fins")
-    if scaled:
-        p = {"max_forces": 2.5 * p["max_forces"], "positions": 1.7 * p["positions"],
-             "max_deflection": 0.35}
-    return p
-
-
-def _vsim_cases(n_fins):
-    rng = _rng()
-    delta = rng.uniform(-0.6, 0.6, size=(N_RANDOM_STATES, n_fins))
-    nu_r = rng.uniform(-3.0, 3.0, size=(N_RANDOM_STATES, 6))
-    nu_r[:20, :3] = rng.uniform(-1e-7, 1e-7, size=(20, 3))   # the source's zero-speed branch
-    return delta, nu_r
-
-
-def test_G2_vsim_fins_signature():
-    p = _vsim_parameters(False)
-    _, function = _build("vsim_fins", p)
-    assert function.name_in() == ["delta", "nu_r"] and function.name_out() == ["tau"]
-    assert function.size_in(0) == (len(p["max_forces"]), 1)
-
-
-# ==========================================================================
 # 6. Outboard motor (reverse sign fixed, owner 2026-10-05)
 # ==========================================================================
 def _parameter_set(name):
@@ -1023,8 +986,6 @@ def test_propeller_fractions_have_the_outboard_range():
     j_max = by_name["max_advance_number"]
     assert (j_max.minimum, j_max.minimum_exclusive, j_max.maximum) == (0.0, True, None)
     assert "not a physics value" in by_name["roll_moment_scale"].meaning
-    vsim = _contract(MODULE_OF.get("vsim_fins", "vsim_fins"))
-    assert "not a physics value" in vsim.vsim_fins_parameters(fin_count=2)[0].meaning
 
 
 def _outboard_throttle_parameters(scaled):
@@ -1054,7 +1015,6 @@ GENERIC = {  # module -> {builder or declaration -> selectors allowed a default}
                   "propeller_parameters": {"open_water_coefficients"}},
     "wageningen_kt_kq": {"wageningen_casadi": {"clip_advance_ratio"}, "wageningen_parameters": set()},
     "fins": {"fins_casadi": {"convention"}, "fins_parameters": set()},
-    "vsim_fins": {"vsim_fins_casadi": set(), "vsim_fins_parameters": set()},
     "outboard_motor": {"outboard_motor_rpm_casadi": {"power_limit", "clip_advance_ratio"},
                        "outboard_motor_throttle_casadi": set(), "outboard_motor_rpm_parameters": set(),
                        "outboard_motor_throttle_parameters": set()},
@@ -1287,8 +1247,7 @@ TRANSFORMS_CASADI = "more_transformations.more_casadi_transformations"
 
 def _force_producer_modules():
     package = Path(importlib.import_module(PACKAGE).__file__).resolve().parent
-    files = [package / "fin" / "fins.py", package / "fin" / "vsim_fins.py",
-             package / "shared" / "force_producer_common.py"]
+    files = [package / "fin" / "fins.py", package / "shared" / "force_producer_common.py"]
     files += [path for folder in ("thruster", "outboard", "propeller") for path in (package / folder).glob("*.py")]
     return {path.stem: ast.parse(path.read_text()) for path in sorted(files)}
 
@@ -1436,9 +1395,6 @@ def _committed_cases():
         cases.append((f"fins {convention}", "fins", {**_remus_fins(), "convention": convention},
                       lambda r: {"delta": r.uniform(-0.6, 0.6, 2)}))
     for scaled in (False, True):
-        p = _vsim_parameters(scaled)
-        cases.append((f"vsim scaled={scaled}", "vsim_fins", p,
-                      lambda r, k=len(p["max_forces"]): {"delta": r.uniform(-0.6, 0.6, k)}))
         for power_limit in (True, False):
             for clip in (False, True):
                 q = {**_outboard_rpm_parameters(scaled), "power_limit": power_limit, "clip_advance_ratio": clip}
@@ -1455,14 +1411,14 @@ def _committed_cases():
 
 def test_G2_blocks_equal_the_committed_blocks(tmp_path):
     """Every producer and selector choice (differential 2 sets; propeller 3
-    sets x 3 models x clip; fins 4 conventions; VSIM 2 sets; outboard rpm
+    sets x 3 models x clip; fins 4 conventions; outboard rpm
     2 sets x power cap x clip; throttle 2 sets) and the Wageningen polynomial
     (2 geometries x clip): equal to the blocks committed at
     ``COMMITTED_REVISION`` (numpy pre-processing) on 300 seeded commands and
     states, 1e-10."""
     old = _committed_package(tmp_path)
     cases = _committed_cases()
-    assert len(cases) == 2 + 18 + 4 + 2 + 8 + 2
+    assert len(cases) == 2 + 18 + 4 + 8 + 2
     for label, name, p, commands in cases:
         _, function = _build(name, p)
         old_p = p
@@ -1485,7 +1441,7 @@ def test_G2_blocks_equal_the_committed_blocks(tmp_path):
                 assert _max_diff(_kt_kq(function, j), _kt_kq(old_function, j)) <= G2_TOLERANCE, (name, clip, j)
 
 
-@pytest.mark.parametrize("name", ["differential_thruster", "propeller", "fins", "vsim_fins",
+@pytest.mark.parametrize("name", ["differential_thruster", "propeller", "fins",
                                   "outboard_motor_rpm", "outboard_motor_throttle"])
 def test_frozen_block_equals_the_block_called_with_numbers(name):
     """``freeze`` (what a plugin carries: a function of the commands and
@@ -1498,8 +1454,6 @@ def test_frozen_block_equals_the_block_called_with_numbers(name):
     block = _contract(MODULE_OF.get(name, name))
     numbers = {k: v for k, v in p.items() if k not in SELECTORS[name] and k != "thrust_torque_coefficients"}
     selectors = {k: p[k] for k in SELECTORS[name] if k in p}
-    if name == "vsim_fins":
-        selectors["fin_count"] = len(p["max_forces"])
     if name == "propeller":
         given = p.get("thrust_torque_coefficients")
         selectors["open_water_coefficients"] = "polynomial" if given is None else "given"

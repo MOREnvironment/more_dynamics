@@ -416,11 +416,15 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
     (tmp_path / "scripts" / "vehicles").mkdir(parents=True)
     shutil.copy(library_root / "scripts" / "vehicles" / "vehicle_simulation.py",
                tmp_path / "scripts" / "vehicles" / "vehicle_simulation.py")
-    vehicle_id, hydrostatics_id, hydrodynamics_id = (str(uuid.uuid4()) for _ in range(3))
+    vehicle_id, hydrostatics_id, hydrodynamics_id, site_id = (str(uuid.uuid4()) for _ in range(4))
     vehicle_dir = tmp_path / ".rppws" / "parts" / "more_dynamics__monohull" / vehicle_id
+    site_dir = vehicle_dir / "subcomponents" / site_id
     hydrostatics_dir = vehicle_dir / "subcomponents" / hydrostatics_id
     hydrodynamics_dir = vehicle_dir / "subcomponents" / hydrodynamics_id
 
+    _write_description(site_dir, part_id=site_id, name="Grethe site", plugin_type="more_dynamics::SiteModel",
+                       plugin_name="more_dynamics::Site", library="more_dynamics")
+    _write_params(site_dir, {})  # the site's own defaults
     _write_description(hydrostatics_dir, part_id=hydrostatics_id, name="Grethe hydrostatics",
                        plugin_type="more_dynamics::HydrostaticsModel", plugin_name="more_dynamics::SurfaceRestoring",
                        library="more_dynamics")
@@ -432,6 +436,7 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
     _write_description(vehicle_dir, part_id=vehicle_id, name="Grethe", plugin_type="more_dynamics::VehicleModel3D",
                        plugin_name="more_dynamics::Monohull", library="more_dynamics",
                        spec={"actuators": "List[more_dynamics::ForceProducer]",
+                            "site": "more_dynamics::SiteModel",
                             "hydrostatics": "more_dynamics::HydrostaticsModel",
                             "hydrodynamics": "more_dynamics::HydrodynamicsModel"}, subcomponents={
         "hydrostatics": {"entry": {"Id": hydrostatics_id, "PluginType": "more_dynamics::HydrostaticsModel",
@@ -440,6 +445,9 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
         "hydrodynamics": {"entry": {"Id": hydrodynamics_id, "PluginType": "more_dynamics::HydrodynamicsModel",
                                     "PluginName": "more_dynamics::SurfaceHullLoads", "SlotName": "hydrodynamics",
                                     "Library": "more_dynamics", "IsLinked": False}},
+        "site": {"entry": {"Id": site_id, "PluginType": "more_dynamics::SiteModel",
+                           "PluginName": "more_dynamics::Site", "SlotName": "site",
+                           "Library": "more_dynamics", "IsLinked": False}},
     })
     _write_params(vehicle_dir, vehicle_params)
 

@@ -10,7 +10,7 @@ revision `cc07579`) as cited in the comment beside it, plus `generate_catamaran_
 
 | Selector | Value | Why |
 |---|---|---|
-| `site_form` | `given` | plugin default; MSS gives `gravity`/`water_density` directly, no site derivation |
+| `site_form` | `given` | the part's own `Site` subcomponent (`site` slot): MSS gives `gravity`/`water_density` directly, no site derivation |
 | `added_mass_form` | `scaled_derivatives` | plugin default; MSS's scaled-derivative added mass |
 | `coriolis_form` | `kirchhoff_full` | plugin default; every added-mass Coriolis term kept |
 | `current_form` | `none` | this part is gated in still water |
