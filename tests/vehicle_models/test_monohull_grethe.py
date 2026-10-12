@@ -68,6 +68,11 @@ def _row_floats(row, prefix, count):
     return np.array([float(row[f"{prefix}_{i + 1:02d}"]) for i in range(count)])
 
 
+def _part_values(cls, name):
+    """The values of a named part of the library's workspace that ``cls`` declares as parameters."""
+    return vc.pick(cls, vc.reference_part(name))
+
+
 def _grethe(*, vehicle_params=None, hydrostatics_params=None, hydrodynamics_params=None, values=None,
            actuators=()):
     """Grethe's ``Monohull``: today's valid parameter set (``values`` replaces it, e.g.
@@ -75,9 +80,12 @@ def _grethe(*, vehicle_params=None, hydrostatics_params=None, hydrodynamics_para
     unless given (the same pattern ``vc.otter()`` uses for the Otter)."""
     p = vc.plugins()
     v = GRETHE_TODAY if values is None else values
+    # the values the data file does not carry come from Grethe's own named part (the plugins hold none)
     vehicle_p = {**vc.pick(p.Monohull, v), "current_form": "none", **(vehicle_params or {})}
-    hydrostatics_p = {**vc.pick(p.SurfaceRestoring, v), **(hydrostatics_params or {})}
-    hydrodynamics_p = {**vc.pick(p.SurfaceHullLoads, v), **(hydrodynamics_params or {})}
+    hydrostatics_p = {**_part_values(p.SurfaceRestoring, "Grethe hydrostatics"), **vc.pick(p.SurfaceRestoring, v),
+                      **(hydrostatics_params or {})}
+    hydrodynamics_p = {**_part_values(p.SurfaceHullLoads, "Grethe hull loads"), **vc.pick(p.SurfaceHullLoads, v),
+                       **(hydrodynamics_params or {})}
     return vc.build_context(p.Monohull, vehicle_p, hydrostatics=(p.SurfaceRestoring, hydrostatics_p),
                             hydrodynamics=(p.SurfaceHullLoads, hydrodynamics_p), actuators=actuators)
 
@@ -346,7 +354,9 @@ def test_G3_today_the_calibrated_otter_default_coasts_down_much_faster_than_ittc
     Section 3.1 gap 3/4) must coast down far faster than today's ITTC physics form.
     This only needs the hull, no outboard (A-64's own setup for this comparison)."""
     mass = float(_grethe().signals(REST, [])["mass"][0])
-    calibrated = _grethe(hydrodynamics_params={"surge_resistance": "none"})  # today's default: the Otter-default Xu
+    otter = vc.reference_part("Otter hull loads")  # the Otter's calibrated thrust and top speed, given on purpose
+    calibrated = _grethe(hydrodynamics_params={"surge_resistance": "none", "max_forward_thrust": otter["max_forward_thrust"],
+                                               "max_speed": otter["max_speed"]})  # the Otter-calibrated Xu on Grethe's hull
     ittc = _grethe(hydrodynamics_params={"max_forward_thrust": 0.0})  # isolates the ITTC term (A-64 Section 3.1 gap 2)
     t_calibrated = _coast_time(calibrated, 2.5, 0.3, mass)
     t_ittc = _coast_time(ittc, 2.5, 0.3, mass)
@@ -424,7 +434,7 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
 
     _write_description(site_dir, part_id=site_id, name="Grethe site", plugin_type="more_dynamics::SiteModel",
                        plugin_name="more_dynamics::Site", library="more_dynamics")
-    _write_params(site_dir, {})  # the site's own defaults
+    _write_params(site_dir, vc.reference_part("Grethe site"))  # the site's values: the plugins hold none
     _write_description(hydrostatics_dir, part_id=hydrostatics_id, name="Grethe hydrostatics",
                        plugin_type="more_dynamics::HydrostaticsModel", plugin_name="more_dynamics::SurfaceRestoring",
                        library="more_dynamics")
@@ -449,7 +459,7 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
                            "PluginName": "more_dynamics::Site", "SlotName": "site",
                            "Library": "more_dynamics", "IsLinked": False}},
     })
-    _write_params(vehicle_dir, vehicle_params)
+    _write_params(vehicle_dir, {**_part_values(vc.plugins().Monohull, "Grethe"), **vehicle_params})
 
     description = {
         "ScriptPath": "scripts/vehicles/vehicle_simulation.py", "Language": "python",
@@ -485,7 +495,8 @@ def test_named_part_grethe_builds_with_todays_valid_options(tmp_path):
         hydrostatics_params={"hull_count": 1, "longitudinal_inertia_factor": GRETHE_TODAY["longitudinal_inertia_factor"],
                              "longitudinal_center_of_flotation": GRETHE_TODAY["longitudinal_center_of_flotation"],
                              "reference_point": GRETHE_TODAY["reference_point"]},
-        hydrodynamics_params={"surge_resistance": "ittc", "time_constants": GRETHE_TODAY["time_constants"],
+        hydrodynamics_params={**_part_values(vc.plugins().SurfaceHullLoads, "Grethe hull loads"),
+                              "surge_resistance": "ittc", "time_constants": GRETHE_TODAY["time_constants"],
                               "damping_ratios": GRETHE_TODAY["damping_ratios"]})
     built = _build_named_part(tmp_path, description_path)
     assert type(built).__name__ == "Monohull"
@@ -502,7 +513,9 @@ def test_named_part_grethe_with_the_full_g0_target_set_does_not_build_yet(tmp_pa
     library_root = Path(__file__).resolve().parents[2]
     description_path = _named_grethe_part(
         tmp_path, library_root, vehicle_params={"current_form": "none"},
-        hydrostatics_params={"hull_count": 1, "wetted_surface_method": "regression_table",
+        hydrostatics_params={**_part_values(vc.plugins().SurfaceRestoring, "Grethe hydrostatics"), "hull_count": 1,
+                             "wetted_surface_method": "regression_table",
                              "reference_point": GRETHE_TODAY["reference_point"]},
-        hydrodynamics_params={"surge_resistance": "ittc_residual", "time_constants": GRETHE_TODAY["time_constants"]})
+        hydrodynamics_params={**_part_values(vc.plugins().SurfaceHullLoads, "Grethe hull loads"),
+                              "surge_resistance": "ittc_residual", "time_constants": GRETHE_TODAY["time_constants"]})
     _build_named_part(tmp_path, description_path)

@@ -30,7 +30,11 @@ is the published Radojcic et al. (2014) hydrostatic (zero-speed) wetted-surface
 regression (one hull only; ``models/restoring/restoring_parts.py``). Raise:
 the wetted surface from the hull lines.
 
-Default values and their provenance are in ``DEFAULTS.md``. Fidelity: the
+Every vehicle number is unset in this plugin and given by the composition (a named part of the
+workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
+selected forms read and the composition leaves unset refuses the build, naming it with its unit and
+meaning.
+Fidelity: the
 linear metacentric restoring around equilibrium; raise: a measured draft and
 the waterplane from the hull lines.
 
@@ -49,10 +53,12 @@ from rpp_plugin_types.more_dynamics import HydrostaticsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.restoring.restoring_parts import (
     BLOCK_COEFFICIENT_METHODS, DRAFT_PARAMETER, SURFACE_RESTORING_PARAMETERS, WETTED_SURFACE_PARAMETER,
     surface_restoring)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name, read_value, refuses_unset
 
 
 WETTED_SURFACE_METHODS = ("computed", "given", "regression_table")
@@ -60,21 +66,23 @@ WETTED_SURFACE_METHODS = ("computed", "given", "regression_table")
 
 class SurfaceRestoring(HydrostaticsModel):
     PARAMETERS = [
-        ParameterDescription("hull_count", 2),  # otter.m 172-193: two pontoons
-        ParameterDescription("longitudinal_inertia_factor", 0.8),  # otter.m 179 (I_L = 0.8 ...)
-        ParameterDescription("longitudinal_center_of_flotation", -0.2),  # otter.m 177, 192
-        ParameterDescription("reference_point", [0.0, 0.0, 0.0]),  # the body-frame origin (CO)
+        ParameterDescription("hull_count", unset()),  # otter.m 172-193: two pontoons
+        ParameterDescription("longitudinal_inertia_factor", unset()),  # otter.m 179 (I_L = 0.8 ...)
+        ParameterDescription("longitudinal_center_of_flotation", unset()),  # otter.m 177, 192
+        ParameterDescription("reference_point", unset()),  # the body-frame origin (CO)
         ParameterDescription("wetted_surface_method", "computed"),  # S = n 1.025 L (C_b B + 1.7 T), XuuITTC.m:38 (Mumford)
-        ParameterDescription("wetted_surface", 1.77),  # m^2, given value, read with "given" (DEFAULTS.md: source and named part)
+        ParameterDescription("wetted_surface", unset()),  # m^2, given value, read with "given" (DEFAULTS.md: source and named part)
         ParameterDescription("block_coefficient_method", "given"),  # E-104: "given" keeps every existing gate (hull_block_coefficient a vehicle coupling, draft derived)
-        ParameterDescription("draft", 0.3),  # m, read with "computed" only: document (F003 p2; M001 p7, ~0.3 m)
+        ParameterDescription("draft", unset()),  # m, read with "computed" only: document (F003 p2; M001 p7, ~0.3 m)
     ]
 
     def __init__(self) -> None:
         self._model = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
-        hull_count = context.get_parameter("hull_count")
+        hull_count = read_value(context, "hull_count", "1", "number of hulls the restoring is summed over (1 or 2)",
+                            placeholder=1)
         if hull_count not in (1, 2):
             raise ValueError(f"hull_count must be 1 or 2, got {hull_count!r}")
         method = context.get_parameter("wetted_surface_method")

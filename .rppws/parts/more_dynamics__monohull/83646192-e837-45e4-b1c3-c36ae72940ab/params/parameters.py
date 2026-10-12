@@ -10,8 +10,6 @@ from __future__ import annotations
 class ComponentParameters:
     length = 5.2  # document: A-43 M1, F003 p2, M001 p7 (overall length)
     beam = 2.15  # document: A-43 M2, F003 p2, M001 p7, D002 p1
-    waterline_length = 0.0  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired
-    waterline_beam = 0.0  # m; 0 = not given (drawing estimate 1.97 m); not yet wired
     hull_block_coefficient = 0.234  # derived: A-43 M4, 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness
     hull_waterplane_coefficient = 0.8  # estimate: A-43 M14
     hull_mass = 806.0  # document: A-43 M7, F003 p2 (FAT, +/- 20 kg)

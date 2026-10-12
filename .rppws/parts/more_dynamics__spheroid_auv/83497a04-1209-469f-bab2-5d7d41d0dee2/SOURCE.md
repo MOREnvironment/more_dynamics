@@ -15,13 +15,20 @@ instrumented workspace, not retyped from the thesis (rule 4).
 | Selector | Value | Why |
 |---|---|---|
 | `site_form` | `latitude` | the part's own `Site` subcomponent (`site` slot): WGS-84 normal gravity at the MSS site; its density 1026 and viscosity 1e-06 are held there too |
-| `added_mass_form` | `lamb_spheroid` | plugin default; ideal-fluid prolate spheroid |
-| `coriolis_form` | `kirchhoff_full` | plugin default; every added-mass Coriolis term kept |
+| `added_mass_form` | `lamb_spheroid` | ideal-fluid prolate spheroid |
+| `coriolis_form` | `munk_couplings_removed` | `remus100.m` 207-210: MSS omits the Munk-moment couplings of the added-mass Coriolis (its reduced model keeps no measured manoeuvring derivatives to balance them); with every term kept (`kirchhoff_full`) this part spins open-loop at zero rudder (design note on the REMUS added-mass options, 2026-10-12) |
 | `current_form` | `none` | this part is gated in still water |
-| `body_density_method` | `computed` (plugin default) | density derived from `body_mass` on the spheroid's own volume |
+| `body_density_method` | `computed` | density derived from `body_mass` on the spheroid's own volume |
 
-Every other declared parameter (geometry, mass, roll added-inertia ratio) is the plugin's
-own cited default -- see `more_dynamics/DEFAULTS.md` for value, unit, source line and kind.
+Every other value (geometry, mass, roll added-inertia ratio, and the hull-loads, hydrostatics,
+fin-pair, propeller and site values of the subcomponents) is set in the part itself, with its
+source line in the comment beside it: `more_dynamics/DEFAULTS.md` gives value, unit, source
+line and kind for this part. The plugins carry no vehicle numbers (unset placeholders): a
+value this part leaves out makes the build fail naming it. Three values were still read from
+the former plugin defaults before the placeholders and are now written into the part:
+`body_mass` 31.9 kg (`remus100.m`:3, document), and in `REMUS 100 hull loads`
+`planform_fraction` 0.7 (`remus100.m`:133, document) and `hull_frontal_drag_coefficient`
+0.42 (`remus100.m`:142, Cd of Allen et al. 2000 as MSS cites it, not read).
 
 ## Higher-fidelity variants (not yet landed, E-106)
 

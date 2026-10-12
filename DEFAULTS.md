@@ -1,265 +1,244 @@
 # Defaults
 
-Rule 20 (AGENTS.md, E-107): plugin and model code never names a vehicle or an author-form.
-A plugin's `PARAMETERS` still carry working default *values* (rpp requires one), but the
-*provenance* of each value — where it comes from and which named part it was first read
-for — lives here, one table per plugin, instead of in the plugin's own docstring or comments.
+**Plugins carry no vehicle numbers** (owner, 2026-10-12): every value of a vehicle, a device or a site is declared with
+`unset()` (an empty list) in the plugin and comes from a named part of the workspace (`.rppws/parts/`) when the
+composition is built; a value the selected forms read and the part leaves out makes the build fail, naming it with its unit
+and meaning. The only defaults a plugin keeps are text **selectors** (a form or method, with its physics default), on/off
+**switches**, and three **numerical settings** that are no vehicle's data: `integration_max_step` (0.05 s, the RK4
+sub-step), `smooth_speed_epsilon` (1e-09 m/s, regularisation of the speed guard) and `ittc_reynolds_floor` (1e5, the lower
+bound of the ITTC friction line). Each type's out-of-the-box example is a reference named part.
 
-A file citation on the code line itself (`remus100.m:207`, `otter.m 94-98`) is not a vehicle
-name under rule 20 (rule 13's carve-out): those stay in the code. What moves here is the
-*prose* that used to say "defaults are the REMUS 100" or "the Otter" beside them.
+This file records the **provenance of each reference part's values**: one table per part (parameter, value, unit, source, kind).
+Kinds: `document` (read off a cited page or file), `estimate` (a starting point with no document behind it, to be
+identified), `derived` (computed from another primitive by a stated equation), `selector` (chooses a form), `convention`
+(a modelling choice), `fitted` (identified from data, with its residual), `owner decision`, `approved guess` (an owner-approved
+placeholder, no source, until a measurement replaces it) and `gap` (a zero or value stated for want of data). A file citation
+on a code line (`remus100.m:207`) is not a vehicle name under the everything-generic rule: it stays where the equation is.
 
-Columns: **Default** is the plugin's own `PARAMETERS` value (arrays shown whole). **Source**
-is the cited file:line or document this number was read from. **Named part** is the
-`.rppws` part (E-89, E-106) the value was first read for — the vehicle whose numbers these
-are, kept here rather than in the library. **Kind**: `document` (read off a cited page or
-file), `estimate` (a starting point with no document behind it, to be identified),
-`derived` (computed from another primitive by a stated equation), `selector` (chooses a
-form, not a physical quantity), `convention` (a modelling choice, not measured), `owner
-decision` or `gap` (named in the owner's own words where the part's `SOURCE.md` uses them,
-e.g. Grethe's).
+The value tables below are generated from the parts' own `params/parameters.py` (the values) and from the earlier per-plugin
+tables and the comment beside each value (source and kind); a part's `SOURCE.md` says more.
 
-## `more_dynamics::SpheroidAuv` (`plugins/vehicle_models/spheroid_auv.py`)
+## REMUS 100 (MSS) (`more_dynamics::SpheroidAuv`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `length` | 1.6 | m | `remus100.m`:131 (L_auv) | REMUS 100 (MSS) | document |
-| `diameter` | 0.19 | m | `remus100.m`:132 (D_auv) | REMUS 100 (MSS) | document |
-| `body_density_method` | `computed` | - | `spheroid.m`:36 solved for rho_b | REMUS 100 (MSS) | selector |
-| `body_mass` | 31.9 | kg | `remus100.m`:3 | REMUS 100 (MSS) | document |
-| `body_density` | 1054.7872613500267 | kg/m^3 | given value, read with `"given"`: 31.9 kg / (4/3 pi a b^2) | REMUS 100 (MSS) | derived |
-| `body_center_of_gravity` | [0, 0, 0.02] | m | `remus100.m`:137 (r_bG) | REMUS 100 (MSS) | document |
-| `roll_added_inertia_ratio` | 0.3 | 1 | `remus100.m`:136 (r44) | REMUS 100 (MSS) | document |
-| `added_mass_form` | `lamb_spheroid` | - | `imlay61.m` 31-59 | REMUS 100 (MSS) | selector |
-| `coriolis_form` | `kirchhoff_full` | - | `m2c.m` 33-48 | - (physics default) | selector |
-| `current_form` | `full_attitude` | - | Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 | - (physics default) | selector |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `integration_max_step` | 0.05 |  | SIMremus100.m 60 (h = 0.05 s), the step of the MSS vehicle simulations | setting |
+| `length` | 1.6 | m | remus100.m:131 L_auv, passed as L at :221 | document |
+| `diameter` | 0.19 | m | remus100.m:132 D_auv, passed as B at :221 | document |
+| `body_density` | 1054.7872613500267 | kg/m^3 | mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35 | derived |
+| `body_center_of_gravity` | [0, 0, 0.02] | m | remus100.m:137 r_bG | document |
+| `roll_added_inertia_ratio` | 0.3 | 1 | remus100.m:136 r44 | document |
+| `added_mass_form` | "lamb_spheroid" | - | imlay61.m 31-59 | selector |
+| `coriolis_form` | "munk_couplings_removed" | - | remus100.m 207-210 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md) | selector |
+| `current_form` | "none" | - | still water | selector |
+| `body_mass` | 31.9 | kg | remus100.m:3 | document |
 
-## `more_dynamics::Catamaran` (`plugins/vehicle_models/catamaran.py`)
+## REMUS 100 hydrostatics (`more_dynamics::SubmergedRestoring`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `length` | 2.0 | m | `otter.m` 92-93, 104-107 | Otter (MSS) | document |
-| `beam` | 1.08 | m | `otter.m` 92-93, 104-107 | Otter (MSS) | document |
-| `pontoon_beam` | 0.25 | m | `otter.m` 104-107 | Otter (MSS) | document |
-| `pontoon_lateral_offset` | 0.395 | m | `otter.m` 104-107 | Otter (MSS) | document |
-| `pontoon_block_coefficient` | 0.4 | 1 | `otter.m` 104-107 | Otter (MSS) | document |
-| `pontoon_waterplane_coefficient` | 0.75 | 1 | `otter.m` 104-107 | Otter (MSS) | document |
-| `hull_mass` | 55.0 | kg | `otter.m` 94-98 | Otter (MSS) | document |
-| `payload_mass` | 25.0 | kg | `generate_catamaran_mss.m` 61-62 | Otter (MSS) | document |
-| `hull_center_of_gravity` | [0.2, 0.0, -0.2] | m | `otter.m` 94-98 | Otter (MSS) | document |
-| `payload_position` | [0.05, 0.0, -0.35] | m | `generate_catamaran_mss.m` 61-62 | Otter (MSS) | document |
-| `radii_of_gyration` | [0.4, 0.25, 0.25] | 1 | `otter.m` 94-98 | Otter (MSS) | document |
-| `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | `otter.m` 152-157 | Otter (MSS) | document |
-| `added_mass_form` | `scaled_derivatives` | - | `otter.m` 152-159 | Otter (MSS) | selector |
-| `coriolis_form` | `kirchhoff_full` | - | `m2c.m` 33-48 | - (physics default) | selector |
-| `current_form` | `full_attitude` | - | Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 | - (physics default) | selector |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `buoyancy_method` | "neutral" | - | remus100.m:214 B = W | selector |
+| `center_of_buoyancy` | [0, 0, 0] | m | remus100.m:138 r_bB | document |
+| `displaced_volume` | 0.030243065278557742 | m^3 | 4/3 pi (L/2)(D/2)^2, remus100.m:131-132 | derived |
+| `buoyancy` | 313.31493718007266 | N | m g with m = 31.9 kg (remus100.m:3), g at remus100.m:96-97 | derived |
 
-## `more_dynamics::Monohull` (`plugins/vehicle_models/monohull.py`)
+## REMUS 100 fin pairs (`more_dynamics::FinPairsDeflectionOnly`)
 
-Every value below is Grethe's (NTNU Mariner 5 USV, Maritime Robotics build 40402, Pioner 17
-ft hull): the frozen, hand-edited source is `tests/vehicle_models/data/grethe/grethe_parameters.json`
-(A-43 Part 2, A-64, E-101), which carries its own per-value `kind` and `place` fields —
-reproduced here for the plugin's own declared parameters only (the full set, including
-options not yet wired as plugin selectors, is in that file and the `Grethe` named part's
-own `SOURCE.md`).
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `rudder_area` | 0.0133 | m^2 | remus100.m:183 A_r = 2 * S_fin (S_fin :179) | document |
+| `stern_plane_area` | 0.0133 | m^2 | remus100.m:188 A_s = 2 * S_fin (S_fin :179) | document |
+| `rudder_lift_coefficient` | 0.5 | 1/rad | remus100.m:182 CL_delta_r | document |
+| `stern_plane_lift_coefficient` | 0.7 | 1/rad | remus100.m:187 CL_delta_s | document |
+| `rudder_position` | -0.8 | m | remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry) | derived |
+| `stern_plane_position` | -0.8 | m | remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry) | derived |
+| `max_deflection` | 0.3490658503988659 | rad | remus100.m:109 delta_max = deg2rad(20) | document |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `length` | 5.2 | m | F003 p2, M001 p7 (overall length) | Grethe | document |
-| `beam` | 2.15 | m | F003 p2, M001 p7, D002 p1 | Grethe | document |
-| `waterline_length` | 0.0 (not given; 4.63 m is the drawing estimate) | m | D002 p1 drawing measurement at T = 0.30 m; not yet wired | Grethe | estimate |
-| `waterline_beam` | 0.0 (not given; 1.97 m is the drawing estimate) | m | D002 p1 drawing measurement at T = 0.30 m; not yet wired | Grethe | estimate |
-| `hull_block_coefficient` | 0.233 | 1 | 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness | Grethe | derived |
-| `hull_waterplane_coefficient` | 0.8 | 1 | A-43 M14 | Grethe | estimate |
-| `hull_mass` | 806.0 | kg | F003 p2 (FAT, +/- 20 kg) | Grethe | document |
-| `payload_mass` | 0.0 | kg | the 2026 field payload (USBL mount, battery packs) is not weighed | Grethe | gap |
-| `hull_center_of_gravity` | [0.0, 0.0, 0.025] | m | A-43 M9 | Grethe | estimate |
-| `payload_position` | [0.0, 0.0, 0.0] | m | unused while `payload_mass` is 0 | Grethe | gap |
-| `radii_of_gyration` | [0.35, 0.25, 0.25] | 1 | A-43 M12 | Grethe | estimate |
-| `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | A-43 M11 (the workspace `.rppws` value; open: the library value is -1.2 in yaw) | Grethe | estimate |
-| `added_mass_form` | `scaled_derivatives` | - | `otter.m` 152-159 | - (physics default) | selector |
-| `added_mass_mass_basis` | `hull` | - | keeps the committed gates green; a payload-carrying part may select `displaced` | - (physics default) | selector |
-| `coriolis_form` | `kirchhoff_full` | - | `m2c.m` 33-48 | - (physics default) | selector |
-| `current_form` | `full_attitude` | - | Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 | - (physics default) | selector |
+## REMUS 100 hull loads (`more_dynamics::AuvHullLoads`)
 
-## `more_dynamics::DerivativeAuv` (`plugins/vehicle_models/derivative_auv.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `time_constants` | [20, 20, 1] | s | remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217) | document |
+| `damping_ratios` | [0.3, 0.8] | 1 | remus100.m:194, 195 [zeta4 zeta5] | document |
+| `planform_area` | 0.2128 | m^2 | remus100.m:133 S = 0.7 * L_auv * D_auv | derived |
+| `parasitic_drag_coefficient` | 0.05595961914206819 | 1 | remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry) | derived |
+| `oswald_efficiency` | 0.3 | 1 | coeffLiftDrag.m:54 e = 0.3 | document |
+| `planform_fraction` | 0.7 | 1 | remus100.m:133 (S = 70% of the rectangle L_auv * D_auv) | document |
+| `hull_frontal_drag_coefficient` | 0.42 | 1 | remus100.m:142 (Cd), Allen et al. (2000) as MSS cites it, not read | document |
 
-Every value is Healey, A. J. & Lienard, D. B. (1993), via MSS `CRAFT/AUV/models/npsauv.m`
-104-172 @ `cc07579`; the paper itself is not read (needs-access, `SOURCE.md`), so every
-number here is read from MSS's instrumented workspace, cited to its line.
+## REMUS 100 propeller (`more_dynamics::Propeller`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `length` | 5.3 | m | `npsauv.m`:105 | NPS AUV II (MSS) | document |
-| `body_mass` | 5443.425076452599 | kg | W / g (`npsauv.m`:109), W at `npsauv.m`:108 | NPS AUV II (MSS) | derived |
-| `inertia_diagonal` | [2038, 13587, 13587] | kg*m^2 | `npsauv.m`:110 | NPS AUV II (MSS) | document |
-| `inertia_products` | [-13.58, -13.58, -13.58] | kg*m^2 | `npsauv.m`:111 | NPS AUV II (MSS) | document |
-| `body_center_of_gravity` | [0, 0, 0.061] | m | `npsauv.m`:106 (r_bg) | NPS AUV II (MSS) | document |
-| `weight` | 53400 | N | `npsauv.m`:108 (W) | NPS AUV II (MSS) | document |
-| `buoyancy` | 53400 | N | `npsauv.m`:108 (B, neutral) | NPS AUV II (MSS) | document |
-| `center_of_buoyancy` | [0, 0, 0] | m | `npsauv.m`:107 (r_bb) | NPS AUV II (MSS) | document |
-| `derivative_scaling` | `nondimensional` | - | `npsauv.m` 116-124 (Fossen prime-scaling) | NPS AUV II (MSS) | selector |
-| `current_form` | `yaw_rate_terms` | - | `npsauv.m` 83-90 (the gate's own MSS form) | NPS AUV II (MSS) | selector |
-| `nondim_*` (93 published nondimensional derivatives) | per-derivative, see `npsauv.m` 126-156 | nondimensional (prime system) | `npsauv.m` 126-156 | NPS AUV II (MSS) | document |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `propeller_diameter` | 0.14 | m | remus100.m:148 D_prop | document |
+| `max_shaft_speed` | 1525 | rpm | remus100.m:110 n_max | document |
+| `thrust_deduction` | 0.1 | 1 | remus100.m:149 t_prop | document |
+| `wake_fraction` | 0.05600000000000005 | 1 | remus100.m:150 Va = 0.944 * U_r, w = 1 - 0.944 | derived |
+| `pitch_diameter_ratio` | 1 | 1 | remus100.m:156 wageningen(0,1,0.718,3), second argument | document |
+| `blade_area_ratio` | 0.718 | 1 | remus100.m:155-156 blade-area ratio 0.718 | document |
+| `blade_count` | 3 | 1 | remus100.m:155-156 3 blades | document |
+| `max_advance_number` | 0.6632 | 1 | remus100.m:153 Ja_max | document |
+| `roll_moment_scale` | 0.1 | 1 | remus100.m:252 tau(4) = K_prop / 10 | document |
+| `position` | [0, 0, 0] | m | remus100.m:249-252 thrust on x_b through the CO (no moment arm) | document |
+| `orientation` | [0, 0, 0] | rad | remus100.m:249, 252 shaft along x_b (thrust in tau(1), torque in tau(4)) | document |
+| `thrust_torque_coefficients` | [0.4566, 0.07, 0.1798, 0.0312] | 1 | remus100.m:157, 158, 160, 161 [KT_0 KQ_0 KT_max KQ_max] | document |
 
-## `more_dynamics::Site` (`plugins/site/site.py`)
+## REMUS 100 (MSS) site (`more_dynamics::Site`)
 
-The one place of the water density, the gravity and the kinematic viscosity: no vehicle type declares them
-(E-104, E-108). A vehicle takes them from the component in its `site` slot; every named part holds its own
-private `Site` with the values below, and a scenario links one `Site` into several vehicles (the
-`shared_site` configuration of `vehicle_simulation.json`). The plugin's own defaults are the Otter's.
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `site_form` | 'latitude' | - | remus100.m 96-98 (the site of the MSS simulation: gravity from the latitude) | selector |
+| `latitude` | 1.1073560310932362 | rad | remus100.m 96-97 (mu = deg2rad(63.446827)) | document |
+| `gravity` | 9.81 | m/s^2 | not read with site_form latitude; mssConstants.m:14 @ 49e03e3 (MSS 2.0.5) | document |
+| `water_density` | 1026 | kg/m^3 | remus100.m 96-98 | document |
+| `kinematic_viscosity` | 1e-06 | m^2/s | cylinderDrag.m 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | document |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `site_form` | `given` | - | `otter.m` 90-91; `gravity.m` 11-12 for `latitude` | Otter (MSS) | selector |
-| `latitude` | 1.1073560310932362 | rad | `remus100.m` 96-97 (mu = deg2rad(63.446827)); read with `site_form="latitude"` | REMUS 100 (MSS) | document |
-| `gravity` | 9.81 | m/s^2 | `mssConstants.m`:14 @ `49e03e3` (MSS 2.0.5); `otter.m` 90-91; read with `site_form="given"` | Otter (MSS) | document |
-| `water_density` | 1025.0 | kg/m^3 | `otter.m` 90-91 | Otter (MSS) | document |
-| `kinematic_viscosity` | 1e-06 | m^2/s | `cylinderDrag.m` 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | - (water property) | document |
+## REMUS 100 fin (`more_dynamics::Fin`)
 
-Values of each named part's own `Site` (the part's description lists it under its `site` slot):
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `fin_position` | [-0.638, 0.0, 0.0] | m | Prestero 2001, Table A.5, p. 103 (x_finpost) | document |
+| `chord_axis` | [1.0, 0.0, 0.0] | 1 | unit chord direction, BODY FRD (convention) | convention |
+| `lift_axis` | [0.0, 1.0, 0.0] | 1 | unit positive-lift direction, BODY FRD (convention) | convention |
+| `fin_area` | 0.00665 | m^2 | Prestero 2001, Table A.5, p. 103 (S_fin) | document |
+| `time_constant` | 0.1 | s | Sarhadi 2026, Fig. 4, p. 4 (a demanding choice of that study, not a measurement) | estimate |
+| `max_deflection` | 0.3490658503988659 | rad | rad = 20 deg, Sarhadi 2026, Fig. 4, p. 4 | estimate |
+| `max_rate` | 0.5235987755982988 | rad/s | rad/s = 30 deg/s, Sarhadi 2026, Fig. 4, p. 4 | estimate |
+| `lift_slope` | 3.12 | 1/rad | Prestero 2001, Table A.5, p. 103 (c_L_alpha) | document |
+| `zero_lift_drag` | 0.0 | 1 | zero with its reason: Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by linear_section only) | document |
 
-| Named part | `site_form` | `latitude` | `gravity` | `water_density` | `kinematic_viscosity` | Source |
-|---|---|---|---|---|---|---|
-| REMUS 100 (MSS) | `latitude` | 1.1073560310932362 | (from latitude) | 1026 | 1e-06 | `remus100.m`:96-98 (the part's former own values) |
-| Otter (MSS) | `given` | (unread) | 9.81 | 1025.0 | 1e-06 | `otter.m` 90-91 |
-| Grethe | `given` | (unread) | 9.81 (estimate: `grethe_mariner5.yaml`) | 1025.0 (standard sea water) | 1e-06 | A-43 M5 |
-| NPS AUV II (MSS) | `given` | (unread) | 9.81 | 1025 | 1e-06 | `npsauv.m`:105 (when U6e lands the part) |
+## Otter (MSS) (`more_dynamics::Catamaran`)
 
-## `more_dynamics::Fin` (`plugins/force_producers/fin.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `integration_max_step` | 0.05 |  | SIMremus100.m 60 (h = 0.05 s), the step of the MSS vehicle simulations | setting |
+| `length` | 2.0 | m | otter.m 92-93, 104-107 | document |
+| `beam` | 1.08 | m | otter.m 92-93, 104-107 | document |
+| `pontoon_beam` | 0.25 | m | otter.m 104-107 | document |
+| `pontoon_lateral_offset` | 0.395 | m | otter.m 104-107 | document |
+| `pontoon_block_coefficient` | 0.4 | 1 | otter.m 104-107 | document |
+| `pontoon_waterplane_coefficient` | 0.75 | 1 | otter.m 104-107 | document |
+| `hull_mass` | 55.0 | kg | otter.m 94-98 | document |
+| `payload_mass` | 25.0 | kg | generate_catamaran_mss.m 61-62 (payload mass) | document |
+| `hull_center_of_gravity` | [0.2, 0.0, -0.2] | m | otter.m 94-98 | document |
+| `payload_position` | [0.05, 0.0, -0.35] | m | generate_catamaran_mss.m 61-62 (payload position) | document |
+| `radii_of_gyration` | [0.4, 0.25, 0.25] | 1 | otter.m 94-98 | document |
+| `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | otter.m 152-157 | document |
+| `added_mass_form` | "scaled_derivatives" | - | otter.m 152-159 | selector |
+| `coriolis_form` | "kirchhoff_full" | - | m2c.m 33-48 (every term kept) | selector |
+| `current_form` | "none" | - | still water | selector |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `fin_position` | [-0.638, 0.0, 0.0] | m | Prestero 2001, Table A.5, p. 103 (x_finpost) | REMUS 100 (MSS) | document |
-| `chord_axis` | [1.0, 0.0, 0.0] | 1 | convention (unit chord direction, BODY FRD) | - | convention |
-| `lift_axis` | [0.0, 1.0, 0.0] | 1 | convention (unit positive-lift direction, BODY FRD) | - | convention |
-| `fin_area` | 0.00665 | m^2 | Prestero 2001, Table A.5, p. 103 (S_fin) | REMUS 100 (MSS) | document |
-| `servo_dynamics` | `first_order_lag` | - | Murray-Smith 2016, Fig. 1, p. 246 | - | selector |
-| `servo_rate_limit` | `True` | - | Murray-Smith 2016, Fig. 1, p. 246 | - | selector |
-| `servo_angle_limit` | `on_command` | - | Murray-Smith 2016, Fig. 1, p. 246 | - | selector |
-| `time_constant` | 0.1 | s | Sarhadi 2026, Fig. 4, p. 4 | - (a demanding choice of that study, not a measurement) | estimate |
-| `max_deflection` | 0.3490658503988659 (20 deg) | rad | Sarhadi 2026, Fig. 4, p. 4 | - | estimate |
-| `max_rate` | 0.5235987755982988 (30 deg/s) | rad/s | Sarhadi 2026, Fig. 4, p. 4 | - | estimate |
-| `inflow` | `rigid_point` | - | Prestero 2001, eq. 4.40, p. 32 | - | selector |
-| `flow_angle` | `small_angle` | - | Prestero 2001, eqs. 4.42-4.43, pp. 32-33 | - | selector |
-| `interference` | `none` | - | Prestero 2001, eq. 4.41, p. 32 (both factors one) | - | selector |
-| `section` | `quadratic_drag` | - | `remus100.m` 238-245 | REMUS 100 (MSS) | selector |
-| `lift_slope` | 3.12 | 1/rad | Prestero 2001, Table A.5, p. 103 (c_L_alpha) | REMUS 100 (MSS) | document |
-| `zero_lift_drag` | 0.0 | 1 | Prestero 2001, eq. 4.37, p. 31 (carries no fin drag; read by `linear_section`) | REMUS 100 (MSS) | document |
+## Otter hull loads (`more_dynamics::SurfaceHullLoads`)
 
-## `more_dynamics::FinPairsDeflectionOnly` (`plugins/force_producers/fin_pairs_deflection_only.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `max_forward_thrust` | 239.364 | N | otter.m, 24.4 kgf = 24.4 * 9.81 N | document |
+| `max_speed` | 3.0864 | m/s | otter.m, 6 knots = 6 * 0.5144 m/s | document |
+| `time_constants` | [1.0, 1.0] | s | otter.m 99-101, 202-240 | document |
+| `damping_ratios` | [0.3, 0.2, 0.4] | 1 | otter.m 99-101, 202-240 | document |
+| `yaw_damping_nonlinearity` | 10.0 | s/rad | otter.m 99-101, 202-240 | document |
+| `surge_resistance` | "none" | - | plugin default (off unless a composition turns it on) | selector |
+| `time_constant` | 100.0 | s | osv.m 128, vessel.T1 = 100 s (read with "ittc") | document |
+| `form_factor` | 0.1 | 1 | XuuITTC.m 33, k = 0.1; Fossen 2011, p. 125 (read with "ittc") | document |
+| `crossover_speed` | 2.0 | m/s | forceSurgeDamping.m 57 @ ac77394, u_cross = 2 m/s (read with "ittc") | document |
+| `surge_added_mass_factor` | 2.7 | 1 | addedMassSurge.m 33, A11 = 2.7 rho nabla^(5/3) / L^2 (read with "ittc") | document |
+| `ittc_reynolds_floor` | 100000.0 | 1 | XuuITTC.m 35, Re_min = 1e5 (read with "ittc") | document |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `rudder_area` | 0.0133 | m^2 | `remus100.m`:183 (A_r = 2 * S_fin) | REMUS 100 (MSS) | document |
-| `stern_plane_area` | 0.0133 | m^2 | `remus100.m`:188 (A_s = 2 * S_fin) | REMUS 100 (MSS) | document |
-| `rudder_lift_coefficient` | 0.5 | 1/rad | `remus100.m`:182 (CL_delta_r) | REMUS 100 (MSS) | document |
-| `stern_plane_lift_coefficient` | 0.7 | 1/rad | `remus100.m`:187 (CL_delta_s) | REMUS 100 (MSS) | document |
-| `fin_positions_method` | `computed` | - | x_r = x_s = -a (`remus100.m`:184, 189) | REMUS 100 (MSS) | selector |
-| `rudder_position` | -0.8 | m | given value, read with `"given"`: `remus100.m`:184 (x_r = -a, a = L_auv / 2) | REMUS 100 (MSS) | derived |
-| `stern_plane_position` | -0.8 | m | given value, read with `"given"`: `remus100.m`:189 (x_s = -a, a = L_auv / 2) | REMUS 100 (MSS) | derived |
-| `max_deflection` | 0.3490658503988659 (20 deg) | rad | `remus100.m`:109 (delta_max = deg2rad(20)) | REMUS 100 (MSS) | document |
+## Otter (MSS) site (`more_dynamics::Site`)
 
-## `more_dynamics::Propeller` (`plugins/force_producers/propeller.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `site_form` | 'given' | - | otter.m 90-91 | selector |
+| `latitude` | 1.1073560310932362 | rad | not read with site_form given (REMUS 100 site value) | document |
+| `gravity` | 9.81 | m/s^2 | mssConstants.m:14 @ 49e03e3 (MSS 2.0.5); otter.m 90-91 | document |
+| `water_density` | 1025.0 | kg/m^3 | otter.m 90-91 | document |
+| `kinematic_viscosity` | 1e-06 | m^2/s | cylinderDrag.m 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | document |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `propeller_diameter` | 0.14 | m | `remus100.m`:148 (D_prop) | REMUS 100 (MSS) | document |
-| `max_shaft_speed` | 1525 | rpm | `remus100.m`:110 (n_max) | REMUS 100 (MSS) | document |
-| `thrust_deduction` | 0.1 | 1 | `remus100.m`:149 (t_prop) | REMUS 100 (MSS) | document |
-| `wake_fraction` | 0.05600000000000005 | 1 | `remus100.m`:150 (Va = 0.944 * U_r, w = 1 - 0.944) | REMUS 100 (MSS) | derived |
-| `pitch_diameter_ratio` | 1 | 1 | `remus100.m`:156 (`wageningen(0,1,0.718,3)`, second argument) | REMUS 100 (MSS) | document |
-| `blade_area_ratio` | 0.718 | 1 | `remus100.m` 155-156 | REMUS 100 (MSS) | document |
-| `blade_count` | 3 | 1 | `remus100.m` 155-156 | REMUS 100 (MSS) | document |
-| `max_advance_number` | 0.6632 | 1 | `remus100.m`:153 (Ja_max) | REMUS 100 (MSS) | document |
-| `roll_moment_scale` | 0.1 | 1 | `remus100.m`:252 (tau(4) = K_prop / 10) | REMUS 100 (MSS) | document |
-| `position` | [0, 0, 0] | m | `remus100.m` 249-252 (thrust on x_b through the CO, no moment arm) | REMUS 100 (MSS) | document |
-| `orientation` | [0, 0, 0] | rad | `remus100.m` 249, 252 (shaft along x_b) | REMUS 100 (MSS) | document |
-| `thrust_torque_coefficients` | [0.4566, 0.07, 0.1798, 0.0312] | 1 | `remus100.m` 157, 158, 160, 161 ([KT_0 KQ_0 KT_max KQ_max]) | REMUS 100 (MSS) | document |
+## Otter hydrostatics (`more_dynamics::SurfaceRestoring`)
 
-## `more_dynamics::AuvHullLoads` (`plugins/hydrodynamics/auv_hull_loads.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `hull_count` | 2 | - | otter.m 172-193: two pontoons | document |
+| `longitudinal_inertia_factor` | 0.8 | 1 | otter.m 179 (I_L = 0.8 ...) | document |
+| `longitudinal_center_of_flotation` | -0.2 | m | otter.m 177, 192 | document |
+| `reference_point` | [0.0, 0.0, 0.0] | m | the body-frame origin (CO) | convention |
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `time_constants` | [20, 20, 1] | s | `remus100.m` 192, 193, 196 ([T1 T2 T6]) | REMUS 100 (MSS) | document |
-| `damping_ratios` | [0.3, 0.8] | 1 | `remus100.m` 194, 195 ([zeta4 zeta5]) | REMUS 100 (MSS) | document |
-| `oswald_efficiency` | 0.3 | 1 | `coeffLiftDrag.m`:54 (e = 0.3) | REMUS 100 (MSS) | document |
-| `planform_area_method` | `computed` | - | S = f L D (`remus100.m`:133) | REMUS 100 (MSS) | selector |
-| `planform_fraction` | 0.7 | 1 | `remus100.m`:133 (S = 70% of the rectangle L_auv * D_auv) | REMUS 100 (MSS) | document |
-| `planform_area` | 0.2128 | m^2 | given value, read with `"given"`: `remus100.m`:133 | REMUS 100 (MSS) | derived |
-| `parasitic_drag_coefficient_method` | `computed` | - | CD_0 = Cd pi (D/2)^2 / S (`remus100.m` 142-144) | REMUS 100 (MSS) | selector |
-| `hull_frontal_drag_coefficient` | 0.42 | 1 | `remus100.m`:142 (Cd), Allen et al. (2000) as MSS cites it, not read | REMUS 100 (MSS) | document |
-| `parasitic_drag_coefficient` | 0.05595961914206819 | 1 | given value, read with `"given"`: `remus100.m` 143-144 | REMUS 100 (MSS) | derived |
-| `smooth_speed` | `True` | - | numerical guard, finite Jacobian at rest | - | selector |
-| `smooth_speed_epsilon` | 1e-09 | m/s | numerical regularisation of the guard, not a vehicle quantity | - | convention |
+## Grethe (`more_dynamics::Monohull`)
 
-## `more_dynamics::CoefficientHullLoads` (`plugins/hydrodynamics/coefficient_hull_loads.py`)
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `length` | 5.2 | m | A-43 M1, F003 p2, M001 p7 (overall length) | document |
+| `beam` | 2.15 | m | A-43 M2, F003 p2, M001 p7, D002 p1 | document |
+| `hull_block_coefficient` | 0.234 | 1 | A-43 M4, 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness | derived |
+| `hull_waterplane_coefficient` | 0.8 | 1 | A-43 M14 | estimate |
+| `hull_mass` | 806.0 | kg | A-43 M7, F003 p2 (FAT, +/- 20 kg) | document |
+| `payload_mass` | 0.0 | kg | a bare hull; the 2026 field payload (USBL mount, battery packs) is not weighed (A-43 M8, gap) | gap |
+| `hull_center_of_gravity` | [0.0, 0.0, 0.025] | m | A-43 M9 | estimate |
+| `payload_position` | [0.0, 0.0, 0.0] | m | unused while payload_mass is 0 (A-43 M10) | gap |
+| `radii_of_gyration` | [0.35, 0.25, 0.25] | 1 | A-43 M12 | estimate |
+| `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | A-43 M11 (open: library yaw is -1.2) | estimate |
+| `added_mass_form` | "scaled_derivatives" | - | A-43 M11 | selector |
+| `added_mass_mass_basis` | "displaced" | - | E-101 Q5 a | owner decision |
+| `coriolis_form` | "kirchhoff_full" | - | every added-mass Coriolis term kept | selector |
+| `current_form` | "none" | - | this part is gated in still water; the G1 references hold current fixed | selector |
 
-The 52 hull-only nondimensional derivatives have no generic physics default (an empirical
-coefficient table): each defaults to 0.0 and is given entirely by a composition. Today's
-only supplying composition is the frozen test fixture
-`tests/vehicle_models/data/npsauv/nps_auv_ii_parameters.json` (U6e, the `NPS AUV II`
-named part itself is not yet landed in `.rppws`, `test_named_part_nps_auv_ii_exists_in_the_root_rppws`).
+## Grethe hydrostatics (`more_dynamics::SurfaceRestoring`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| every hull-only derivative (52, `npsauv.m` 126-156) | 0.0 | nondimensional | none (empirical table; no physics default) | NPS AUV II (test fixture, not yet a `.rppws` part) | gap |
-| `cross_flow_drag_coefficients` | [0.5, 0.6] | 1 | `npsauv.m`:220 ([Cdy, Cdz]) | NPS AUV II (test fixture) | document |
-| `cross_flow_section_dimensions` | [0.53, 0.53] | m | `npsauv.m` 220-221 ([Hx, Bx]) | NPS AUV II (test fixture) | document |
-| `cross_flow_sections` | 10 | 1 | `npsauv.m`:218 (number of strips) | NPS AUV II (test fixture) | document |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `hull_count` | 1 | - | A-43 M15, monohull | convention |
+| `longitudinal_inertia_factor` | 1.0 | 1 | A-43 M17 | estimate |
+| `longitudinal_center_of_flotation` | -0.3 | m | A-43 M18 | estimate |
+| `reference_point` | [-2.24, 0.0, 0.0] | m | E-101 Q4 a, CO at the midpoint of the waterline length | owner decision |
+| `wetted_surface_method` | "regression_table" | - | A-64 Section 3.3 R11 | owner decision |
 
-## `more_dynamics::SurfaceHullLoads` (`plugins/hydrodynamics/surface_hull_loads.py`)
+## Grethe site (`more_dynamics::Site`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `max_forward_thrust` | 239.364 | N | `otter.m` (24.4 kgf = 24.4 * 9.81 N) | Otter (MSS) | document |
-| `max_speed` | 3.0864 | m/s | `otter.m` (6 knots = 6 * 0.5144 m/s) | Otter (MSS) | document |
-| `time_constants` | [1.0, 1.0] | s | `otter.m` 99-101, 202-240 | Otter (MSS) | document |
-| `damping_ratios` | [0.3, 0.2, 0.4] | 1 | `otter.m` 99-101, 202-240 | Otter (MSS) | document |
-| `yaw_damping_nonlinearity` | 10.0 | s/rad | `otter.m` 99-101, 202-240 | Otter (MSS) | document |
-| `manoeuvring_damping` | `time_constants` | - | plugin default | - | selector |
-| `sway_yaw_derivatives` | [0.0, 0.0, 0.0, 0.0] | N s/m, N m s | read with `linear_coupled`/`linear_coupled_modulus` | - | gap |
-| `modulus_coefficients` | [0.0, 0.0] | - | read with `linear_coupled_modulus`; zero (module docstring) | - | gap |
-| `cross_flow` | `hoerner_strips` | - | plugin default | - | selector |
-| `surge_resistance` | `none` | - | plugin default (off unless a composition turns it on) | - | selector |
-| `time_constant` | 100.0 | s | `osv.m`:128 (vessel.T1 = 100 s) | - (ship-scale MSS calibration) | document |
-| `form_factor` | 0.1 | 1 | `XuuITTC.m`:33 (k = 0.1); Fossen 2011, p. 125 | - | document |
-| `crossover_speed` | 2.0 | m/s | `forceSurgeDamping.m`:57 @ `ac77394` (u_cross = 2 m/s) | - | document |
-| `surge_added_mass_factor` | 2.7 | 1 | `addedMassSurge.m`:33 (A11 = 2.7 rho nabla^(5/3) / L^2) | - | document |
-| `ittc_reynolds_floor` | 100000.0 | 1 | `XuuITTC.m`:35 (Re_min = 1e5) | - | document |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `site_form` | 'given' | - | no site derivation for this vehicle | selector |
+| `latitude` | 1.1073560310932362 | rad | not read with site_form given | document |
+| `gravity` | 9.81 | m/s^2 | estimate: the standard value (A-43 M5) | estimate |
+| `water_density` | 1025.0 | kg/m^3 | standard sea water (A-43 M5) | estimate |
+| `kinematic_viscosity` | 1e-06 | m^2/s | cylinderDrag.m 78-80; Fossen 2011, p. 125, below eq. 6.85 (20 degC) | document |
 
-## `more_dynamics::SubmergedRestoring` (`plugins/hydrostatics/submerged_restoring.py`)
+## Grethe hull loads (`more_dynamics::SurfaceHullLoads`)
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `buoyancy_method` | `neutral` | - | `remus100.m`:214 (B = W) | REMUS 100 (MSS) | selector |
-| `center_of_buoyancy` | [0, 0, 0] | m | `remus100.m`:138 (r_bB) | REMUS 100 (MSS) | document |
-| `displaced_volume` | 0.030243065278557742 | m^3 | `remus100.m` 131-132 (4/3 pi (L/2)(D/2)^2) | REMUS 100 (MSS) | derived |
-| `buoyancy` | 313.31493718007266 | N | m g with m = 31.9 kg (`remus100.m`:3), g at `remus100.m` 96-97 | REMUS 100 (MSS) | derived |
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `manoeuvring_damping` | "linear_coupled" | - | A-64 Section 3.4 G0 set | owner decision |
+| `sway_yaw_derivatives` | [-251.875, 0.0, 0.0, -229.86112500000002] | N s/m, N m s | [Y_v, Y_r, N_v, N_r]: Y_v = -M22/T_sway, N_r = -M66/T_yaw (time_constants [8, 16] s); Y_r = N_v = 0, unidentified (E-101 Q2 a) | gap |
+| `cross_flow` | "hoerner_strips" | - | A-64 Section 3.4 | selector |
+| `surge_resistance` | "ittc_residual" | - | E-101 Q1 a | owner decision |
+| `time_constant` | 15.0 | s | A-43 M26 (= M20 T1) | estimate |
+| `form_factor` | 0.1 | 1 | Fossen 2011 p. 125; A-43 M27 | published |
+| `crossover_speed` | 2.0 | m/s | A-43 M28 | published |
+| `surge_added_mass_factor` | 2.7 | 1 | addedMassSurge.m 33; A-43 | published |
+| `ittc_reynolds_floor` | 100000.0 | 1 | A-43 M29 | published |
+| `max_forward_thrust` | 0 | N | zero on purpose: the surge resistance of this part is the ITTC and residual forms alone, a thrust here would count a second resistance (A-74 Q1, owner E-135); a coast-down-fitted resistance option follows | decision |
+| `max_speed` | 2.4 | m/s | fitted from her 2026 control-station logs, through water, logged band 2.32-2.47 m/s (A-74 section 1); replace by the full-throttle runs of the sea trials (X-9 G14) | fitted |
+| `damping_ratios` | [0.3, 0.05, 0.5] | 1 | [heave, roll, pitch]: roll 0.05 fitted from her logs, band 0.03-0.08 (A-74 section 3, owner E-135); heave 0.3 and pitch 0.5 approved guess 2026-10-12 (owner E-135), no source, until the quay free decays (X-9 G12) | roll fitted; heave, pitch approved guess |
 
-## `more_dynamics::SurfaceRestoring` (`plugins/hydrostatics/surface_restoring.py`)
+## Plugins without a named part yet
 
-| Parameter | Default | Unit | Source | Named part | Kind |
-|---|---|---|---|---|---|
-| `hull_count` | 2 | - | `otter.m` 172-193 (two pontoons) | Otter (MSS) | document |
-| `longitudinal_inertia_factor` | 0.8 | 1 | `otter.m`:179 (I_L = 0.8 ...) | Otter (MSS) | document |
-| `longitudinal_center_of_flotation` | -0.2 | m | `otter.m` 177, 192 | Otter (MSS) | document |
-| `reference_point` | [0.0, 0.0, 0.0] | m | convention (the body-frame origin, CO) | - | convention |
-| `wetted_surface_method` | `computed` | - | S = n 1.025 L (C_b B + 1.7 T), `XuuITTC.m`:38 (Mumford) | - | selector |
-| `wetted_surface` | 1.77 | m^2 | given value, read with `"given"`: the Mumford value at the Otter set (`otter.m` 92-107, mass 80 kg, `XuuITTC.m`:38) | Otter (MSS) | derived |
-| `block_coefficient_method` | `given` | - | E-104 (keeps every existing gate; `hull_block_coefficient` a vehicle coupling, draft derived) | - | selector |
-| `draft` | 0.3 | m | read with `"computed"` only: document (F003 p2; M001 p7, approx. 0.3 m) | Grethe | document |
+`DerivativeAuv` and `CoefficientHullLoads` (the NPS AUV II vehicle): the named part is not landed (its own job); until it is, their
+reference values are the frozen data file `tests/vehicle_models/data/npsauv/nps_auv_ii_parameters.json` (every entry cited to its
+`npsauv.m` line, kind `document`, paper not read: needs-access, its `SOURCE.md`). The vehicle declares the 14 acceleration derivatives
+and the inertia; `CoefficientHullLoads` declares the 52 hull derivatives and the cross-flow geometry (a derivative is declared once, on
+the part that reads it); the 27 actuator-coupled derivatives are declared by no plugin until an actuator design reads them, and stay in
+the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 10 for this vehicle) is vehicle data.
 
 ## Named parts
 
 | Named part | `.rppws` location | `SOURCE.md` |
 |---|---|---|
-| REMUS 100 (MSS) | `.rppws/parts/more_dynamics__spheroid_auv/83497a04-1209-469f-bab2-5d7d41d0dee2/` | yes (this job) |
-| Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes (this job) |
-| Grethe | `.rppws/parts/more_dynamics__monohull/` (U8b leftover, this job) | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
-| NPS AUV II (MSS) | not yet landed (U6e) | n/a |
-| Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `…__catamaran/09d55b0c-…`, `…/287972df-…` (R11: two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
+| REMUS 100 (MSS) | `.rppws/parts/more_dynamics__spheroid_auv/83497a04-1209-469f-bab2-5d7d41d0dee2/` | yes |
+| REMUS 100 fin | `.rppws/parts/more_dynamics__fin/` | yes |
+| Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
+| Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
+| NPS AUV II (MSS) | not yet landed | n/a |
+| Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `...__catamaran/09d55b0c-...`, `...__catamaran/287972df-...` (two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
 
-HullVessel (Luka's `plugins/vehicle_models/hull_vessel.py`, `.rppws/parts/more_dynamics__hull_vessel/`)
-and JetNozzle (`.rppws/parts/more_dynamics__jet_nozzle/`) are Luka's own files (E-28, E-91) and
-are exempt from rule 20 and from this file.
+
+HullVessel (Luka's `plugins/vehicle_models/hull_vessel.py`, `.rppws/parts/more_dynamics__hull_vessel/`) and JetNozzle
+(`.rppws/parts/more_dynamics__jet_nozzle/`) are Luka's own files and are exempt from this file.

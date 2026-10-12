@@ -185,10 +185,11 @@ class _Child:
 
 
 class _StandIn:
-    """What a vehicle type asks of its context: the children by slot and the declared defaults."""
+    """What a vehicle type asks of its context: the children by slot, the declared defaults and the reference
+    part's values where a default is unset."""
 
     def __init__(self, cls, children):
-        self.defaults = {d.name: d.default_value for d in cls.PARAMETERS}
+        self.defaults = {**{d.name: d.default_value for d in cls.PARAMETERS}, **vc.reference_values(cls)}
         self.children = children
 
     def get_component(self, slot):
@@ -411,7 +412,9 @@ def test_monohull_restoring_equals_the_one_hull_surface_block_at_its_equilibrium
                            hydrodynamics=p.SurfaceHullLoads).signals(np.zeros(12), [])
     assert one["draft"][0] == pytest.approx(two["draft"][0], rel=1e-15)
     volume = 806.0 / 1025.0
-    assert one["draft"][0] == pytest.approx(volume / (0.233 * 2.15 * 5.2), rel=1e-12)
+    reference = vc.reference_part("Grethe")  # the part's own block coefficient, length and beam
+    assert one["draft"][0] == pytest.approx(
+        volume / (reference["hull_block_coefficient"] * reference["beam"] * reference["length"]), rel=1e-12)
 
 
 def test_monohull_is_a_different_vehicle_from_the_catamaran_with_the_same_hull_loads():

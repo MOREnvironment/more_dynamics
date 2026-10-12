@@ -50,13 +50,22 @@ def test_catamaran_is_one_plugin_and_uses_the_cross_flow_strip_of_the_torpedo_wi
                             "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity"} - set(vc.SITE_NAMES) <= declared
 
 
-def test_every_default_equals_the_frozen_otter_value():
+def test_every_value_of_the_otter_parts_equals_the_frozen_otter_value_and_the_plugins_hold_none():
+    """The numbers are the named parts', equal to the frozen Otter set; the plugins' own defaults for them are
+    unset (a value the composition gives)."""
+    from more_transformations.more_casadi_transformations import is_unset
     p = vc.plugins()
-    for cls in (p.Catamaran, p.SurfaceRestoring, p.SurfaceHullLoads):
+    checked = 0
+    for cls, part in ((p.Catamaran, "Otter (MSS)"), (p.SurfaceRestoring, "Otter hydrostatics"),
+                      (p.SurfaceHullLoads, "Otter hull loads")):
+        values = vc.reference_part(part)
         for d in cls.PARAMETERS:
-            if d.name in vc.OTTER:
-                assert np.array_equal(np.asarray(d.default_value, dtype=float),
+            if d.name in vc.OTTER and d.name in values:
+                assert np.array_equal(np.asarray(values[d.name], dtype=float),
                                       np.asarray(vc.OTTER[d.name], dtype=float)), (cls.__name__, d.name)
+                assert is_unset(d.default_value), (cls.__name__, d.name)
+                checked += 1
+    assert checked >= 15  # the loop compares something (19 values at the time of writing)
 
 
 def test_G1_catamaran_matches_existing_otter_block_references():

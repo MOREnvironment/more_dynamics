@@ -13,9 +13,9 @@ Servo (one device whose features are switched on or off, Murray-Smith 2016,
 Fig. 1, p. 246): ``servo_dynamics`` ``"none"`` or ``"first_order_lag"`` (needs
 ``time_constant``), ``servo_rate_limit`` ``False`` or ``True`` (needs the lag
 and ``max_rate``), ``servo_angle_limit`` ``"none"``, ``"on_command"`` or
-``"on_output"`` (needs ``max_deflection``). Defaults: the lag with rate and
-angle limit on the command, the numbers of the AUV fin servo of Sarhadi
-(2026): 0.1 s, +-20 deg, +-30 deg/s (Fig. 4 and text, p. 4; a demanding
+``"on_output"`` (needs ``max_deflection``). Selector defaults: the lag with rate and
+angle limit on the command; the reference fin part carries the numbers of the AUV fin servo of
+Sarhadi (2026): 0.1 s, +-20 deg, +-30 deg/s (Fig. 4 and text, p. 4; a demanding
 choice of that study, not a measurement; raise: identify the time constant
 and the rate limit of the real servo from a logged step in the fin command).
 
@@ -39,9 +39,10 @@ cited sources, not a large-angle flow-axis model: f = 1/2 rho A U^2 (C_L
 lift_axis - C_D chord_axis), tau = [f; r x f] (Prestero 2001, eqs. 4.37,
 4.41-4.43, pp. 31-33; Fossen 2011, eq. 12.226, p. 400).
 
-Defaults: one fin at the fin post, a rudder lifting along +y (the sign of
-the lift axis is a convention of the composition); provenance of every
-default number is in ``DEFAULTS.md``.
+Every number (fin post, areas, axes, lift slope, servo time constant and limits) is unset in this
+plugin and given by the composition; the reference fin part is one fin at the fin post, a rudder
+lifting along +y (the sign of the lift axis is a convention of the composition), and
+``DEFAULTS.md`` gives the provenance of its numbers.
 
 References
 ----------
@@ -67,7 +68,7 @@ from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_transformations.more_casadi_transformations import freeze
+from more_transformations.more_casadi_transformations import freeze, unset
 from more_dynamics.models.fin.flow_angle import none as flow_angle_none, small_angle
 from more_dynamics.models.fin.inflow import rigid_point, translational
 from more_dynamics.models.fin.interference import none as interference_none
@@ -75,7 +76,7 @@ from more_dynamics.models.fin.lifting_fin import (check_lifting_fin_values, lift
                                                   lifting_fin_parameters)
 from more_dynamics.models.fin.section import linear_section, quadratic_drag
 from more_dynamics.models.servo.servo import servo_casadi, servo_parameters
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, read_declared, refuses_unset
 
 FED_INPUTS = ["command", "state", "nu_r", "water_density"]
 INFLOWS = {"translational": (translational.translational_casadi, translational.translational_parameters),
@@ -100,27 +101,28 @@ def _form(slot, name, forms):
 
 class Fin(ForceProducer):
     PARAMETERS = [
-        ParameterDescription("fin_position", [-0.638, 0.0, 0.0]),  # m, Prestero 2001, Table A.5, p. 103 (x_finpost)
-        ParameterDescription("chord_axis", [1.0, 0.0, 0.0]),  # unit chord direction, BODY FRD (convention)
-        ParameterDescription("lift_axis", [0.0, 1.0, 0.0]),  # unit positive-lift direction, BODY FRD (convention)
-        ParameterDescription("fin_area", 0.00665),  # m^2, Prestero 2001, Table A.5, p. 103 (S_fin)
+        ParameterDescription("fin_position", unset()),  # m, Prestero 2001, Table A.5, p. 103 (x_finpost)
+        ParameterDescription("chord_axis", unset()),  # unit chord direction, BODY FRD (convention)
+        ParameterDescription("lift_axis", unset()),  # unit positive-lift direction, BODY FRD (convention)
+        ParameterDescription("fin_area", unset()),  # m^2, Prestero 2001, Table A.5, p. 103 (S_fin)
         ParameterDescription("servo_dynamics", "first_order_lag"),  # Murray-Smith 2016, Fig. 1, p. 246
         ParameterDescription("servo_rate_limit", True),
         ParameterDescription("servo_angle_limit", "on_command"),
-        ParameterDescription("time_constant", 0.1),  # s, Sarhadi 2026, Fig. 4, p. 4
-        ParameterDescription("max_deflection", 0.3490658503988659),  # rad = 20 deg, Sarhadi 2026, Fig. 4, p. 4
-        ParameterDescription("max_rate", 0.5235987755982988),  # rad/s = 30 deg/s, Sarhadi 2026, Fig. 4, p. 4
+        ParameterDescription("time_constant", unset()),  # s, Sarhadi 2026, Fig. 4, p. 4
+        ParameterDescription("max_deflection", unset()),  # rad = 20 deg, Sarhadi 2026, Fig. 4, p. 4
+        ParameterDescription("max_rate", unset()),  # rad/s = 30 deg/s, Sarhadi 2026, Fig. 4, p. 4
         ParameterDescription("inflow", "rigid_point"),  # Prestero 2001, eq. 4.40, p. 32
         ParameterDescription("flow_angle", "small_angle"),  # Prestero 2001, eqs. 4.42-4.43, pp. 32-33
         ParameterDescription("interference", "none"),  # Prestero 2001, eq. 4.41, p. 32 (both factors one)
         ParameterDescription("section", "quadratic_drag"),  # remus100.m 238-245
-        ParameterDescription("lift_slope", 3.12),  # 1/rad, Prestero 2001, Table A.5, p. 103 (c_L_alpha)
-        ParameterDescription("zero_lift_drag", 0.0),  # Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by "linear_section")
+        ParameterDescription("lift_slope", unset()),  # 1/rad, Prestero 2001, Table A.5, p. 103 (c_L_alpha)
+        ParameterDescription("zero_lift_drag", unset()),  # Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by "linear_section")
     ]
 
     def __init__(self) -> None:
         self._model = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
         selectors = {name: context.get_parameter(name)
                      for name in ("servo_dynamics", "servo_rate_limit", "servo_angle_limit")}
@@ -132,7 +134,7 @@ class Fin(ForceProducer):
             casadi_function, parameters = _form(slot, context.get_parameter(slot), forms)
             parts[slot] = frozen_block(context, casadi_function(), parameters())
         declared = lifting_fin_parameters()
-        values = check_lifting_fin_values({d.name: context.get_parameter(d.name) for d in declared})
+        values = check_lifting_fin_values(read_declared(context, declared))
         model = freeze(lifting_fin_casadi(parts), declared, values)
         left_open = [name for name in model.name_in() if name not in FED_INPUTS]
         if left_open:

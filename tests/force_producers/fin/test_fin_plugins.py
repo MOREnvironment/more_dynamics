@@ -96,13 +96,18 @@ def _default(cls, name):
     return next(d.default_value for d in cls.PARAMETERS if d.name == name)
 
 
-def test_defaults_are_the_printed_numbers_they_cite():
+def test_the_fin_part_holds_the_printed_numbers_it_cites_and_the_plugin_none():
+    from more_transformations.more_casadi_transformations import is_unset
     fin = _classes()["Fin"]
-    assert _default(fin, "fin_position") == [prestero_value("fin_position_x"), 0.0, 0.0]  # Table A.5, p. 103
-    assert _default(fin, "fin_area") == prestero_value("fin_area")
-    assert _default(fin, "lift_slope") == prestero_value("lift_slope")
+    part = vc.reference_part("REMUS 100 fin")
+    assert part["fin_position"] == [prestero_value("fin_position_x"), 0.0, 0.0]  # Table A.5, p. 103
+    assert part["fin_area"] == prestero_value("fin_area")
+    assert part["lift_slope"] == prestero_value("lift_slope")
     for name, value in SERVO_NUMBERS.items():  # Sarhadi 2026, Fig. 4, p. 4
-        assert abs(_default(fin, name) - value) <= 1e-15, name
+        assert abs(part[name] - value) <= 1e-15, name
+        assert is_unset(_default(fin, name)), name
+    for name in ("fin_position", "fin_area", "lift_slope"):
+        assert is_unset(_default(fin, name)), name
     assert [_default(fin, f"servo_{n}") for n in ("dynamics", "rate_limit", "angle_limit")] == \
         [SERVO_SETTINGS["lag_rate_angle"][n] for n in ("dynamics", "rate_limit", "angle_limit")]
 

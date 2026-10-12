@@ -25,9 +25,11 @@ from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.fin.fin_pairs_deflection_only import (fin_pair_positions, fin_pairs_deflection_only,
                                                                     fin_pairs_deflection_only_parameters)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, refuses_unset
 
 
 FIN_POSITIONS_METHODS = ("computed", "given")
@@ -35,19 +37,20 @@ FIN_POSITIONS_METHODS = ("computed", "given")
 
 class FinPairsDeflectionOnly(ForceProducer):
     PARAMETERS = [
-        ParameterDescription("rudder_area", 0.0133),  # remus100.m:183 A_r = 2 * S_fin (S_fin :179)
-        ParameterDescription("stern_plane_area", 0.0133),  # remus100.m:188 A_s = 2 * S_fin (S_fin :179)
-        ParameterDescription("rudder_lift_coefficient", 0.5),  # remus100.m:182 CL_delta_r
-        ParameterDescription("stern_plane_lift_coefficient", 0.7),  # remus100.m:187 CL_delta_s
+        ParameterDescription("rudder_area", unset()),  # remus100.m:183 A_r = 2 * S_fin (S_fin :179)
+        ParameterDescription("stern_plane_area", unset()),  # remus100.m:188 A_s = 2 * S_fin (S_fin :179)
+        ParameterDescription("rudder_lift_coefficient", unset()),  # remus100.m:182 CL_delta_r
+        ParameterDescription("stern_plane_lift_coefficient", unset()),  # remus100.m:187 CL_delta_s
         ParameterDescription("fin_positions_method", "computed"),  # x_r = x_s = -a (remus100.m:184, 189)
-        ParameterDescription("rudder_position", -0.8),  # given value, read with "given": remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry)
-        ParameterDescription("stern_plane_position", -0.8),  # given value, read with "given": remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry)
-        ParameterDescription("max_deflection", 0.3490658503988659),  # remus100.m:109 delta_max = deg2rad(20)
+        ParameterDescription("rudder_position", unset()),  # given value, read with "given": remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry)
+        ParameterDescription("stern_plane_position", unset()),  # given value, read with "given": remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry)
+        ParameterDescription("max_deflection", unset()),  # remus100.m:109 delta_max = deg2rad(20)
     ]
 
     def __init__(self) -> None:
         self._model = self._positions = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
         method = context.get_parameter("fin_positions_method")
         if method not in FIN_POSITIONS_METHODS:

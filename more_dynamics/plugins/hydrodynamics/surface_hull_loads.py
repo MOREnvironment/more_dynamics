@@ -48,13 +48,15 @@ from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.cross_flow.cross_flow_strip import cross_flow_strip_rectangular_section_hoerner
 from more_dynamics.models.damping.hydrodynamic_load_parts import (
     coupled_manoeuvring_damping_surface, coupled_manoeuvring_damping_surface_parameters,
     surge_resistance_ittc, surge_resistance_ittc_parameters, surge_resistance_ittc_residual,
     surge_resistance_ittc_residual_parameters, time_constant_damping_surface,
     time_constant_damping_surface_parameters)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name, refuses_unset
 
 SURGE_RESISTANCES = ("none", "ittc", "ittc_residual")
 MANOEUVRING_DAMPINGS = ("time_constants", "linear_coupled", "linear_coupled_modulus")
@@ -67,26 +69,27 @@ _SURGE_RESISTANCE_PARAMETER_FUNCTIONS = {
 
 class SurfaceHullLoads(HydrodynamicsModel):
     PARAMETERS = [
-        ParameterDescription("max_forward_thrust", 239.364),  # otter.m, 24.4 kgf = 24.4 * 9.81 N
-        ParameterDescription("max_speed", 3.0864),  # otter.m, 6 knots = 6 * 0.5144 m/s
-        ParameterDescription("time_constants", [1.0, 1.0]),  # otter.m 99-101, 202-240
-        ParameterDescription("damping_ratios", [0.3, 0.2, 0.4]),  # otter.m 99-101, 202-240
-        ParameterDescription("yaw_damping_nonlinearity", 10.0),  # otter.m 99-101, 202-240
+        ParameterDescription("max_forward_thrust", unset()),  # otter.m, 24.4 kgf = 24.4 * 9.81 N
+        ParameterDescription("max_speed", unset()),  # otter.m, 6 knots = 6 * 0.5144 m/s
+        ParameterDescription("time_constants", unset()),  # otter.m 99-101, 202-240
+        ParameterDescription("damping_ratios", unset()),  # otter.m 99-101, 202-240
+        ParameterDescription("yaw_damping_nonlinearity", unset()),  # otter.m 99-101, 202-240
         ParameterDescription("manoeuvring_damping", "time_constants"),
-        ParameterDescription("sway_yaw_derivatives", [0.0, 0.0, 0.0, 0.0]),  # read with "linear_coupled"/"_modulus"
-        ParameterDescription("modulus_coefficients", [0.0, 0.0]),  # read with "linear_coupled_modulus"; zero (module docstring)
+        ParameterDescription("sway_yaw_derivatives", unset()),  # read with "linear_coupled"/"_modulus"
+        ParameterDescription("modulus_coefficients", unset()),  # read with "linear_coupled_modulus"; zero (module docstring)
         ParameterDescription("cross_flow", "hoerner_strips"),
         ParameterDescription("surge_resistance", "none"),
-        ParameterDescription("time_constant", 100.0),  # osv.m 128, vessel.T1 = 100 s (read with "ittc"/"ittc_residual")
-        ParameterDescription("form_factor", 0.1),  # XuuITTC.m 33, k = 0.1; Fossen 2011, p. 125 (read with "ittc"/"ittc_residual")
-        ParameterDescription("crossover_speed", 2.0),  # forceSurgeDamping.m 57 @ ac77394, u_cross = 2 m/s (read with "ittc"/"ittc_residual")
-        ParameterDescription("surge_added_mass_factor", 2.7),  # addedMassSurge.m 33, A11 = 2.7 rho nabla^(5/3) / L^2 (read with "ittc"/"ittc_residual")
+        ParameterDescription("time_constant", unset()),  # osv.m 128, vessel.T1 = 100 s (read with "ittc"/"ittc_residual")
+        ParameterDescription("form_factor", unset()),  # XuuITTC.m 33, k = 0.1; Fossen 2011, p. 125 (read with "ittc"/"ittc_residual")
+        ParameterDescription("crossover_speed", unset()),  # forceSurgeDamping.m 57 @ ac77394, u_cross = 2 m/s (read with "ittc"/"ittc_residual")
+        ParameterDescription("surge_added_mass_factor", unset()),  # addedMassSurge.m 33, A11 = 2.7 rho nabla^(5/3) / L^2 (read with "ittc"/"ittc_residual")
         ParameterDescription("ittc_reynolds_floor", 100000.0),  # XuuITTC.m 35, Re_min = 1e5 (read with "ittc"/"ittc_residual")
     ]
 
     def __init__(self) -> None:
         self._damping = self._cross_flow = self._surge = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
         surge = context.get_parameter("surge_resistance")
         if surge not in SURGE_RESISTANCES:

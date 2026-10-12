@@ -1,0 +1,10 @@
+{
+    "Id": "bca4fba6-3ebe-45e8-b3d6-9658d5e9f9b2",
+    "Name": "REMUS 100 fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

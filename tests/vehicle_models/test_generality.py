@@ -2,8 +2,8 @@
 set that shares none of the first's numbers -- proof that the plugin's own graph is driven
 by its declared parameters, not by a hardcoded vehicle number buried in the code.
 
-"Set A" is each vehicle type's own cited ``PARAMETERS`` default (``DEFAULTS.md``, a named
-part's numbers). "Set B" is a synthetic, uniformly scaled variant: no second identified
+"Set A" is each plugin's reference named part (``DEFAULTS.md`` gives its numbers' sources) or,
+where the plugin has no part, its frozen data file. "Set B" is a synthetic, uniformly scaled variant: no second identified
 vehicle exists for every one of these four forms (``DerivativeAuv`` has only the one
 published nondimensional-derivative table on disk), so this file scales set A by a fixed
 factor (and nudges an exact zero off zero) instead of guessing a second vehicle's numbers
@@ -14,7 +14,7 @@ scaled. Each test builds the vehicle hull alone (``PrescribedWrench``, Luka's/Fo
 stage-1 force producer,
 no parameters of its own) and checks both sets build, step to a finite state, and disagree
 -- selectors (site/current/coriolis/added-mass forms, the hydrodynamics forms) are left at
-the plugin's own default in both sets: this test is about numbers, not forms.
+the plugin's declared default in both sets: this test is about numbers, not forms.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -43,7 +43,9 @@ def _scaled(value):
 
 
 def _defaults(cls):
-    return {d.name: d.default_value for d in cls.PARAMETERS}
+    """Set A of a plugin: its selectors and settings as declared, its values from its reference part (or data
+    file): the plugins carry no vehicle numbers."""
+    return {**{d.name: d.default_value for d in cls.PARAMETERS}, **vc.reference_values(cls)}
 
 
 def _build(vehicle_cls, vehicle_params, hydrostatics_cls, hydrostatics_params,
@@ -69,8 +71,7 @@ def _assert_generic(vehicle_cls, hydrostatics_cls, hydrodynamics_cls, *, hydrost
     """``hydrostatics_fixed`` names the hydrostatics plugin's own parameters that this
     *vehicle type* (not the shared hydrostatics plugin) pins structurally -- e.g.
     ``Monohull`` always builds a one-hull form, so ``hull_count`` stays 1 in both sets
-    even though ``SurfaceRestoring`` (shared with ``Catamaran``) declares 2 as its own
-    class default; scaling or flipping it would ask the hull form for an input
+    even though ``SurfaceRestoring`` (shared with ``Catamaran``) has 2 hulls in the Otter part; scaling or flipping it would ask the hull form for an input
     (``hull_lateral_offset``) the vehicle's own hull form never produces."""
     a_vehicle, a_hydrostatics, a_hydrodynamics = (
         vc.pick(vehicle_cls, _defaults(vehicle_cls)), vc.pick(hydrostatics_cls, _defaults(hydrostatics_cls)),

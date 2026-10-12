@@ -16,3 +16,6 @@ class ComponentParameters:
     crossover_speed = 2.0  # published (MSS constant): A-43 M28
     surge_added_mass_factor = 2.7  # published: addedMassSurge.m 33; A-43
     ittc_reynolds_floor = 100000.0  # published + owner default: A-43 M29
+    max_forward_thrust = 0  # zero on purpose: surge resistance is the ITTC + residual forms alone, a thrust here would count a second resistance (A-74 Q1, owner E-135); a coast-down-fitted resistance option follows
+    max_speed = 2.4  # fitted from her 2026 control-station logs, through water, logged band 2.32-2.47 m/s (A-74 section 1, a74_top_speed.py); replace by X-9 G14 sea runs
+    damping_ratios = [0.3, 0.05, 0.5]  # [heave, roll, pitch]: roll 0.05 from her logs, band 0.03-0.08 (A-74 section 3, owner E-135); heave and pitch approved guess 2026-10-12 (owner E-135), no source, until quay free decays (X-9 G12)

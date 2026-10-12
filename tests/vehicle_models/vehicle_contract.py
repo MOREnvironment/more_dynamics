@@ -36,6 +36,43 @@ OTTER = json.loads((DATA / "otter" / "otter_mss_cc07579.json").read_text())
 
 _PLUGINS = {}
 
+RPPWS = Path(__file__).resolve().parents[2] / ".rppws"
+# the named part whose values a plugin is built from when a test gives none (the plugins carry no vehicle
+# numbers: every vehicle, device and site value comes from a part); a plugin with no part reads its frozen data file
+REFERENCE_PARTS = {
+    "SpheroidAuv": "REMUS 100 (MSS)", "Monohull": "Grethe", "Catamaran": "Otter (MSS)",
+    "SubmergedRestoring": "REMUS 100 hydrostatics", "SurfaceRestoring": "Otter hydrostatics",
+    "AuvHullLoads": "REMUS 100 hull loads", "SurfaceHullLoads": "Otter hull loads",
+    "FinPairsDeflectionOnly": "REMUS 100 fin pairs", "Propeller": "REMUS 100 propeller",
+    "Site": "Otter (MSS) site", "Fin": "REMUS 100 fin",
+}
+REFERENCE_FILES = {"DerivativeAuv": "npsauv/nps_auv_ii_parameters.json",
+                   "CoefficientHullLoads": "npsauv/nps_auv_ii_parameters.json"}
+
+
+def reference_part(name):
+    """``{parameter: value}`` of the named part ``name`` of the library's workspace (its own ``params``, read with
+    rpp's own parameter loader, the part found by the ``Name`` of its ``description.json``)."""
+    from rpp_orchestrator.component_storage import ComponentParameterStore
+    found = [d.parent for d in RPPWS.joinpath("parts").rglob("description.json")
+             if json.loads(d.read_text()).get("Name") == name]
+    assert len(found) == 1, f"named part {name!r}: found {len(found)} under {RPPWS}"
+    return ComponentParameterStore().load(found[0])
+
+
+def reference_values(cls):
+    """The values a plugin class takes where its default is unset and a test gives none: its reference part's, or
+    its frozen data file's."""
+    from more_transformations.more_casadi_transformations import is_unset
+    if cls.__name__ in REFERENCE_PARTS:
+        source = reference_part(REFERENCE_PARTS[cls.__name__])
+    elif cls.__name__ in REFERENCE_FILES:
+        entries = json.loads((DATA / REFERENCE_FILES[cls.__name__]).read_text())["parameters"]
+        source = {name: entry["value"] for name, entry in entries.items()}
+    else:
+        return {}
+    return {d.name: source[d.name] for d in cls.PARAMETERS if is_unset(d.default_value) and d.name in source}
+
 
 def plugins():
     """The plugin classes of the library, importable once rpp's generated types are; skips otherwise."""
@@ -58,6 +95,7 @@ def plugins():
             from more_dynamics.plugins.force_producers.propeller import Propeller
             from more_dynamics.plugins.force_producers.prescribed_wrench import PrescribedWrench
             from more_dynamics.plugins.shared.vehicle_graph import CompositionError
+            from more_dynamics.plugins.shared.payload_io import UnsetValues
         except Exception as exc:  # no rpp, or the generated types are missing
             pytest.skip(f"{REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
         _PLUGINS.update(locals())
@@ -66,33 +104,37 @@ def plugins():
     return SimpleNamespace(**_PLUGINS)
 
 
-def context_of(cls, params=None, children=None, spec=None):
-    """A ``ComponentContext`` of ``cls`` with its declared defaults, ``params`` over them, and child contexts by
-    slot (``{slot: [context, ...]}``)."""
+def context_of(cls, params=None, children=None, spec=None, reference=True):
+    """A ``ComponentContext`` of ``cls`` with its declared defaults, its reference part's values where the default is
+    unset (``reference_values``), ``params`` over them, and child contexts by slot (``{slot: [context, ...]}``)."""
     from rpp_py.context import ComponentContext
     from rpp_py.parameter_handler import ParameterHandler
     resolved = ParameterHandler.resolve_params(cls.PARAMETERS, {})
     unknown = set(params or {}) - {d.name for d in cls.PARAMETERS}
     assert not unknown, f"{cls.__name__} declares no parameter {sorted(unknown)}"
+    if reference:
+        resolved.params.update(reference_values(cls))
     resolved.params.update(params or {})
     return ComponentContext(instance=cls(), params=resolved, subcomponents=children or {},
                             spec=spec if spec is not None else getattr(cls, "COMPONENTS", {}))
 
 
 def child(item):
-    """``(class, parameters)`` or a class -> its context."""
+    """``(class, parameters)``, a class, or an already made context -> its context."""
+    if not isinstance(item, (type, tuple)):
+        return item
     cls, params = item if isinstance(item, tuple) else (item, None)
     return context_of(cls, params)
 
 
-def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, actuators=(), site=None):
+def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, actuators=(), site=None, reference=True):
     """The initialised context of a vehicle: ``site``, ``hydrostatics`` and ``hydrodynamics`` are a class or a
     ``(class, parameters)`` (``site`` default: the ``Site`` plugin with its own defaults), ``actuators`` a list of
     them. Returns the vehicle plugin."""
     children = {"site": [child(plugins().Site if site is None else site)],
                 "hydrostatics": [child(hydrostatics)], "hydrodynamics": [child(hydrodynamics)],
                 "actuators": [child(a) for a in actuators]}
-    context = context_of(vehicle_class, params, children)
+    context = context_of(vehicle_class, params, children, reference=reference)
     context.initialize()
     return context.get_instance()
 

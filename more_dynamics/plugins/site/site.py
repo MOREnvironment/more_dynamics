@@ -17,7 +17,10 @@ that raises it to the next level:
 
 ``latitude`` is read only with ``"latitude"`` and ``gravity`` only with
 ``"given"``; the water density and the kinematic viscosity are read in both.
-Default values and their provenance are in ``DEFAULTS.md``.
+Every vehicle number is unset in this plugin and given by the composition (a named part of the
+workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
+selected forms read and the composition leaves unset refuses the build, naming it with its unit and
+meaning.
 
 References
 ----------
@@ -38,9 +41,11 @@ from rpp_plugin_types.more_dynamics import SiteModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.site.site import (
     SITE_AT_LATITUDE_PARAMETERS, SITE_GIVEN_PARAMETERS, site_at_latitude, site_given)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import CompositionError
 
 SITE_FORMS = {"latitude": (site_at_latitude, SITE_AT_LATITUDE_PARAMETERS),
@@ -52,15 +57,16 @@ OUTPUT_DESCRIPTIONS = {"water_density": "water density, kg/m^3", "gravity": "acc
 class Site(SiteModel):
     PARAMETERS = [
         ParameterDescription("site_form", "given"),  # otter.m 90-91; gravity.m 11-12 for "latitude"
-        ParameterDescription("latitude", 1.1073560310932362),  # rad, remus100.m 96-97 mu = deg2rad(63.446827); read with site_form "latitude"
-        ParameterDescription("gravity", 9.81),  # m/s^2, mssConstants.m:14 @ 49e03e3 (MSS 2.0.5), otter.m 90-91; read with site_form "given"
-        ParameterDescription("water_density", 1025.0),  # kg/m^3, otter.m 90-91
-        ParameterDescription("kinematic_viscosity", 1e-06),  # m^2/s, cylinderDrag.m 78-80 nu_water = 1e-6; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
+        ParameterDescription("latitude", unset()),  # rad, remus100.m 96-97 mu = deg2rad(63.446827); read with site_form "latitude"
+        ParameterDescription("gravity", unset()),  # m/s^2, mssConstants.m:14 @ 49e03e3 (MSS 2.0.5), otter.m 90-91; read with site_form "given"
+        ParameterDescription("water_density", unset()),  # kg/m^3, otter.m 90-91
+        ParameterDescription("kinematic_viscosity", unset()),  # m^2/s, cylinderDrag.m 78-80 nu_water = 1e-6; Fossen 2011, p. 125, below eq. 6.85 (20 degC)
     ]
 
     def __init__(self) -> None:
         self._model = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
         form = context.get_parameter("site_form")
         if form not in SITE_FORMS:

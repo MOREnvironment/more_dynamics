@@ -11,10 +11,12 @@ revision `cc07579`) as cited in the comment beside it, plus `generate_catamaran_
 | Selector | Value | Why |
 |---|---|---|
 | `site_form` | `given` | the part's own `Site` subcomponent (`site` slot): MSS gives `gravity`/`water_density` directly, no site derivation |
-| `added_mass_form` | `scaled_derivatives` | plugin default; MSS's scaled-derivative added mass |
-| `coriolis_form` | `kirchhoff_full` | plugin default; every added-mass Coriolis term kept |
+| `added_mass_form` | `scaled_derivatives` | MSS's scaled-derivative added mass |
+| `coriolis_form` | `kirchhoff_full` | every added-mass Coriolis term kept |
 | `current_form` | `none` | this part is gated in still water |
 
-Every other declared parameter (hull geometry, mass, radii of gyration, added-mass
-coefficients) is the plugin's own cited default -- see `more_dynamics/DEFAULTS.md` for
-value, unit, source line and kind.
+Every other value (hull geometry, mass, radii of gyration, added-mass coefficients, and the
+hydrostatics, hull-loads and site values of the subcomponents) is set in the part itself with
+its source in the comment beside it (the plugins carry no vehicle numbers: a value the part
+leaves out makes the build fail naming it) -- see `more_dynamics/DEFAULTS.md` for value, unit,
+source line and kind.

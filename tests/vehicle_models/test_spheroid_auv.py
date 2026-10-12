@@ -315,15 +315,24 @@ def test_each_parameter_has_one_owner(stage):
     assert owners["body_density"] == ["SpheroidAuv"] and owners["center_of_buoyancy"] == ["SubmergedRestoring"]
 
 
-def test_every_default_equals_the_frozen_value():
-    """The cited literal defaults of the plugins are the frozen REMUS 100 set (one density, one geometry)."""
+def test_every_value_of_the_remus_parts_equals_the_frozen_value_and_the_plugins_hold_none():
+    """The numbers are the named parts' and equal the frozen REMUS 100 set (one density, one geometry); the plugins'
+    own defaults for them are unset (a value the composition gives)."""
+    from more_transformations.more_casadi_transformations import is_unset
     p = plugins()
     v = vc.remus_values()
-    for cls in (p.SpheroidAuv, p.SubmergedRestoring, p.AuvHullLoads, p.FinPairsDeflectionOnly, p.Propeller):
+    checked = 0
+    for cls, part in ((p.SpheroidAuv, "REMUS 100 (MSS)"), (p.SubmergedRestoring, "REMUS 100 hydrostatics"),
+                      (p.AuvHullLoads, "REMUS 100 hull loads"), (p.FinPairsDeflectionOnly, "REMUS 100 fin pairs"),
+                      (p.Propeller, "REMUS 100 propeller")):
+        values = vc.reference_part(part)
         for d in cls.PARAMETERS:
-            if d.name in v and not (cls is p.SubmergedRestoring and d.name != "center_of_buoyancy"):
-                assert np.array_equal(np.asarray(d.default_value, dtype=float), np.asarray(v[d.name], dtype=float)), \
-                    (cls.__name__, d.name, d.default_value, v[d.name])
+            if d.name in v and d.name in values and not (cls is p.SubmergedRestoring and d.name != "center_of_buoyancy"):
+                assert np.array_equal(np.asarray(values[d.name], dtype=float), np.asarray(v[d.name], dtype=float)), \
+                    (cls.__name__, d.name, values[d.name], v[d.name])
+                assert is_unset(d.default_value), (cls.__name__, d.name)
+                checked += 1
+    assert checked >= 20
 
 
 @pytest.mark.parametrize("stage, file, input_kind", [

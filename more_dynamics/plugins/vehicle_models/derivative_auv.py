@@ -45,16 +45,14 @@ file's precision, the gravity of the ``site`` slot being 9.81 as ``npsauv.m`` 10
 the vehicle because ``npsauv.m`` gives them as its own primitives (``W``,
 ``B``), not because this vehicle's graph consumes them a second time.
 
-Every published nondimensional derivative (93, ``nondim_<Name>``) is
-declared here (rule 16: no omitted primitive; test contract). The 14
-``*dot`` (acceleration) derivatives are this vehicle's own (the added-mass
-step below); the 52 hull-only derivatives are declared a second time, with
-the same values, on ``CoefficientHullLoads`` (which alone reads them: the
-contract requires every published quantity named on the vehicle, while the
-quantity it is used by stays the hydrodynamics child, as ``AuvHullLoads``'s
-own derivatives come from a different named part); the remaining 27 couple to a fin deflection or
-the propeller and are not yet read by any plugin of this vehicle (flag,
-below).
+Of the 93 published nondimensional derivatives (``nondim_<Name>``), this
+vehicle declares only the 14 ``*dot`` (acceleration) derivatives: they are its
+own (the added-mass step below). The 52 hull-only derivatives are declared on
+``CoefficientHullLoads``, which alone reads them, and the remaining 27 couple
+to a fin deflection or the propeller and are declared by no plugin until an
+actuator design gives them a reader (flag, below); a derivative is declared
+once, by the part that reads it. All 93 stay in the vehicle's parameter data
+file and its ``SOURCE.md``.
 
 **Flag (rule 21, not fixed, not guessed): the 27 actuator-coupled
 derivatives** (e.g. ``Xqds``, ``Ydr``, ``Zqn``\\ ``*epsilon``) are
@@ -76,9 +74,10 @@ This is a gap in the standard's actuator slot for this vehicle's physics
 (rule 19): the smallest extension in the standard's own shape is not
 designed here; it is an owner question for the next job.
 
-Default values and their provenance are in ``DEFAULTS.md``; the underlying
-paper itself is not read (needs-access, ``SOURCE.md``) — every default is
-read from MSS's instrumented workspace, cited to its line.
+Every vehicle number is unset in the plugin and comes from a named part
+(``DEFAULTS.md`` gives each reference part's provenance); the underlying
+paper itself is not read (needs-access, ``SOURCE.md``) — every value is read
+from MSS's instrumented workspace, cited to its line.
 
 References
 ----------
@@ -99,47 +98,15 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_transformations.more_casadi_transformations import check_symmetric_positive_definite
+from more_transformations.more_casadi_transformations import check_symmetric_positive_definite, unset
 
 from more_dynamics.models.added_mass.added_mass_parts import (
     GIVEN_DERIVATIVE_ADDED_MASS_NAMES, given_derivative_added_mass, given_derivative_added_mass_parameters)
-from more_dynamics.models.coefficient_loads.coefficient_loads import HULL_ONLY_DERIVATIVE_NAMES
 from more_dynamics.models.rigid_body.rigid_body_parts import FULL_TENSOR_RIGID_BODY_PARAMETERS, full_tensor_rigid_body
+from more_dynamics.plugins.shared.payload_io import read_value, refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
-
-# npsauv.m 126-156: every published nondimensional derivative, by line.
-_ACTUATOR_COUPLED_DERIVATIVES = {
-    "Xqds": -1, "Xqdb2": -1, "Xrdr": -1, "Xvdr": -1, "Xwds": -1, "Xwdb2": -1, "Xdsds": -1, "Xdrdr": -1,
-    "Xqdsn": -1, "Xwdsn": -1, "Xdsdsn": -1, "Ydr": -1, "Zds": -1, "Zdb2": -1, "Zqn": -1, "Zwn": -1, "Zdsn": -1,
-    "Kdb2": -1, "Kpn": -1, "Kprop": -1, "Mds": -1, "Mdb2": -1, "Mqn": -1, "Mwn": -1, "Mdsn": -1, "Ndr": -1,
-    "Nprop": -1,
-}
-_DERIVATIVE_VALUES = {
-    "Xpp": 7.0e-3, "Xqq": -1.5e-2, "Xrr": 4.0e-3, "Xpr": 7.5e-4, "Xudot": -7.6e-3, "Xwq": -2.0e-1,
-    "Xvp": -3.0e-3, "Xvr": 2.0e-2, "Xqds": 2.5e-2, "Xqdb2": -1.3e-3, "Xrdr": -1.0e-3, "Xvv": 5.3e-2,
-    "Xww": 1.7e-1, "Xvdr": 1.7e-3, "Xwds": 4.6e-2, "Xwdb2": 0.5e-2, "Xdsds": -1.0e-2, "Xdrdr": -1.0e-2,
-    "Xqdsn": 2.0e-3, "Xwdsn": 3.5e-3, "Xdsdsn": -1.6e-3,
-    "Ypdot": 1.2e-4, "Yrdot": 1.2e-3, "Ypq": 4.0e-3, "Yqr": -6.5e-3, "Yvdot": -5.5e-2, "Yp": 3.0e-3,
-    "Yr": 3.0e-2, "Yvq": 2.4e-2, "Ywp": 2.3e-1, "Ywr": -1.9e-2, "Yv": -1.0e-1, "Yvw": 6.8e-2, "Ydr": 2.7e-2,
-    "Zqdot": -6.8e-3, "Zpp": 1.3e-4, "Zpr": 6.7e-3, "Zrr": -7.4e-3, "Zwdot": -2.4e-1, "Zq": -1.4e-1,
-    "Zvp": -4.8e-2, "Zvr": 4.5e-2, "Zw": -3.0e-1, "Zvv": -6.8e-2, "Zds": -7.3e-2, "Zdb2": -1.3e-2,
-    "Zqn": -2.9e-3, "Zwn": -5.1e-3, "Zdsn": -1.0e-2,
-    "Kpdot": -1.0e-3, "Krdot": -3.4e-5, "Kpq": -6.9e-5, "Kqr": 1.7e-2, "Kvdot": 1.2e-4, "Kp": -1.1e-2,
-    "Kr": -8.4e-4, "Kvq": -5.1e-3, "Kwp": -1.3e-4, "Kwr": 1.4e-2, "Kv": 3.1e-3, "Kvw": -1.9e-1, "Kdb2": 0.0,
-    "Kpn": -5.7e-4, "Kprop": 0.0,
-    "Mqdot": -1.7e-2, "Mpp": 5.3e-5, "Mpr": 5.0e-3, "Mrr": 2.9e-3, "Mwdot": -6.8e-3, "Muq": -6.8e-2,
-    "Mvp": 1.2e-3, "Mvr": 1.7e-2, "Muw": 1.0e-1, "Mvv": -2.6e-2, "Mds": -4.1e-2, "Mdb2": 3.5e-3,
-    "Mqn": -1.6e-3, "Mwn": -2.9e-3, "Mdsn": -5.2e-3,
-    "Npdot": -3.4e-5, "Nrdot": -3.4e-3, "Npq": -2.1e-2, "Nqr": 2.7e-3, "Nvdot": 1.2e-3, "Np": -8.4e-4,
-    "Nr": -1.6e-2, "Nvq": -1.0e-2, "Nwp": -1.7e-2, "Nwr": 7.4e-3, "Nv": -7.4e-3, "Nvw": -2.7e-2,
-    "Ndr": -1.3e-2, "Nprop": 0.0,
-}
-_ALL_DERIVATIVE_NAMES = (GIVEN_DERIVATIVE_ADDED_MASS_NAMES + tuple(n for g in HULL_ONLY_DERIVATIVE_NAMES.values()
-                         for n in g) + tuple(_ACTUATOR_COUPLED_DERIVATIVES))
-assert len(_ALL_DERIVATIVE_NAMES) == 93 and set(_ALL_DERIVATIVE_NAMES) == set(_DERIVATIVE_VALUES)
-
 
 def _check_inertia(context: ComponentContext) -> None:
     """Refuse a composition whose full inertia tensor about the CO
@@ -147,8 +114,12 @@ def _check_inertia(context: ComponentContext) -> None:
     symmetric positive definite — a wrong sign convention on
     ``inertia_products`` (rule 11 of the A-62 trap list: a composition error
     silently accepted) gives a physically impossible body."""
-    diagonal = [float(v) for v in context.get_parameter("inertia_diagonal")]
-    ixy, iyz, ixz = (float(v) for v in context.get_parameter("inertia_products"))
+    diagonal = [float(v) for v in read_value(context, "inertia_diagonal", "kg*m^2",
+                                             "principal moments of inertia [Ix, Iy, Iz] about the CO",
+                                             placeholder=[1.0, 1.0, 1.0])]
+    ixy, iyz, ixz = (float(v) for v in read_value(context, "inertia_products", "kg*m^2",
+                                                  "products of inertia [Ixy, Iyz, Ixz] about the CO",
+                                                  placeholder=[0.0, 0.0, 0.0]))
     inertia = [[diagonal[0], -ixy, -ixz], [-ixy, diagonal[1], -iyz], [-ixz, -iyz, diagonal[2]]]
     check_symmetric_positive_definite({"inertia": inertia}, "inertia")
 
@@ -164,22 +135,23 @@ class DerivativeAuv(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("length", 5.3),  # m, npsauv.m:105 L
-        ParameterDescription("body_mass", 5443.425076452599),  # kg, W / g (npsauv.m:109), W at npsauv.m:108
-        ParameterDescription("inertia_diagonal", [2038, 13587, 13587]),  # kg*m^2, npsauv.m:110 [Ix, Iy, Iz]
-        ParameterDescription("inertia_products", [-13.58, -13.58, -13.58]),  # kg*m^2, npsauv.m:111 [Ixy, Iyz, Ixz]
-        ParameterDescription("body_center_of_gravity", [0, 0, 0.061]),  # m, npsauv.m:106 r_bg
-        ParameterDescription("weight", 53400),  # N, npsauv.m:108 W (read by hydrostatics via mass * gravity)
-        ParameterDescription("buoyancy", 53400),  # N, npsauv.m:108 B (neutral: SubmergedRestoring's own default)
-        ParameterDescription("center_of_buoyancy", [0, 0, 0]),  # m, npsauv.m:107 r_bb
+        ParameterDescription("length", unset()),  # m, npsauv.m:105 L
+        ParameterDescription("body_mass", unset()),  # kg, W / g (npsauv.m:109), W at npsauv.m:108
+        ParameterDescription("inertia_diagonal", unset()),  # kg*m^2, npsauv.m:110 [Ix, Iy, Iz]
+        ParameterDescription("inertia_products", unset()),  # kg*m^2, npsauv.m:111 [Ixy, Iyz, Ixz]
+        ParameterDescription("body_center_of_gravity", unset()),  # m, npsauv.m:106 r_bg
+        ParameterDescription("weight", unset()),  # N, npsauv.m:108 W (read by hydrostatics via mass * gravity)
+        ParameterDescription("buoyancy", unset()),  # N, npsauv.m:108 B (neutral: the hydrostatics child's own method)
+        ParameterDescription("center_of_buoyancy", unset()),  # m, npsauv.m:107 r_bb
         ParameterDescription("derivative_scaling", "nondimensional"),  # npsauv.m:116-124 (Fossen prime-scaling)
         ParameterDescription("current_form", "yaw_rate_terms"),  # npsauv.m:83-90 (the gate's own MSS form)
-        *[ParameterDescription(f"nondim_{name}", value) for name, value in _DERIVATIVE_VALUES.items()],
+        *[ParameterDescription(f"nondim_{name}", unset()) for name in GIVEN_DERIVATIVE_ADDED_MASS_NAMES],  # npsauv.m 166-171
     ]
 
     def __init__(self):
         self._assembly = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
         own_inputs = current_inputs(context, "DerivativeAuv", CompositionError)
@@ -188,7 +160,7 @@ class DerivativeAuv(VehicleModel3D):
         def compute(pose, velocity, current, site):
             known = {"pose": pose, "velocity": velocity, **current, **site}
             parts = Parts(context, "DerivativeAuv", known)
-            known["length"] = ca.SX(context.get_parameter("length"))  # npsauv.m:105 L (vehicle coupling, not a site/hull-form quantity here)
+            known["length"] = ca.SX(read_value(context, "length", "m", "overall length L"))  # npsauv.m:105 L (vehicle coupling, not a site/hull-form quantity here)
             parts.run("rigid body", full_tensor_rigid_body(), FULL_TENSOR_RIGID_BODY_PARAMETERS)
             parts.run("added mass", given_derivative_added_mass(), given_derivative_added_mass_parameters())
             parts.run("current", CURRENT_FORMS[form]())

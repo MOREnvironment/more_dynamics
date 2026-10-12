@@ -63,9 +63,9 @@ def _scenario(tmp_path, site_id, vehicles):
         folder = parts / "more_dynamics__catamaran" / vehicle_id
         children = folder / "subcomponents"
         _write(children / restoring_id, _record(restoring_id, f"{name} hydrostatics", "more_dynamics::HydrostaticsModel",
-                                                "more_dynamics::SurfaceRestoring"), {"hull_count": 2})
+                                                "more_dynamics::SurfaceRestoring"), vc.reference_part("Otter hydrostatics"))
         _write(children / loads_id, _record(loads_id, f"{name} hydrodynamics", "more_dynamics::HydrodynamicsModel",
-                                            "more_dynamics::SurfaceHullLoads"))
+                                            "more_dynamics::SurfaceHullLoads"), vc.reference_part("Otter hull loads"))
         if own_site is None:  # a linked record: the shared site's own folder is read
             (children / child_site_id).mkdir(parents=True)
             (children / child_site_id / "description.json").write_text(json.dumps({
@@ -84,7 +84,7 @@ def _scenario(tmp_path, site_id, vehicles):
             "hydrostatics": _entry(restoring_id, "more_dynamics::HydrostaticsModel", "more_dynamics::SurfaceRestoring",
                                    "hydrostatics"),
             "hydrodynamics": _entry(loads_id, "more_dynamics::HydrodynamicsModel", "more_dynamics::SurfaceHullLoads",
-                                    "hydrodynamics")}), {"current_form": "none"})
+                                    "hydrodynamics")}), {**vc.reference_part("Otter (MSS)"), "current_form": "none"})
     description = {
         "ScriptPath": "scripts/vehicles/vehicle_simulation.py", "Language": "python",
         "Configurations": {"scenario": {"Description": "vehicles in one water (test)", "Components": {
@@ -122,8 +122,9 @@ def test_a_site_linked_into_two_vehicles_is_edited_in_one_place(tmp_path):
     site_id = str(uuid.uuid4())
     shared = tmp_path / ".rppws" / "parts" / "more_dynamics__site" / site_id
     _write(shared, _record(site_id, "water of the scenario", "more_dynamics::SiteModel", "more_dynamics::Site"),
-           {"water_density": 1025.0, "gravity": 9.81})
-    ids, description = _scenario(tmp_path, site_id, {"first": None, "second": None, "alone": {"water_density": 1025.0}})
+           {"water_density": 1025.0, "gravity": 9.81, "kinematic_viscosity": 1e-06})
+    ids, description = _scenario(tmp_path, site_id, {"first": None, "second": None, "alone": {
+        "water_density": 1025.0, "gravity": 9.81, "kinematic_viscosity": 1e-06}})
     first, second, alone = _build(tmp_path, description)
     assert _site_values(first) == _site_values(second) == _site_values(alone) == (1025.0, 9.81, 1e-06)
 

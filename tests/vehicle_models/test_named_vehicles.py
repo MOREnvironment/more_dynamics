@@ -66,13 +66,15 @@ def test_the_script_description_lists_one_configuration_per_named_vehicle():
         assert json.loads(matches[0].read_text())["Name"] == NAMED[key]
 
 
-def test_remus_100_from_the_workspace_equals_the_plugins_on_their_defaults():
-    """The plugins on their defaults, the site being the part's own (gravity from the latitude, 1026 kg/m^3: the
-    ``Site`` plugin's default is another set)."""
+def test_remus_100_from_the_workspace_equals_the_plugins_on_the_part_values():
+    """The workspace part built by rpp's builder equals the plugins built from the part's values and selectors
+    (still water; the part's own site: gravity from the latitude, 1026 kg/m^3; MSS's Munk-removed Coriolis)."""
     p = vc.plugins()
     built = _build("remus100")
-    reference = vc.build_context(p.SpheroidAuv, {"current_form": "none"},  # the named part is gated in still water
-                                 site=(p.Site, {"site_form": "latitude", "water_density": 1026}),
+    site = vc.reference_part("REMUS 100 (MSS) site")
+    reference = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
+                                 site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
+                                                "water_density": site["water_density"]}),
                                  hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                                  actuators=[p.FinPairsDeflectionOnly, p.Propeller])
     assert type(built).__name__ == "SpheroidAuv"

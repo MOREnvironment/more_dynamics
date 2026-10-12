@@ -43,8 +43,10 @@ Options, each with its fidelity and what raises it:
 The water density, the gravity and the kinematic viscosity are not parameters
 of the hull: they come from the ``site`` slot (``plugins/site/site.py``).
 
-Default values and their provenance (each citing its line) are in
-``DEFAULTS.md``.
+Every vehicle number is unset in this plugin and given by the composition (a named part of the
+workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
+selected forms read and the composition leaves unset refuses the build, naming it with its unit and
+meaning.
 
 References
 ----------
@@ -65,10 +67,13 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import TWIN_PONTOONS_PARAMETERS, twin_pontoons
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
+from more_dynamics.plugins.shared.payload_io import refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
@@ -91,18 +96,18 @@ class Catamaran(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("length", 2.0),  # otter.m 92-93, 104-107
-        ParameterDescription("beam", 1.08),  # otter.m 92-93, 104-107
-        ParameterDescription("pontoon_beam", 0.25),  # otter.m 104-107
-        ParameterDescription("pontoon_lateral_offset", 0.395),  # otter.m 104-107
-        ParameterDescription("pontoon_block_coefficient", 0.4),  # otter.m 104-107
-        ParameterDescription("pontoon_waterplane_coefficient", 0.75),  # otter.m 104-107
-        ParameterDescription("hull_mass", 55.0),  # otter.m 94-98
-        ParameterDescription("payload_mass", 25.0),  # generate_catamaran_mss.m 61-62 (payload mass)
-        ParameterDescription("hull_center_of_gravity", [0.2, 0.0, -0.2]),  # otter.m 94-98
-        ParameterDescription("payload_position", [0.05, 0.0, -0.35]),  # generate_catamaran_mss.m 61-62 (payload position)
-        ParameterDescription("radii_of_gyration", [0.4, 0.25, 0.25]),  # otter.m 94-98
-        ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # otter.m 152-157
+        ParameterDescription("length", unset()),  # otter.m 92-93, 104-107
+        ParameterDescription("beam", unset()),  # otter.m 92-93, 104-107
+        ParameterDescription("pontoon_beam", unset()),  # otter.m 104-107
+        ParameterDescription("pontoon_lateral_offset", unset()),  # otter.m 104-107
+        ParameterDescription("pontoon_block_coefficient", unset()),  # otter.m 104-107
+        ParameterDescription("pontoon_waterplane_coefficient", unset()),  # otter.m 104-107
+        ParameterDescription("hull_mass", unset()),  # otter.m 94-98
+        ParameterDescription("payload_mass", unset()),  # generate_catamaran_mss.m 61-62 (payload mass)
+        ParameterDescription("hull_center_of_gravity", unset()),  # otter.m 94-98
+        ParameterDescription("payload_position", unset()),  # generate_catamaran_mss.m 61-62 (payload position)
+        ParameterDescription("radii_of_gyration", unset()),  # otter.m 94-98
+        ParameterDescription("added_mass_coefficients", unset()),  # otter.m 152-157
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
@@ -111,6 +116,7 @@ class Catamaran(VehicleModel3D):
     def __init__(self):
         self._assembly = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
         own_inputs = current_inputs(context, "Catamaran", CompositionError)

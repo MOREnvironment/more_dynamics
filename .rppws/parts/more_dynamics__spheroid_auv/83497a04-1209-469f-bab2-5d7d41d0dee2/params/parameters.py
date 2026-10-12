@@ -13,5 +13,6 @@ class ComponentParameters:
     body_center_of_gravity = [0, 0, 0.02]  # remus100.m:137 r_bG
     roll_added_inertia_ratio = 0.3  # remus100.m:136 r44
     added_mass_form = "lamb_spheroid"  # imlay61.m 31-59
-    coriolis_form = "kirchhoff_full"  # m2c.m 33-48 (every term kept)
+    coriolis_form = "munk_couplings_removed"  # remus100.m 207-210 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md)
     current_form = "none"  # still water
+    body_mass = 31.9  # document: remus100.m:3

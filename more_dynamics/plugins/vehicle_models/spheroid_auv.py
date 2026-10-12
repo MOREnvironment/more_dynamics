@@ -43,8 +43,10 @@ Options, each with its fidelity and what raises it:
   ``"given"`` (``body_density``). Raise: the mass from a weighing, the volume
   from the hull lines.
 
-Default values and their provenance (one density and one geometry
-throughout; each cites its line) are in ``DEFAULTS.md``.
+Every vehicle number is unset in this plugin and given by the composition (a named part of the
+workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
+selected forms read and the composition leaves unset refuses the build, naming it with its unit and
+meaning.
 
 References
 ----------
@@ -72,12 +74,15 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.added_mass.added_mass_parts import lamb_spheroid, lamb_spheroid_parameters
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import (
     PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS, prolate_spheroid_main_dimensions)
 from more_dynamics.models.rigid_body.rigid_body_parts import (
     SPHEROID_BODY_MASS_PARAMETERS, homogeneous_spheroid, homogeneous_spheroid_parameters, spheroid_body_density)
+from more_dynamics.plugins.shared.payload_io import refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
@@ -98,13 +103,13 @@ class SpheroidAuv(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("length", 1.6),  # remus100.m:131 L_auv, passed as L at :221
-        ParameterDescription("diameter", 0.19),  # remus100.m:132 D_auv, passed as B at :221
+        ParameterDescription("length", unset()),  # remus100.m:131 L_auv, passed as L at :221
+        ParameterDescription("diameter", unset()),  # remus100.m:132 D_auv, passed as B at :221
         ParameterDescription("body_density_method", "computed"),  # rho_b = m / (4/3 pi a b^2) (spheroid.m:36 solved for rho_b)
-        ParameterDescription("body_mass", 31.9),  # kg, remus100.m:3 (given); read with body_density_method "computed"
-        ParameterDescription("body_density", 1054.7872613500267),  # given value, read with "given": mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35
-        ParameterDescription("body_center_of_gravity", [0, 0, 0.02]),  # remus100.m:137 r_bG
-        ParameterDescription("roll_added_inertia_ratio", 0.3),  # remus100.m:136 r44
+        ParameterDescription("body_mass", unset()),  # kg, remus100.m:3 (given); read with body_density_method "computed"
+        ParameterDescription("body_density", unset()),  # given value, read with "given": mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35
+        ParameterDescription("body_center_of_gravity", unset()),  # remus100.m:137 r_bG
+        ParameterDescription("roll_added_inertia_ratio", unset()),  # remus100.m:136 r44
         ParameterDescription("added_mass_form", "lamb_spheroid"),  # imlay61.m 31-59
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
@@ -113,6 +118,7 @@ class SpheroidAuv(VehicleModel3D):
     def __init__(self):
         self._assembly = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
         density_method = context.get_parameter("body_density_method")

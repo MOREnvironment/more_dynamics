@@ -59,27 +59,29 @@ from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.cross_flow.cross_flow_strip import cross_flow_strip_circular_cylinder_reynolds
 from more_dynamics.models.damping.hydrodynamic_load_parts import (
     HULL_PARASITIC_DRAG_PARAMETERS, HULL_PLANFORM_PARAMETERS, hull_lift_drag, hull_lift_drag_parameters,
     hull_parasitic_drag, hull_planform_area, time_constant_damping_submerged,
     time_constant_damping_submerged_parameters)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name, read_value, refuses_unset
 
 DERIVED_METHODS = ("computed", "given")
 
 
 class AuvHullLoads(HydrodynamicsModel):
     PARAMETERS = [
-        ParameterDescription("time_constants", [20, 20, 1]),  # remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)
-        ParameterDescription("damping_ratios", [0.3, 0.8]),  # remus100.m:194, 195 [zeta4 zeta5]
-        ParameterDescription("oswald_efficiency", 0.3),  # coeffLiftDrag.m:54 e = 0.3
+        ParameterDescription("time_constants", unset()),  # remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)
+        ParameterDescription("damping_ratios", unset()),  # remus100.m:194, 195 [zeta4 zeta5]
+        ParameterDescription("oswald_efficiency", unset()),  # coeffLiftDrag.m:54 e = 0.3
         ParameterDescription("planform_area_method", "computed"),  # S = f L D (remus100.m:133)
-        ParameterDescription("planform_fraction", 0.7),  # remus100.m:133 S = 70 % of the rectangle L_auv * D_auv
-        ParameterDescription("planform_area", 0.2128),  # given value, read with "given": remus100.m:133 S = 0.7 * L_auv * D_auv
+        ParameterDescription("planform_fraction", unset()),  # remus100.m:133 S = 70 % of the rectangle L_auv * D_auv
+        ParameterDescription("planform_area", unset()),  # given value, read with "given": remus100.m:133 S = 0.7 * L_auv * D_auv
         ParameterDescription("parasitic_drag_coefficient_method", "computed"),  # CD_0 = Cd pi (D/2)^2 / S (remus100.m:142-144)
-        ParameterDescription("hull_frontal_drag_coefficient", 0.42),  # remus100.m:142 Cd = 0.42, Allen et al. (2000) as MSS cites it
-        ParameterDescription("parasitic_drag_coefficient", 0.05595961914206819),  # given value, read with "given": remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)
+        ParameterDescription("hull_frontal_drag_coefficient", unset()),  # remus100.m:142 Cd = 0.42, Allen et al. (2000) as MSS cites it
+        ParameterDescription("parasitic_drag_coefficient", unset()),  # given value, read with "given": remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)
         ParameterDescription("smooth_speed", True),  # numerical guard, finite Jacobian at rest (models/lift_drag, models/damping)
         ParameterDescription("smooth_speed_epsilon", 1e-09),  # m/s, numerical regularisation of the guard, not a vehicle quantity
     ]
@@ -88,6 +90,7 @@ class AuvHullLoads(HydrodynamicsModel):
         self._damping = self._lift_drag = self._cross_flow = self._planform = self._parasitic_drag = None
         self._given_planform = 0.0
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
         planform_method = context.get_parameter("planform_area_method")
         drag_method = context.get_parameter("parasitic_drag_coefficient_method")
@@ -106,7 +109,7 @@ class AuvHullLoads(HydrodynamicsModel):
                           if computed["planform_area"] else None)
         self._parasitic_drag = (frozen_block(context, hull_parasitic_drag(), HULL_PARASITIC_DRAG_PARAMETERS)
                                 if computed["parasitic_drag_coefficient"] else None)
-        self._given_planform = None if computed["planform_area"] else float(context.get_parameter("planform_area"))
+        self._given_planform = None if computed["planform_area"] else float(read_value(context, "planform_area", "m^2", "given planform area of the hull"))
         self._cross_flow = cross_flow_strip_circular_cylinder_reynolds()
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:

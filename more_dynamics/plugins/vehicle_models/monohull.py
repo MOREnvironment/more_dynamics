@@ -30,10 +30,13 @@ shortcuts ``"yaw_rate_terms"``, ``"full_rotation_rate"``, still water ``"none"``
 fidelity. The water density, the gravity and the kinematic viscosity are not parameters of the hull:
 they come from the ``site`` slot (``plugins/site/site.py``).
 
-Default values and their provenance (the key is in each comment; **document**
-values are read off a cited page, **estimate** values are starting points
-with no document behind them, to be identified from logs) are in
-``DEFAULTS.md``.
+Every vehicle number is unset in this plugin and given by the composition (a named part of the
+workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
+selected forms read and the composition leaves unset refuses the build, naming it with its unit and
+meaning.
+Each reference value is labelled **document** (read off a cited page),
+**estimate** (a starting point with no document behind it, to be identified
+from logs), **fitted** or **approved guess**.
 
 ``added_mass_mass_basis`` (E-101 Q5 a) chooses the mass the added-mass
 derivatives scale with (``models/added_mass``): ``"hull"`` (the hull mass
@@ -46,10 +49,9 @@ with its own payload may select ``"displaced"``.
 
 ``waterline_length``/``waterline_beam`` (A-64 Section 3.3 row R11) are
 declared so a composition can record the waterline dimensions distinct from
-the overall ``length``/``beam`` (0.0 = not given); **not yet wired** into
-the hull form, restoring, cross-flow or resistance (``SOURCE.md`` of the
-reference data this default comes from: "the future basis, once ... wired")
--- a later job.
+the overall ``length``/``beam``; **not yet wired** into the hull form,
+restoring, cross-flow or resistance, so a composition may leave them unset
+(an unset value no option reads is not an error) -- a later job.
 
 References
 ----------
@@ -74,11 +76,13 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import SINGLE_HULL_PARAMETERS, single_hull
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
-from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name
+from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name, refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly, call_model)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
@@ -99,18 +103,18 @@ class Monohull(VehicleModel3D):
 
     PARAMETERS = [
         INTEGRATION_STEP,
-        ParameterDescription("length", 5.2),  # document: grethe_mariner5.yaml hull.length (F003 p2; M001 p7)
-        ParameterDescription("beam", 2.15),  # document: grethe_mariner5.yaml hull.beam (F003 p2; M001 p7; D002 p1)
-        ParameterDescription("waterline_length", 0.0),  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired, docstring
-        ParameterDescription("waterline_beam", 0.0),  # m; 0 = not given (drawing estimate 1.97 m); not yet wired, docstring
-        ParameterDescription("hull_block_coefficient", 0.233),  # estimate: grethe_mariner5.yaml hydrostatics.block_coefficient (a mass knob: 806 / (1025 * 5.2 * 2.15 * 0.3) = 0.234)
-        ParameterDescription("hull_waterplane_coefficient", 0.8),  # estimate: grethe_mariner5.yaml hydrostatics.waterplane_coefficient
-        ParameterDescription("hull_mass", 806.0),  # document: grethe_mariner5.yaml mass.mass_delivered (F003 p2); the field mass (USBL mount, payload) is a gap
-        ParameterDescription("payload_mass", 0.0),  # a bare hull; the field payload is a gap (grethe_mariner5.yaml mass.mass_field)
-        ParameterDescription("hull_center_of_gravity", [0.0, 0.0, 0.025]),  # estimate: grethe_mariner5.yaml mass.center_of_gravity
-        ParameterDescription("payload_position", [0.0, 0.0, 0.0]),  # unused while payload_mass is 0
-        ParameterDescription("radii_of_gyration", [0.35, 0.25, 0.25]),  # estimate: grethe_mariner5.yaml mass.radii_of_gyration_scale (fractions of [B, L, L])
-        ParameterDescription("added_mass_coefficients", [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
+        ParameterDescription("length", unset()),  # document: grethe_mariner5.yaml hull.length (F003 p2; M001 p7)
+        ParameterDescription("beam", unset()),  # document: grethe_mariner5.yaml hull.beam (F003 p2; M001 p7; D002 p1)
+        ParameterDescription("waterline_length", unset()),  # m; 0 = not given (A-64 Section 3.3 R11; drawing estimate 4.63 m); not yet wired, docstring
+        ParameterDescription("waterline_beam", unset()),  # m; 0 = not given (drawing estimate 1.97 m); not yet wired, docstring
+        ParameterDescription("hull_block_coefficient", unset()),  # estimate: grethe_mariner5.yaml hydrostatics.block_coefficient (a mass knob: 806 / (1025 * 5.2 * 2.15 * 0.3) = 0.234)
+        ParameterDescription("hull_waterplane_coefficient", unset()),  # estimate: grethe_mariner5.yaml hydrostatics.waterplane_coefficient
+        ParameterDescription("hull_mass", unset()),  # document: grethe_mariner5.yaml mass.mass_delivered (F003 p2); the field mass (USBL mount, payload) is a gap
+        ParameterDescription("payload_mass", unset()),  # a bare hull; the field payload is a gap (grethe_mariner5.yaml mass.mass_field)
+        ParameterDescription("hull_center_of_gravity", unset()),  # estimate: grethe_mariner5.yaml mass.center_of_gravity
+        ParameterDescription("payload_position", unset()),  # unused while payload_mass is 0
+        ParameterDescription("radii_of_gyration", unset()),  # estimate: grethe_mariner5.yaml mass.radii_of_gyration_scale (fractions of [B, L, L])
+        ParameterDescription("added_mass_coefficients", unset()),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
         ParameterDescription("added_mass_mass_basis", "hull"),  # "hull" keeps the committed gates green; a payload-carrying part may select "displaced" (E-101 Q5 a, DEFAULTS.md)
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
@@ -120,6 +124,7 @@ class Monohull(VehicleModel3D):
     def __init__(self):
         self._assembly = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext):
         form = context.get_parameter("current_form")
         own_inputs = current_inputs(context, "Monohull", CompositionError)

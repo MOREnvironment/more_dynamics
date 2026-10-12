@@ -9,9 +9,10 @@ is the signed generalized force the vehicle adds (``vehicle_model.capnp``
 Inputs by name, from the vehicle: ``relative_velocity``, ``mass``,
 ``inertia_diagonal``, ``inertia_products``, ``center_of_gravity``,
 ``length``, ``water_density``. Own parameters: the 52 hull-only
-nondimensional derivatives and the cross-flow geometry (the remaining 41 of
-the published 93 derivatives are read by the added-mass block and the
-actuators: ``models/coefficient_loads`` module docstring).
+nondimensional derivatives and the cross-flow geometry (the 14 acceleration
+derivatives are read by the vehicle's added-mass block, the remaining 27
+published ones by no plugin yet: ``models/coefficient_loads`` module
+docstring).
 
 **No rigid-body Coriolis matrix of the vehicle's own** applies alongside
 this block: a vehicle using this hull-load form folds the rigid-body
@@ -31,29 +32,33 @@ from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
+from more_transformations.more_casadi_transformations import unset
+
 from more_dynamics.models.coefficient_loads.coefficient_loads import (
     coefficient_hull_loads, coefficient_hull_loads_parameters)
 from more_dynamics.models.cross_flow.cross_flow_strip import (
     COMBINED_DRAG_CROSS_FLOW_PARAMETERS, cross_flow_strip_combined_drag)
-from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
+from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, read_value, refuses_unset
 
 
 class CoefficientHullLoads(HydrodynamicsModel):
     PARAMETERS = [
-        # 52 hull-only derivatives (npsauv.m 126-156), each 0.0 by default: no generic physics default exists for
-        # an empirical coefficient table (contrast AuvHullLoads's computed defaults, DEFAULTS.md); a composition
-        # gives every one of them (DEFAULTS.md names the part that supplies them).
-        *[ParameterDescription(d.name, 0.0) for d in coefficient_hull_loads_parameters()],
-        ParameterDescription("cross_flow_drag_coefficients", [0.5, 0.6]),  # npsauv.m:220 [Cdy, Cdz]
-        ParameterDescription("cross_flow_section_dimensions", [0.53, 0.53]),  # npsauv.m:220-221 [Hx, Bx]
-        ParameterDescription("cross_flow_sections", 10),  # npsauv.m:218, number of strips
+        # 52 hull-only derivatives (npsauv.m 126-156): no generic physics default exists for an empirical
+        # coefficient table, a composition gives every one of them, each with its kind (measured, predicted,
+        # assumed, zero with its reason); declared here once, by the part that reads them.
+        *[ParameterDescription(d.name, unset()) for d in coefficient_hull_loads_parameters()],
+        ParameterDescription("cross_flow_drag_coefficients", unset()),  # npsauv.m:220 [Cdy, Cdz]
+        ParameterDescription("cross_flow_section_dimensions", unset()),  # npsauv.m:220-221 [Hx, Bx]
+        ParameterDescription("cross_flow_sections", unset()),  # npsauv.m:218, number of strips (vehicle data)
     ]
 
     def __init__(self) -> None:
         self._hull = self._cross_flow = None
 
+    @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
-        sections = int(context.get_parameter("cross_flow_sections"))
+        sections = int(read_value(context, "cross_flow_sections", "1", "number of strips of the cross-flow integral",
+                                 placeholder=1))
         if sections < 1:
             raise ValueError(f"CoefficientHullLoads: cross_flow_sections must be >= 1, got {sections}")
         hull_declared = coefficient_hull_loads_parameters()
