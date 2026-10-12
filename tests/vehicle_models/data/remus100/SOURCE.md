@@ -148,6 +148,8 @@ In the default set the model of each row is the marked copy with the same option
 
 ## Parameter set of the unmodified MSS run (history, `remus100_parameters.json`; MSS lines at `cc07579`)
 
+This file is kept unmodified and hash-pinned below. Its `block_parameter` names for the propeller (`diameter`, `max_speed`) are the keyword names of the block's earlier `preprocess_*` form (`declared` = `old`), as `generate_remus100_mss.m` writes them; the block now declares `propeller_diameter` and `max_shaft_speed` (rpm), and the live set `remus100_parameters_consistent.json` uses those names. No test reads this file against the block's declarations.
+
 | Name | Value | Unit | Block (name inside) | Form | MSS place | Stage |
 |---|---|---|---|---|---|---|
 | `semi_major_axis` | `0.8076800000000001` | m | rigid_body | new | remus100.m:134 a = 1.0096 * L_auv/2 | hull |

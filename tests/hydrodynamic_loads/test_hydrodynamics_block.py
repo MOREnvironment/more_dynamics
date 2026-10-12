@@ -181,6 +181,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+from more_transformations.matrix_transforms import MatrixTransforms
+from more_transformations.ecef_ned_transforms import ECEFNEDtransform
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -454,12 +456,6 @@ def _table(rel, name):
     return np.array(_snapshot()["tables"][rel][name])
 
 
-def _gravity(mu):
-    """gravity.m 11-12, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
-    return ECEFNEDtransform.gravity(mu, unit="rad")
-
-
 def _contract(name):
     try:
         return importlib.import_module(name)
@@ -543,18 +539,6 @@ def _max_diff(a, b):
     return float(np.max(np.abs(np.asarray(a, float) - np.asarray(b, float))))
 
 
-def _skew(v):
-    """Smtrx.m 11-13, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-    return MatrixTransforms.skew(v)
-
-
-def _hmtrx(r):
-    """Hmtrx.m, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-    return MatrixTransforms.H_matrix(r)
-
-
 # --------------------------------------------------------------------------
 # Parameter sets (every number parsed from a pinned line)
 # --------------------------------------------------------------------------
@@ -574,7 +558,7 @@ def _spheroid_damping(fade, csv=LEGACY_SPHEROID):
     return {
         "rigid_body_mass_matrix": mrb,
         "added_mass_matrix": ma,
-        "weight": mrb[0, 0] * _gravity(_value(REMUS, 96)),  # remus100.m 214
+        "weight": mrb[0, 0] * ECEFNEDtransform.gravity(_value(REMUS, 96), unit="rad"),  # remus100.m 214
         "center_of_gravity": _value(REMUS, 137),
         "center_of_buoyancy": _value(REMUS, 138),
         "time_constants": [_value(REMUS, 192), _value(REMUS, 193), _value(REMUS, 196)],
@@ -615,7 +599,7 @@ def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
     the CO to the CF with H(-r_f), r_f = [LCF 0 0] (otter.m 191-193)."""
     ref = _catamaran_reference(csv)
     m, g_co = ref["M"][0], ref["G"][0]
-    h_inv = _hmtrx(-np.array([_value(OTTER, 192), 0.0, 0.0]))
+    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER, 192), 0.0, 0.0]))
     return {
         "mass_matrix": m,
         "restoring_matrix": h_inv.T @ g_co @ h_inv,
@@ -628,7 +612,7 @@ def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
 
 
 def _matlab_gravity_catamaran():
-    return _gravity(_value(GEN_CAT, 165))  # generator lines 136-137
+    return ECEFNEDtransform.gravity(_value(GEN_CAT, 165), unit="rad")  # generator lines 136-137
 
 
 # --------------------------------------------------------------------------
@@ -1067,8 +1051,10 @@ def test_G2_function_signatures():
         *lift.lift_drag_casadi().name_in(), "smooth_speed_epsilon"]
     for form in surge.SURGE_FORMS:
         floor = "ittc_reynolds_floor" in surge.surge_damping_casadi(surge_form=form).name_in()
-        assert floor == (form in ("ittc", "exp_ittc")), form
-    for form in ("ittc", "exp_ittc"):
+        # every form that evaluates the ITTC friction line carries the floor;
+        # "ittc_residual" adds its residual term to that same line
+        assert floor == (form in ("ittc", "ittc_residual", "exp_ittc")), form
+    for form in ("ittc", "ittc_residual", "exp_ittc"):
         assert surge.surge_damping_casadi(surge_form=form).name_in()[-1] == "ittc_reynolds_floor", form
         assert "ittc_reynolds_floor" not in surge.surge_damping_casadi(
             surge_form=form, ittc_reynolds_bound="offset").name_in(), form

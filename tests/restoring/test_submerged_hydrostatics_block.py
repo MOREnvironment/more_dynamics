@@ -66,6 +66,8 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from more_transformations.matrix_transforms import MatrixTransforms
+from more_transformations.ecef_ned_transforms import ECEFNEDtransform
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -212,12 +214,6 @@ def _max_diff(a, b):
     return float(np.max(np.abs(np.asarray(a, float) - np.asarray(b, float))))
 
 
-def _gravity_library(mu_deg):
-    """Gravity from more_transformations (owner, 2026-10-05): the WGS-84 formula of gravity.m."""
-    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
-    return ECEFNEDtransform.gravity(mu_deg)
-
-
 # --------------------------------------------------------------------------
 # Parameter sets
 # --------------------------------------------------------------------------
@@ -239,7 +235,7 @@ def _remus_like_parameters():
     a = 1.0096 * c["L_auv"] / 2   # remus100.m line 134
     b = 1.0096 * c["D_auv"] / 2   # remus100.m line 135
     m = 4 / 3 * np.pi * c["rho"] * a * b ** 2   # spheroid.m line 36
-    weight = m * _gravity_library(c["mu_deg"])
+    weight = m * ECEFNEDtransform.gravity(c["mu_deg"])
     return {
         "weight": weight,
         "buoyancy": weight,
@@ -268,24 +264,19 @@ def _matlab_parameters():
     ref = _reference_cases()
     assert np.ptp(ref["mass"]) == 0.0
     params = _remus_like_parameters()
-    weight = ref["mass"][0] * _gravity_library(REMUS_CONSTANTS["mu_deg"])
+    weight = ref["mass"][0] * ECEFNEDtransform.gravity(REMUS_CONSTANTS["mu_deg"])
     return {**params, "weight": weight, "buoyancy": weight}
 
 
 # --------------------------------------------------------------------------
 # MSS transcriptions (each line cited and pinned)
 # --------------------------------------------------------------------------
-def _rzyx_row3(phi, theta):
-    """Rzyx.m line 19: third row of R, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-    return MatrixTransforms.Rzyx_explicit((phi, theta, 0.0))[2, :]
-
 
 def _g_rvect(p, eta):
     """gRvect.m lines 26-32 with R from Rzyx.m."""
     w, b = p["weight"], p["buoyancy"]
     rg, rb = np.asarray(p["center_of_gravity"]), np.asarray(p["center_of_buoyancy"])
-    r3 = _rzyx_row3(eta[3], eta[4])
+    r3 = MatrixTransforms.Rzyx_explicit((eta[3], eta[4], 0.0))[2, :]
     return np.array([
         -(w - b) * r3[0],
         -(w - b) * r3[1],
@@ -309,8 +300,6 @@ def _g_vect(p, eta):
         (rg[2] * w - rb[2] * b) * sth + (rg[0] * w - rb[0] * b) * cth * cphi,
         -(rg[0] * w - rb[0] * b) * cth * sphi - (rg[1] * w - rb[1] * b) * sth,
     ])
-
-
 
 
 # --------------------------------------------------------------------------
@@ -346,7 +335,7 @@ def test_gravity_matches_frozen_mss_output():
     oracle is the frozen MSS output, not a Python re-implementation of the transform."""
     mu_deg, g_mss = _frozen_gravity_reference()
     assert mu_deg == REMUS_CONSTANTS["mu_deg"]
-    assert abs(_gravity_library(mu_deg) - g_mss) <= 1e-12
+    assert abs(ECEFNEDtransform.gravity(mu_deg) - g_mss) <= 1e-12
 
 
 def test_cited_mss_lines_are_unchanged():

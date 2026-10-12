@@ -130,6 +130,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+from more_transformations.matrix_transforms import MatrixTransforms
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -248,12 +249,6 @@ def _planar_coriolis(mass_matrix):
 
 def _max_diff(a, b):
     return float(np.max(np.abs(np.asarray(a, float) - np.asarray(b, float))))
-
-
-def _skew(v):
-    """Smtrx.m 11-13, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-    return MatrixTransforms.skew(v)
 
 
 class _Csv:
@@ -539,7 +534,7 @@ def test_G1_book_form_equals_rbody_plus_documented_term(set_id):
     for k in rows:
         nu = rb.vector("nu", 6)[k]
         expected = rb.matrix("C_RB")[k].copy()
-        expected[3:, 3:] -= m * float(r_g @ r_g) * _skew(nu[3:])
+        expected[3:, 3:] -= m * float(r_g @ r_g) * MatrixTransforms.skew(nu[3:])
         assert _max_diff(_evaluate(function, nu, nu)["C_RB"], expected) <= G1_TOLERANCE, k
 
 
@@ -892,7 +887,7 @@ def test_cross_form_coriolis_forms_give_the_same_force(set_id):
         assert _max_diff(c["book"] @ nu, c["co"] @ nu) <= G2_TOLERANCE, k
         assert _max_diff(c["lagrangian"] @ nu, c["co"] @ nu) <= G2_TOLERANCE, k
         term = np.zeros((6, 6))
-        term[3:, 3:] = m * float(r_g @ r_g) * _skew(nu[3:])
+        term[3:, 3:] = m * float(r_g @ r_g) * MatrixTransforms.skew(nu[3:])
         assert _max_diff(c["co"] - c["book"], term) <= G2_TOLERANCE, k
         differs |= _max_diff(c["lagrangian"], c["co"]) > G4_FACTOR * G1_TOLERANCE
     assert differs

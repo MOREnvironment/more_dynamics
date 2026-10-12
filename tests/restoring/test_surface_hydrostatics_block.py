@@ -76,6 +76,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+from more_transformations.ecef_ned_transforms import ECEFNEDtransform
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -248,11 +249,6 @@ def _h(r):
     x, y, z = r
     s = np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
     return np.block([[np.eye(3), s.T], [np.zeros((3, 3)), np.eye(3)]])
-
-
-def _gravity_library(latitude):
-    from more_transformations.ecef_ned_transforms import ECEFNEDtransform
-    return ECEFNEDtransform.gravity(latitude)
 
 
 # --------------------------------------------------------------------------
@@ -734,7 +730,7 @@ def test_single_hull_must_be_on_the_centreline_and_hull_count_is_one_or_two():
 def test_gravity_from_latitude_by_default_and_explicit_override():
     p = _monohull_parameters()
     constants, _ = _build(p)
-    assert constants.gravity == _gravity_library(p["latitude"])
+    assert constants.gravity == ECEFNEDtransform.gravity(p["latitude"])
     overridden, _ = _build({**p, "gravity": 9.81})
     assert overridden.gravity == 9.81
     ratio = overridden.stiffness_at_flotation[2, 2] / constants.stiffness_at_flotation[2, 2]

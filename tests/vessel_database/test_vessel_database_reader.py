@@ -154,6 +154,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+from more_transformations.matrix_transforms import MatrixTransforms
 import pytest
 
 # scripts/ has no __init__.py anywhere in this repo (an implicit namespace
@@ -212,13 +213,6 @@ def _co_to_cg(row: dict) -> np.ndarray:
     )
 
 
-def _h_matrix(r_bg: np.ndarray) -> np.ndarray:
-    """`more_transformations`'s own H, not a local definition (Transforms rule)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-
-    return MatrixTransforms.H_matrix(r_bg)
-
-
 def _contract():
     try:
         return importlib.import_module(CONTRACT_MODULE)
@@ -270,7 +264,7 @@ class TestFixtureSanity:
         row = _reference_row()
         a_inf_cg = _matrix(row, "A_inf")
         r = _co_to_cg(row)
-        H = _h_matrix(r)
+        H = MatrixTransforms.H_matrix(r)
         a_inf_co = H.T @ a_inf_cg @ H
         np.testing.assert_allclose(
             np.diag(a_inf_co), A66_CASE2_BEM_AT_CO_DIAG, atol=A66_CASE2_TOLERANCE

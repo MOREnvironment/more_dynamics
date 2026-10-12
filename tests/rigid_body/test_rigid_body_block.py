@@ -58,6 +58,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+from more_transformations.matrix_transforms import MatrixTransforms
 import pytest
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -393,12 +394,6 @@ def test_G5_otter_translational_constants():
     )
 
 
-def _skew(v):
-    """Smtrx.m 11-13, from more_transformations (owner, 2026-10-09, E-62)."""
-    from more_transformations.matrix_transforms import MatrixTransforms
-    return MatrixTransforms.skew(v)
-
-
 def _otter_m_current_inertia():
     """otter.m lines 122-128 (revision 2026-04-20): inertia about the combined CG."""
     m, mp = OTTER["m"], OTTER_MP
@@ -407,7 +402,7 @@ def _otter_m_current_inertia():
     ig_cg = m * np.diag(radii**2)
     rg_total = (m * rg + mp * rp) / (m + mp)
     r_hull, r_payload = rg - rg_total, rp - rg_total
-    ig = ig_cg - m * _skew(r_hull) @ _skew(r_hull) - mp * _skew(r_payload) @ _skew(r_payload)
+    ig = ig_cg - m * MatrixTransforms.skew(r_hull) @ MatrixTransforms.skew(r_hull) - mp * MatrixTransforms.skew(r_payload) @ MatrixTransforms.skew(r_payload)
     return ig, rg_total
 
 
@@ -416,7 +411,7 @@ def test_G5_otter_rotational_inertia_current_mss():
     constants, _ = _build(**_otter_inputs_as_parameters())
     ig, rg_total = _otter_m_current_inertia()
     m_total = OTTER["m"] + OTTER_MP
-    h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
+    h = np.block([[np.eye(3), MatrixTransforms.skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
     mrb_cg = np.block([[m_total * np.eye(3), np.zeros((3, 3))], [np.zeros((3, 3)), ig]])
     # otter.m lines 142-143, 147-148
     np.testing.assert_allclose(
@@ -440,7 +435,7 @@ def _otter_m_current_matrices():
     """
     m, mp, L, rho = OTTER["m"], OTTER_MP, OTTER["L"], OTTER["rho"]
     ig, rg_total = _otter_m_current_inertia()
-    h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
+    h = np.block([[np.eye(3), MatrixTransforms.skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
     mrb_cg = np.block([[(m + mp) * np.eye(3), np.zeros((3, 3))], [np.zeros((3, 3)), ig]])
     a11 = 2.7 * rho * (m / rho) ** (5.0 / 3.0) / L**2
     y_v, z_w, k_p, m_q, n_r = OTTER["added"]
@@ -451,10 +446,10 @@ def _otter_m_current_matrices():
 def _otter_m_crb(ig, rg_total, nu2):
     """otter.m lines 144-145 (CRB_CG), 147, 149 (CRB = H' CRB_CG H)."""
     m_total = OTTER["m"] + OTTER_MP
-    h = np.block([[np.eye(3), _skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
+    h = np.block([[np.eye(3), MatrixTransforms.skew(rg_total).T], [np.zeros((3, 3)), np.eye(3)]])
     crb_cg = np.block([
-        [m_total * _skew(nu2), np.zeros((3, 3))],
-        [np.zeros((3, 3)), -_skew(ig @ nu2)],
+        [m_total * MatrixTransforms.skew(nu2), np.zeros((3, 3))],
+        [np.zeros((3, 3)), -MatrixTransforms.skew(ig @ nu2)],
     ])
     return h.T @ crb_cg @ h
 
@@ -475,7 +470,7 @@ def test_G5_default_path_inertia_cg_and_rotational_added_mass():
     rg_total = (m * rg_hull + mp * rp) / (m + mp)                  # line 124
     r_hull = rg_hull - rg_total                                    # line 125
     r_payload = rp - rg_total                                      # line 126
-    s_hull, s_payload = _skew(r_hull), _skew(r_payload)
+    s_hull, s_payload = MatrixTransforms.skew(r_hull), MatrixTransforms.skew(r_payload)
     ig = ig_cg - m * s_hull @ s_hull - mp * s_payload @ s_payload  # line 127 (Smtrx(.)^2)
     np.testing.assert_allclose(
         constants.inertia, ig, atol=G1_TOLERANCE, rtol=0.0, err_msg="otter.m lines 122-127"
