@@ -45,14 +45,14 @@ def _missing(exc):
 
 
 def derivative_auv_plugins():
-    """The new plugin classes U6e must create, imported directly (no try/except at module scope,
-    so a collection error does not swallow every test in the file as a single red item)."""
+    """The two plugin classes, taken from ``vehicle_contract.plugins()`` like every other vehicle test
+    (it starts rpp's ``DataManager`` before the generated types are imported, so the file also runs
+    alone). A plugin that fails to import is a red test naming it, not a skip."""
+    namespace = plugins()
     try:
-        from more_dynamics.plugins.vehicle_models.derivative_auv import DerivativeAuv
-        from more_dynamics.plugins.hydrodynamics.coefficient_hull_loads import CoefficientHullLoads
-    except (ImportError, ModuleNotFoundError) as exc:
+        return namespace.DerivativeAuv, namespace.CoefficientHullLoads
+    except AttributeError as exc:
         _missing(exc)
-    return DerivativeAuv, CoefficientHullLoads
 
 
 def _read_csv(name):
@@ -175,9 +175,19 @@ def test_the_vehicle_is_one_plugin_with_the_slots_of_hull_vessel():
     assert DerivativeAuv.COMPONENTS["actuators"] == "List[more_dynamics::ForceProducer]"
 
 
-def test_parameter_names_include_the_full_inertia_tensor_and_every_derivative_table():
-    """The plugin's own PARAMETERS declare the published quantities by name (rule 16: primitives,
-    not a re-derivation); every nondim_* of the frozen set is a declared parameter."""
+def _declared_derivatives(cls):
+    return {d.name for d in cls.PARAMETERS if d.name.startswith("nondim_")}
+
+
+def _file_derivatives():
+    return {n for n in _parameter_file()["parameters"] if n.startswith("nondim_")}
+
+
+def test_parameter_names_include_the_full_inertia_tensor_and_the_own_derivatives():
+    """The plugin's own PARAMETERS declare the vehicle's primitives by name (rule 16) and **only the 14
+    acceleration derivatives** it reads for the added mass (E-126 point 5: every derivative is declared
+    once, on the part that reads it; E-129 Q6 a: the 27 actuator-coupled ones are not declared by anyone
+    until J7's actuator design gives them a reader)."""
     DerivativeAuv, _ = derivative_auv_plugins()
     names = {d.name for d in DerivativeAuv.PARAMETERS}
     expected = {"body_mass", "inertia_diagonal", "inertia_products", "body_center_of_gravity",
@@ -185,8 +195,26 @@ def test_parameter_names_include_the_full_inertia_tensor_and_every_derivative_ta
                "derivative_scaling", "current_form"}
     assert expected <= names, expected - names
     assert not names & set(vc.SITE_NAMES), names & set(vc.SITE_NAMES)  # the water and the gravity are the site's
-    derivative_names = {n for n in names if n.startswith("nondim_")}
-    assert len(derivative_names) == 93
+    from more_dynamics.models.added_mass.added_mass_parts import GIVEN_DERIVATIVE_ADDED_MASS_NAMES
+    assert len(GIVEN_DERIVATIVE_ADDED_MASS_NAMES) == 14
+    assert _declared_derivatives(DerivativeAuv) == {f"nondim_{n}" for n in GIVEN_DERIVATIVE_ADDED_MASS_NAMES}, \
+        _declared_derivatives(DerivativeAuv)
+
+
+def test_every_published_derivative_is_declared_once_and_the_actuator_coupled_ones_by_nobody():
+    """The 93 in the data file split 14 (``DerivativeAuv``, added mass) + 52 (``CoefficientHullLoads``,
+    hull loads) + 27 declared by no plugin; no name on both; the declared 66 are all in the data file.
+    The data file and ``SOURCE.md`` keep all 93 (``test_parameter_file_has_every_published_derivative…``)."""
+    DerivativeAuv, CoefficientHullLoads = derivative_auv_plugins()
+    own, hull, published = (_declared_derivatives(DerivativeAuv), _declared_derivatives(CoefficientHullLoads),
+                            _file_derivatives())
+    assert len(published) == 93
+    assert len(own) == 14 and len(hull) == 52
+    assert not own & hull, f"declared twice (E-126 point 5): {sorted(own & hull)}"
+    assert (own | hull) <= published, sorted((own | hull) - published)
+    assert len(published - own - hull) == 27, sorted(published - own - hull)
+    from more_dynamics.models.coefficient_loads.coefficient_loads import HULL_ONLY_DERIVATIVE_NAMES
+    assert hull == {f"nondim_{n}" for names in HULL_ONLY_DERIVATIVE_NAMES.values() for n in names}
 
 
 def test_derivative_scaling_option_defaults_to_nondimensional_as_published():
@@ -210,12 +238,14 @@ def test_refuses_a_non_symmetric_inertia_product_sign_convention():
 
 
 def test_refuses_a_missing_derivative_table_entry():
-    """A composition that leaves out one nondim_* parameter does not build silently with it at
-    zero: the plugin refuses, naming the missing entry (rule 11 of the A-62 trap list: an
-    undeclared/omitted parameter is otherwise a silent no-op)."""
-    DerivativeAuv, _ = derivative_auv_plugins()
-    names = {d.name for d in DerivativeAuv.PARAMETERS if d.name.startswith("nondim_")}
-    assert names, "no nondim_* parameters declared"
+    """Where each derivative table now lives: ``DerivativeAuv`` declares the 14 acceleration derivatives
+    and ``CoefficientHullLoads`` the 52 hull derivatives, each of them a declared (nameable) parameter;
+    a composition that leaves one out cannot be told apart from a zero unless it is declared. The old
+    assertion here only checked that the declared list was not empty (no refusal was exercised); the
+    refusal of an unset entry is the neutral-placeholder check of R14b, tested with the plugin."""
+    DerivativeAuv, CoefficientHullLoads = derivative_auv_plugins()
+    assert _declared_derivatives(DerivativeAuv), "no nondim_* parameters declared on DerivativeAuv"
+    assert _declared_derivatives(CoefficientHullLoads), "no nondim_* parameters declared on CoefficientHullLoads"
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +360,7 @@ def test_the_lag_gate_rudder_actuator_state_matches_the_first_order_step_respons
 # G4: a perturbed parameter is caught by G1
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("name", ["Xvv", "Ndr", "Mqdot"])
+@pytest.mark.parametrize("name", ["Xvv", "Nv", "Mqdot"])  # hull, hull, added mass; Ndr (actuator-coupled) has no reader until J7 (E-129 Q6 a)
 def test_G4_perturbed_derivative_is_caught_by_G1(name):
     v = _nps_values()
     v[f"nondim_{name}"] *= 1.01
