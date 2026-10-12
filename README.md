@@ -34,11 +34,13 @@ Each test folder keeps its frozen reference data beside it in `data/` (the MATLA
 
 A vehicle type is one plugin in the form of `HullVessel`: its own `PARAMETERS` (geometry, mass, centres, forms), the rigid body, the added mass, the Coriolis terms and the current computed inside it from the model functions, and the slots `hydrostatics`, `hydrodynamics` and `actuators` (a list of force producers).
 
-| Type | Hull | Defaults |
+| Type | Hull | Reference named part (the plugin itself carries no number) |
 |---|---|---|
-| `SpheroidAuv` | prolate spheroid, mass from the body density, Lamb added mass | REMUS 100 (Prestero 2001; MSS `remus100.m`) |
-| `Catamaran` | two pontoons, a hull mass and a point payload, scaled added-mass derivatives | Otter (MSS `otter.m`) |
-| `Monohull` | one hull, the same rigid body and added-mass forms as the catamaran | Grethe: document values and **marked estimates** (the comment of each default says which); none is a measurement |
+| `SpheroidAuv` | prolate spheroid, mass from the body density, Lamb added mass | REMUS 100 (MSS) (Prestero 2001; MSS `remus100.m`) |
+| `Catamaran` | two pontoons, a hull mass and a point payload, scaled added-mass derivatives | Otter (MSS) (MSS `otter.m`) |
+| `Monohull` | one hull, the same rigid body and added-mass forms as the catamaran | Grethe: document values, **marked estimates**, fitted values and one marked approved guess (the comment of each value says which) |
+
+A plugin declares every vehicle, device or site number as unset (an empty list, `unset()` of `more_transformations`); the numbers come from a named part of `.rppws/parts/` when the composition is built, and a value its selected forms read that the part leaves out refuses the build, naming the plugin and every such value with unit and meaning. Only text selectors, switches and three numerical settings keep a default. `DEFAULTS.md` gives the provenance of each reference part's values.
 
 The graph is the equation of motion of a craft in a current over the children's payloads (`plugins/shared/vehicle_graph.py`): `nu_r = nu - nu_c`, `nu_dot = nu_c_dot + M^-1 (tau - C nu_r)`, `eta_dot = J(eta) nu`, with `tau` the sum of the signed generalized forces of the hydrostatics, the hydrodynamics and every actuator. State `[eta; nu]` after the actuators' states (NED position, ZYX Euler angles, BODY FRD velocity, SI units). A child's input is connected **by the name and size in its description** to a quantity the vehicle computed (`pose`, `velocity`, `relative_velocity`, `mass_matrix`, `water_density`, `gravity`, `length`, ...) or to an output of the hydrostatics (`weight`, `restoring_matrix`, `draft`, ...); a missing or mis-sized one is refused, naming the slot and the child. An actuator input that nothing feeds is a command; the vehicle's inputs are the current values first (when `current_form` is not `none`), then the commands in list order (`getInputDescriptions()`).
 
