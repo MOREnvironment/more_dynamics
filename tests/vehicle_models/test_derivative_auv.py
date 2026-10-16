@@ -257,12 +257,29 @@ def _nps_values():
     return v
 
 
+def _vehicle_values(vehicle_class, v):
+    """The vehicle's own values, and the integration step of the frozen runs: the MATLAB references advance by one
+    RK4 step of ``STEP`` (generate_npsauv.m), so the vehicle takes the same step, not its default sub-steps."""
+    return {**vc.pick(vehicle_class, v), "integration_max_step": STEP}
+
+
+def _fins():
+    """Rudder, stern plane and the two bow planes: each with the servo ``npsauv.m`` gives all four channels (one
+    first-order lag toward the command, the state itself saturated, no rate limit: npsauv.m 93-96), the rest of the
+    fin from the fin part."""
+    p = plugins()
+    v = _nps_values()
+    servo = {"servo_rate_limit": False, "servo_angle_limit": "on_output", "time_constant": v["actuator_time_constant"],
+             "max_deflection": v["max_fin_deflection"]}
+    return [(p.Fin, dict(servo)) for _ in range(4)]
+
+
 def _build_full():
     DerivativeAuv, CoefficientHullLoads = derivative_auv_plugins()
     p = plugins()
     v = _nps_values()
-    fins = [(p.Fin, {}), (p.Fin, {}), (p.Fin, {}), (p.Fin, {})]  # rudder, stern plane, two bow planes
-    return vc.build_context(DerivativeAuv, vc.pick(DerivativeAuv, v),
+    fins = _fins()
+    return vc.build_context(DerivativeAuv, _vehicle_values(DerivativeAuv, v),
                             hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, v)),
                             hydrodynamics=(CoefficientHullLoads, vc.pick(CoefficientHullLoads, v)),
                             actuators=[*fins, (p.Propeller, vc.pick(p.Propeller, v))])
@@ -272,7 +289,7 @@ def _build_hull():
     _, CoefficientHullLoads = derivative_auv_plugins()
     p = plugins()
     v = _nps_values()
-    return vc.build_context(derivative_auv_plugins()[0], vc.pick(derivative_auv_plugins()[0], v),
+    return vc.build_context(derivative_auv_plugins()[0], _vehicle_values(derivative_auv_plugins()[0], v),
                             hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, v)),
                             hydrodynamics=(CoefficientHullLoads, vc.pick(CoefficientHullLoads, v)),
                             actuators=[p.PrescribedWrench])
@@ -285,8 +302,8 @@ def test_G1_derivative_equals_npsauv_full_model():
     x_mss = _columns(table, "x", 17)
     ui = _columns(table, "ui", 5)
     n = len(x_mss)
-    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x_mss).T, np.column_stack([current, ui]).T)
-    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T) - _columns(table, "xdot", 17))
+    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x_mss, vehicle).T, np.column_stack([current, ui]).T)
+    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T, vehicle) - _columns(table, "xdot", 17))
     assert error.max() <= G1_TOLERANCE, f"max |diff| {error.max():.3g}"
 
 
@@ -304,7 +321,8 @@ def test_G1_hull_derivative_equals_npsauv_hull():
 
 def test_G1_mass_matrix_equals_npsauv_empty_call():
     vehicle = _build_full()
-    mass = vc.matrix(vehicle.signals(np.zeros(17 - 5 + 12), np.zeros(3 + 5))["mass_matrix"])
+    mass = vc.matrix(vehicle.signals(np.zeros(vc.actuator_state_count(vehicle) + 12),
+                                     np.zeros(vc.input_size(vehicle)))["mass_matrix"])
     table = _read_csv(MASS_MATRIX_FILE)
     reference = np.column_stack([table[f"M_{j}"] for j in range(1, 7)])
     assert np.abs(mass - reference).max() <= G1_TOLERANCE
@@ -321,10 +339,10 @@ def test_G3_trajectory_equals_matlab_rk4_run(name):
     n_in = 6 if hull else 5
     commands = _columns(table, "tau_ext" if hull else "ui", n_in)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])
-    x = vc.mss_to_ours(_columns(table, "x", n_state)[0])
+    x = vc.mss_to_ours(_columns(table, "x", n_state)[0], vehicle)
     states = np.zeros((len(times), n_state))
     for row in range(len(times)):
-        states[row] = vc.ours_to_mss(x)
+        states[row] = vc.ours_to_mss(x, vehicle)
         if row < len(times) - 1:
             u = np.concatenate([current[row], commands[row]])
             for _ in range(steps):
@@ -345,13 +363,15 @@ def test_the_lag_gate_rudder_actuator_state_matches_the_first_order_step_respons
     steps = int(round((times[1] - times[0]) / STEP))
     commands = _columns(table, "ui", 5)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])
-    x = vc.mss_to_ours(_columns(table, "x", 17)[0])
+    # the gate reads the four fin servo states; x_17, the propeller shaft speed, has no state in the vehicle
+    # (its propeller carries none) and is left out here by name, not by the converter
+    x = vc.mss_to_ours(_columns(table, "x", 17)[0][:12 + vc.actuator_state_count(vehicle)], vehicle)
     target_row = np.argmin(np.abs(times - 0.5))
     for row in range(target_row):
         u = np.concatenate([current[row], commands[row]])
         for _ in range(steps):
             x = vehicle.step_vector(x, u, STEP)
-    rudder_state = vc.ours_to_mss(x)[12]
+    rudder_state = vc.ours_to_mss(x, vehicle)[12]
     reference = _columns(table, "x", 17)[target_row][12]
     assert abs(rudder_state - reference) <= G1_TOLERANCE
 
@@ -366,8 +386,8 @@ def test_G4_perturbed_derivative_is_caught_by_G1(name):
     v[f"nondim_{name}"] *= 1.01
     DerivativeAuv, CoefficientHullLoads = derivative_auv_plugins()
     p = plugins()
-    fins = [(p.Fin, {}), (p.Fin, {}), (p.Fin, {}), (p.Fin, {})]
-    vehicle = vc.build_context(DerivativeAuv, vc.pick(DerivativeAuv, v),
+    fins = _fins()
+    vehicle = vc.build_context(DerivativeAuv, _vehicle_values(DerivativeAuv, v),
                                hydrostatics=(p.SubmergedRestoring, vc.pick(p.SubmergedRestoring, v)),
                                hydrodynamics=(CoefficientHullLoads, vc.pick(CoefficientHullLoads, v)),
                                actuators=[*fins, (p.Propeller, vc.pick(p.Propeller, v))])
@@ -376,20 +396,32 @@ def test_G4_perturbed_derivative_is_caught_by_G1(name):
     x_mss = _columns(table, "x", 17)
     ui = _columns(table, "ui", 5)
     n = len(x_mss)
-    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x_mss).T, np.column_stack([current, ui]).T)
-    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T) - _columns(table, "xdot", 17))
+    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x_mss, vehicle).T, np.column_stack([current, ui]).T)
+    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T, vehicle) - _columns(table, "xdot", 17))
     assert error.max() > 10 * G1_TOLERANCE
 
 
 # ---------------------------------------------------------------------------
-# GUI round trip of a named part (test only: U6e writes the .rppws part)
+# The named part: found as the REMUS 100 part is (by the Name of its description.json), values as frozen
 # ---------------------------------------------------------------------------
 
+NAMED_PART_CHILDREN = ("NPS AUV II site", "NPS AUV II hydrostatics", "NPS AUV II hull loads")
+
+
 def test_named_part_nps_auv_ii_exists_in_the_root_rppws():
-    """U6e parametrises 'NPS AUV II' as a named part in the root .rppws, as 'REMUS 100' and
-    'Otter' are (E-89); this test only checks it is there and builds equal to the plugin
-    defaults (rule 19's GUI round trip, A-62 §3), it does not create it."""
-    import more_dynamics
-    rppws = Path(more_dynamics.__file__).parent.parent / ".rppws"
-    candidates = list(rppws.glob("**/NPS AUV II")) + list(rppws.glob("**/nps_auv_ii"))
-    assert candidates, f"no 'NPS AUV II' named part found under {rppws} (U6e writes it)"
+    """'NPS AUV II' is a named part of the library's ``.rppws`` as 'REMUS 100 (MSS)' is: found by the ``Name`` of its
+    ``description.json`` (the folders are ids, not names), a ``DerivativeAuv`` whose own and children's values are
+    the frozen parameter file's, unchanged (no value of a part is set by hand to a different number)."""
+    import json
+    rppws = vc.RPPWS / "parts"
+    descriptions = [json.loads(d.read_text()) for d in rppws.rglob("description.json")]
+    roots = [d for d in descriptions if d.get("Name") == "NPS AUV II"]
+    assert len(roots) == 1, f"'NPS AUV II': found {len(roots)} under {rppws}"
+    assert roots[0]["PluginName"] == "more_dynamics::DerivativeAuv"
+    expected = _nps_values()
+    for name in ("NPS AUV II", *NAMED_PART_CHILDREN):
+        part = vc.reference_part(name)
+        shared = [key for key in part if key in expected]
+        assert shared, f"{name}: no value of the frozen parameter file"
+        for key in shared:
+            assert np.array_equal(np.asarray(part[key]), np.asarray(expected[key])), f"{name}.{key}: {part[key]} != {expected[key]}"

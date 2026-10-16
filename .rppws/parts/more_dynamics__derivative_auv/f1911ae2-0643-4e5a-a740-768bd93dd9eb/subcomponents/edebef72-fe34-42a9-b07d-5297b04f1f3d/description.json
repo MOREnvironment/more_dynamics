@@ -1,0 +1,17 @@
+{
+    "Id": "edebef72-fe34-42a9-b07d-5297b04f1f3d",
+    "Name": "NPS AUV II prescribed wrench",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::PrescribedWrench",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::DerivativeAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

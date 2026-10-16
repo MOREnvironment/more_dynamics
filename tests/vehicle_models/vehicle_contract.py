@@ -226,10 +226,28 @@ def dynamics_map(vessel, n):
     return graph_of(vessel).step.map(n)
 
 
-def mss_to_ours(x):
-    """MSS state [nu; eta] to ours [eta; nu]."""
+def actuator_state_count(vessel):
+    """Number of states the vehicle's actuators carry: the graph stacks them, in list order, before the 12 vessel
+    states (``vehicle_graph.py``), so it is the graph's state size less 12."""
+    return graph_of(vessel).num_states - 12
+
+
+def mss_to_ours(x, vessel=None):
+    """MSS state [nu; eta; actuator states] to ours [actuator states; eta; nu]. ``vessel`` names the vehicle whose
+    actuators carry states; without it the state is the 12 vessel states. An MSS vector whose actuator columns
+    are not the vehicle's states is refused, not truncated: a column with no state behind it in the vehicle
+    (``npsauv.m``'s propeller shaft speed, for one) is a difference to see, not to drop."""
     x = np.asarray(x)
-    return np.concatenate([x[..., 6:12], x[..., 0:6]], axis=-1)
+    count = 0 if vessel is None else actuator_state_count(vessel)
+    if x.shape[-1] - 12 != count:
+        raise ValueError(f"the MSS state has {x.shape[-1] - 12} actuator states, the vehicle's actuators carry {count}")
+    return np.concatenate([x[..., 12:], x[..., 6:12], x[..., 0:6]], axis=-1)
 
 
-ours_to_mss = mss_to_ours
+def ours_to_mss(x, vessel=None):
+    """Ours [actuator states; eta; nu] to the MSS order [nu; eta; actuator states] (``mss_to_ours``, reversed)."""
+    x = np.asarray(x)
+    count = 0 if vessel is None else actuator_state_count(vessel)
+    if x.shape[-1] - 12 != count:
+        raise ValueError(f"the state has {x.shape[-1] - 12} actuator states, the vehicle's actuators carry {count}")
+    return np.concatenate([x[..., count + 6:], x[..., count:count + 6], x[..., :count]], axis=-1)

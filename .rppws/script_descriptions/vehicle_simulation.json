@@ -377,6 +377,17 @@
                     }
                 ]
             }
+        },
+        "npsauv": {
+            "Description": "NPS AUV II, derivative-table AUV class (MSS npsauv.m values), hull only: its control surfaces and propeller are not composed",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
+                        "PluginName": "more_dynamics::DerivativeAuv"
+                    }
+                ]
+            }
         }
     },
     "ActiveConfiguration": "grethe",

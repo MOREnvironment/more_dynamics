@@ -1,0 +1,17 @@
+{
+    "Id": "374864c6-fffb-4b4e-b512-b05805c85813",
+    "Name": "NPS AUV II hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::CoefficientHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::DerivativeAuv",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

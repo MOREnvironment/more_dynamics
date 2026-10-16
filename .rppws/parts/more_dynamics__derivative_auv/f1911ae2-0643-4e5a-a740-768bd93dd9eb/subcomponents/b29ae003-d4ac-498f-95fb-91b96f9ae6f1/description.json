@@ -1,0 +1,17 @@
+{
+    "Id": "b29ae003-d4ac-498f-95fb-91b96f9ae6f1",
+    "Name": "NPS AUV II site",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::Site",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::DerivativeAuv",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

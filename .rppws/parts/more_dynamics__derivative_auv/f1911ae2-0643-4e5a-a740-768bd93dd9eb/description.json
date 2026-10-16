@@ -1,0 +1,50 @@
+{
+    "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
+    "Name": "NPS AUV II",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::DerivativeAuv",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "site": {
+            "Id": "b29ae003-d4ac-498f-95fb-91b96f9ae6f1",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::Site",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrostatics": {
+            "Id": "a6a2f4ed-673c-44fe-b4bd-ccb17546fc97",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SubmergedRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "374864c6-fffb-4b4e-b512-b05805c85813",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::CoefficientHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "actuators": [
+            {
+                "Id": "edebef72-fe34-42a9-b07d-5297b04f1f3d",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::PrescribedWrench",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": false
+            }
+        ]
+    },
+    "ParentComponentInfo": null
+}

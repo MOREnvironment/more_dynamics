@@ -25,7 +25,7 @@ import vehicle_contract as vc
 LIBRARY = Path(__file__).resolve().parents[2]
 RPPWS = LIBRARY / ".rppws"
 DESCRIPTION = RPPWS / "script_descriptions" / "vehicle_simulation.json"
-NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe"}
+NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe", "npsauv": "NPS AUV II"}
 
 
 def _build(configuration):
