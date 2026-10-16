@@ -11,6 +11,334 @@
                         "PluginName": "more_dynamics::SpheroidAuv"
                     }
                 ]
+            },
+            "Commands": {
+                "dive_and_level_off": {
+                    "Description": "frozen run remus100_trajectory_dive_and_level_off_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.5,
+                    "Duration": 40.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 5.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.2617993877991494
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 9.75,
+                            "fin_deflection_command": [
+                                0.0,
+                                -0.2617993877991494
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 12.25,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        }
+                    ]
+                },
+                "rudder_step_15deg_at_925rpm": {
+                    "Description": "frozen run remus100_trajectory_rudder_step_15deg_at_925rpm_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.54,
+                    "Duration": 60.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.2617993877991494,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                925.0
+                            ]
+                        }
+                    ]
+                },
+                "rudder_step_20deg": {
+                    "Description": "frozen run remus100_trajectory_rudder_step_20deg_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.5,
+                    "Duration": 40.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 5.0,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        }
+                    ]
+                },
+                "rudder_step_4deg_at_1p54ms": {
+                    "Description": "frozen run remus100_trajectory_rudder_step_4deg_at_1p54ms_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.54,
+                    "Duration": 60.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                920.0880186539696
+                            ]
+                        },
+                        {
+                            "Time": 10.0,
+                            "fin_deflection_command": [
+                                0.06981317007977318,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                920.0880186539696
+                            ]
+                        }
+                    ]
+                },
+                "stern_plane_step_10deg": {
+                    "Description": "frozen run remus100_trajectory_stern_plane_step_10deg_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.5,
+                    "Duration": 30.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 5.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.17453292519943295
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        }
+                    ]
+                },
+                "straight_from_rest": {
+                    "Description": "frozen run remus100_trajectory_straight_from_rest_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 0.0,
+                    "Duration": 30.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        }
+                    ]
+                },
+                "zigzag_20_20": {
+                    "Description": "frozen run remus100_trajectory_zigzag_20_20_consistent.csv: the commands of its ui columns (rudder, stern plane in rad, shaft speed in rpm), held over each sample interval",
+                    "InitialSurgeSpeed": 1.5,
+                    "Duration": 60.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "fin_deflection_command": [
+                                0.0,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 5.0,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 7.0,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 11.25,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 15.5,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 19.75,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 24.0,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 28.25,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 32.5,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 36.75,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 41.0,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 45.25,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 49.5,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 53.75,
+                            "fin_deflection_command": [
+                                0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        },
+                        {
+                            "Time": 58.0,
+                            "fin_deflection_command": [
+                                -0.3490658503988659,
+                                0.0
+                            ],
+                            "shaft_speed_command": [
+                                1300.0
+                            ]
+                        }
+                    ]
+                }
             }
         },
         "otter": {
