@@ -95,6 +95,11 @@
             "Name": "Site",
             "Path": "more_dynamics/plugins/site/site.py",
             "Type": "file"
+        },
+        {
+            "Name": "Propulsor",
+            "Path": "more_dynamics/plugins/force_producers/propulsor.py",
+            "Type": "file"
         }
     ],
     "PluginTypes": [

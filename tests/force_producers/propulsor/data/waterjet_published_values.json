@@ -1,0 +1,35 @@
+{
+  "description": "Numbers of the waterjet sources the propulsor gates use as published anchors, each typed from the saved full text with its page (rule: no number from memory). Only numbers a test needs are here; a figure read off a plot is not.",
+  "values": {
+    "bollard_coefficient_rpm": {
+      "value": 1.89e-4, "unit": "N/rpm^2",
+      "source": "Tajima, K., Hazuku, T., Shimizu, E., Ode, T., Takamasa, T. (2015). J. JIME 50(3):376-381; bollard law F = k N^2 (eq. 7) and the fitted coefficient, Fig. 3 inset 'F = 1.89x10^-4 N^2' with N in rpm (axis 'Motor Revolution N x10^3 rpm'), mean relative error 7.6 % over 10-90 % torque command",
+      "page": "p. 378"
+    },
+    "han_thrust_speed_coefficient": {
+      "value": -0.0119, "unit": "1 (b11 times the thrust model, per m/s of the second term)",
+      "source": "Han, J., Xiong, J., He, Y., Gu, F., Li, D. (2017). IEEE TIE 64(4):3348-3358; Table III 'parameters of b11 times thrust model': b11 k2 for T = k1 eps^(2/3) + k2 eps^(1/3) u (eq. 7, p. 3350). Both entries are scaled by the unknown b11, so only their ratio is a thrust ratio.",
+      "page": "Table III, p. 3354"
+    },
+    "han_thrust_square_coefficient": {
+      "value": 0.6006, "unit": "1 (b11 times the thrust model)",
+      "source": "Han et al. (2017), Table III, b11 k1 (see above)",
+      "page": "Table III, p. 3354"
+    },
+    "jet_ski_pump_nozzle_outlet_diameter": {
+      "value": 0.093946, "unit": "m",
+      "source": "Li, C.-Y., Kao, J.-H. (2023/2024). CMES 138(3), doi:10.32604/cmes.2023.030215; Table 1 'outlet diameter D_A (mm)' 93.946 for A_A/A_E = 27 %",
+      "page": "Table 1, p. 2280"
+    },
+    "jet_ski_pump_shaft_speed_rpm": {
+      "value": 5950.0, "unit": "rpm",
+      "source": "Li & Kao (2023/2024), Table 3 'rotor rotational speed (RPM)' 5950 at the trial top speed 31.4889 m/s",
+      "page": "Table 3, p. 2286"
+    },
+    "jet_ski_pump_rotor_torque": {
+      "value": 391.550, "unit": "N*m",
+      "source": "Li & Kao (2023/2024), Table 6 'rotor torque (N-m)' 391.550 (Q_R*) at A_A/A_E = 27 % (the table's 'net thrust' is the rotor's, not the craft's: the memo's slip 3)",
+      "page": "Table 6, p. 2288"
+    }
+  }
+}

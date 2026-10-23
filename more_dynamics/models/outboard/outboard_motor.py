@@ -27,7 +27,9 @@ module (stated beside each line), the propeller laws above are published.
 Only the algebraic force map is here. The rpm lag, the thrust lag, the
 steering rate limit and the battery are states of the assembly: the inputs
 are the *actual* propeller speed (rpm) or thrust (N) and the *actual*
-steering angle ``delta`` (rad, port-positive). A flat battery (zero force)
+steering angle ``delta`` (rad, port-positive: the force is ``T [cos delta,
+sin delta, 0]`` with +y to starboard, so a positive angle turns the bow to port
+for a motor aft of the CO). A flat battery (zero force)
 is not modelled.
 
 Admissible ranges of the dimensionless numbers of the rpm model (refused
@@ -58,6 +60,10 @@ References
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
     licence, revision ``cc07579``: ``LIBRARY/modeling/wageningen.m`` 6;
     ``CRAFT/AUV/models/remus100.m`` 249.
+[Krizman] Krizman, E. (2026). Model file ``grethe.m``, MSS fork branch ``grethe-vehicle``, revision
+    ``01cd570``: ``CRAFT/USV/models/grethe.m`` 265-268, 394-404 (the leg normal force, ``outboard_leg_normal_force``;
+    the file may still be revised). Whicker, L. F. and Fehlner, L. F. (1958), the rudder lift slope the file adapts
+    (page not read).
 
 Author:    Enio Krizman
 Date:      2026-10-05
@@ -74,6 +80,7 @@ from more_dynamics.models.propeller.wageningen_kt_kq import wageningen_expressio
 ZERO_SPEED_RPS = 1e-9         # rev/s: below it the propeller is stopped (guard of this module)
 MIN_EFFICIENCY = 1e-3         # floor of the efficiency in the power cap (guard of this module)
 MIN_HORIZONTAL_SPEED = 0.1    # m/s: floor of U_h in the throttle cap (guard of this module)
+LEG_SPEED_GUARD = 1e-6        # m^2/s^2: added under the root of the flow speed at the leg (guard of the model file)
 
 
 def _positive(name, unit, meaning):
@@ -131,6 +138,48 @@ def _steered_wrench(thrust, delta, position):
     return wrench(force, position)  # (Fossen 2011, eq. 12.226, p. 400)
 
 
+def signed_advance_open_water(density, diameter, pitch_diameter_ratio, blade_area_ratio, blade_count,
+                              reverse_thrust_factor, reverse_torque_factor, n_rps, advance_speed,
+                              clip_advance_ratio=False):
+    """Shaft thrust and torque ``(T, Q)`` of the open-water law with a signed advance number: ``J = Va / (n D)``
+    (MSS ``wageningen.m`` 6), ``K_T`` and ``K_Q`` from the Wageningen polynomial at that ``J``, the reverse
+    factors on both for ``n < 0`` and zero force when the shaft is stopped (constructions of this module);
+    ``T = rho D^4 K_T n |n|``, ``Q = rho D^5 K_Q n |n|`` (Fossen 2011, eq. 12.265, p. 411); ``n_rps`` in rev/s."""
+    d, rho = diameter, density
+    stopped = ca.fabs(n_rps) < ZERO_SPEED_RPS  # guard of this module
+    advance_number = advance_speed / (ca.if_else(stopped, 1.0, n_rps) * d)  # J = Va / (n D) (wageningen.m 6), signed
+    kt, kq = wageningen_expression(advance_number, pitch_diameter_ratio, blade_area_ratio, blade_count,
+                                   clip_advance_ratio)
+    reverse = n_rps < 0.0
+    kt = ca.if_else(reverse, reverse_thrust_factor * kt, kt)  # reverse factor on K_T: construction
+    kq = ca.if_else(reverse, reverse_torque_factor * kq, kq)  # reverse factor on K_Q: construction
+    quadratic = ca.fabs(n_rps) * n_rps  # n_p |n_p| (Fossen 2011, eq. 12.265, p. 411)
+    thrust = ca.if_else(stopped, 0.0, rho * d**4 * kt * quadratic)  # T = rho D^4 K_T n|n| (Fossen 2011, eq. 12.265, p. 411)
+    torque = ca.if_else(stopped, 0.0, rho * d**5 * kq * quadratic)  # Q = rho D^5 K_Q n|n| (Fossen 2011, eq. 12.265 form)
+    return thrust, torque
+
+
+def outboard_leg_normal_force(nu_r, delta, position, density, leg_area, leg_aspect_ratio):
+    """Wrench ``tau`` (6x1, BODY, about the CO) of the normal force of the outboard leg: flat-plate-like, the
+    force on the leg proportional to the flow component normal to the motor axis and to the flow speed at the leg.
+
+    Flow at the leg ``u_l = u_r - y_P r_r``, ``v_l = v_r + x_P r_r``; unit normal to the motor axis ``n = [-sin d,
+    cos d]``; ``v_n = u_l n_x + v_l n_y``; ``U_l = sqrt(u_l^2 + v_l^2 + 1e-6)``; ``F_n = -1/2 rho A C_L' U_l v_n``
+    with the slope ``C_L' = 6.13 AR / (AR + 2.25)``; the force ``F_n n`` acts at the motor position (the
+    model file ``grethe.m`` 394-404 with the slope of 265-268, in the author's MSS fork at 01cd570: the slope is
+    the rudder lift slope of Whicker and Fehlner adapted to the leg, a construction; the ``1e-6`` under the root
+    is the model file's guard against a zero flow). Wrench of a point force ``[f; r x f]`` (Fossen 2011, eq.
+    12.226, p. 400)."""
+    slope = 6.13 * leg_aspect_ratio / (leg_aspect_ratio + 2.25)  # normal-force slope per rad (grethe.m 267)
+    flow_x = nu_r[0] - position[1] * nu_r[5]  # flow at the leg (grethe.m 397)
+    flow_y = nu_r[1] + position[0] * nu_r[5]  # (grethe.m 398)
+    normal_x, normal_y = -ca.sin(delta), ca.cos(delta)  # normal to the motor axis (grethe.m 399)
+    normal_speed = flow_x * normal_x + flow_y * normal_y  # (grethe.m 400)
+    speed = ca.sqrt(flow_x**2 + flow_y**2 + LEG_SPEED_GUARD)  # (grethe.m 401)
+    normal_force = -0.5 * density * leg_area * slope * speed * normal_speed  # (grethe.m 402)
+    return wrench(ca.vertcat(normal_force * normal_x, normal_force * normal_y, 0.0), position)  # (grethe.m 403-404; Fossen 2011, eq. 12.226, p. 400)
+
+
 def outboard_motor_rpm_casadi(*, power_limit=True, clip_advance_ratio=False):
     """The rpm block: ``(n, delta, nu_r, <parameters by name>) -> tau``.
 
@@ -139,7 +188,8 @@ def outboard_motor_rpm_casadi(*, power_limit=True, clip_advance_ratio=False):
     ``power_limit`` and ``clip_advance_ratio`` are bools (the shaft-power cap
     on or off; the Wageningen clip). Inputs: ``n`` (1x1, actual propeller
     speed in rpm, saturated at ``max_speed``), ``delta`` (1x1, actual
-    steering angle, rad, port-positive), ``nu_r`` (6x1) and the parameters
+    steering angle, rad, port-positive: positive turns the bow to port for a motor
+    aft of the CO), ``nu_r`` (6x1) and the parameters
     of ``outboard_motor_rpm_parameters()`` by name. Output: ``tau`` (6x1).
     """
     if not isinstance(power_limit, bool) or not isinstance(clip_advance_ratio, bool):
@@ -152,17 +202,9 @@ def outboard_motor_rpm_casadi(*, power_limit=True, clip_advance_ratio=False):
 
     n_rps = saturate(n, -p["max_speed"], p["max_speed"]) / 60.0  # rpm -> rev/s, saturated
     advance_speed = p["advance_speed_factor"] * (1.0 - p["propwash_factor"]) * nu_r[0]  # Va = c_Va (1 - w) u_r: construction
-    stopped = ca.fabs(n_rps) < ZERO_SPEED_RPS  # guard of this module
-    advance_number = advance_speed / (ca.if_else(stopped, 1.0, n_rps) * d)  # J = Va / (n D) (wageningen.m 6), signed
-    kt, kq = wageningen_expression(advance_number, p["pitch_diameter_ratio"], p["blade_area_ratio"],
-                                   p["blade_count"], clip_advance_ratio)
-    reverse = n_rps < 0.0
-    kt = ca.if_else(reverse, p["reverse_thrust_factor"] * kt, kt)  # reverse factor on K_T: construction
-    kq = ca.if_else(reverse, p["reverse_torque_factor"] * kq, kq)  # reverse factor on K_Q: construction
-
-    quadratic = ca.fabs(n_rps) * n_rps  # n_p |n_p| (Fossen 2011, eq. 12.265, p. 411)
-    thrust = ca.if_else(stopped, 0.0, rho * d**4 * kt * quadratic)  # T = rho D^4 K_T n|n| (Fossen 2011, eq. 12.265, p. 411)
-    torque = ca.if_else(stopped, 0.0, rho * d**5 * kq * quadratic)  # Q = rho D^5 K_Q n|n| (Fossen 2011, eq. 12.265 form)
+    thrust, torque = signed_advance_open_water(
+        rho, d, p["pitch_diameter_ratio"], p["blade_area_ratio"], p["blade_count"], p["reverse_thrust_factor"],
+        p["reverse_torque_factor"], n_rps, advance_speed, clip_advance_ratio)
     thrust = (1.0 - p["thrust_deduction"]) * thrust  # (1 - t) T (remus100.m 249)
 
     if power_limit:

@@ -1,0 +1,10 @@
+{
+    "Id": "4e1a6c7a-6d8e-4a3b-9c52-0b7f6c1d2e02",
+    "Name": "Otter port thruster",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Propulsor",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

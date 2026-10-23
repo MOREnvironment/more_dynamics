@@ -129,8 +129,10 @@ def propeller_parameters(*, open_water_coefficients="polynomial"):
     return _COMMON + ((_GIVEN,) if open_water_coefficients == "given" else ())
 
 
-def _open_water(p, coefficients, model, clip_advance_ratio, n_rps, advance_speed):
-    """Shaft thrust ``X_prop`` and torque ``K_prop`` of the chosen model."""
+def open_water_loads(p, coefficients, model, clip_advance_ratio, n_rps, advance_speed):
+    """Shaft thrust ``X_prop`` and torque ``K_prop`` of the chosen model: ``p`` holds ``water_density``,
+    ``propeller_diameter``, ``max_advance_number`` and the Wageningen geometry by name, ``coefficients`` the
+    four ``[K_T0, K_Q0, K_Tmax, K_Qmax]``, ``n_rps`` the shaft speed in rev/s."""
     kt0, kq0, kt_max, kq_max = coefficients[0], coefficients[1], coefficients[2], coefficients[3]
     rho, d = p["water_density"], p["propeller_diameter"]
     quadratic = ca.fabs(n_rps) * n_rps  # n_p |n_p| (Fossen 2011, eq. 12.265, p. 411)
@@ -197,7 +199,7 @@ def propeller_casadi(*, open_water_model, open_water_coefficients="polynomial", 
 
     n_rps = saturate(n, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0  # n_p = sat(n, n_max) / 60 (remus100.m 115)
     advance_speed = (1.0 - p["wake_fraction"]) * safe_norm(nu_r[0:3])  # Va = (1 - w) U_r (remus100.m 127, 150)
-    thrust, torque = _open_water(p, coefficients, open_water_model, clip_advance_ratio, n_rps, advance_speed)
+    thrust, torque = open_water_loads(p, coefficients, open_water_model, clip_advance_ratio, n_rps, advance_speed)
 
     axis = MatrixTransforms.Rzyx_explicit(p["orientation"])[:, 0]  # shaft axis R_zyx[:, 0] (Fossen 2011, eq. 2.18, p. 22)
     force = axis * ((1.0 - p["thrust_deduction"]) * thrust)  # (1 - t) X along the shaft (remus100.m 249)

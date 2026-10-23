@@ -1,0 +1,11 @@
+{
+  "description": "Three parameter sets of a jet nozzle used by the propulsor gates. The numbers are arbitrary test values chosen for the checks (not any craft's): they differ from the shared repository's plugin defaults so a hidden default cannot pass a test, the limits are asymmetric in 'biased' so the normalised-angle mapping is exercised on both sides, and 'trimmed' / 'biased' carry a trim angle and a yaw bias. Names are this library's part parameters; the generator maps position -> location and nozzle_velocity -> nozzle_velocity_radpersec for the shared repository's plugin.",
+  "sets": {
+    "straight": {"position": [-1.2, 0.1, 0.3], "trim_angle": 0.0, "yaw_bias": 0.0, "max_thrust": 800.0, "thrust_coefficient": 0.9,
+                 "thrust_rise_time": 0.6, "thrust_fall_time": 0.3, "nozzle_velocity": 2.0, "min_angle": -0.5, "max_angle": 0.6},
+    "trimmed":  {"position": [-1.2, 0.1, 0.3], "trim_angle": 0.2, "yaw_bias": 0.0, "max_thrust": 800.0, "thrust_coefficient": 0.9,
+                 "thrust_rise_time": 0.6, "thrust_fall_time": 0.3, "nozzle_velocity": 2.0, "min_angle": -0.5, "max_angle": 0.6},
+    "biased":   {"position": [-0.9, -0.2, 0.25], "trim_angle": -0.15, "yaw_bias": 0.05, "max_thrust": 650.0, "thrust_coefficient": 1.1,
+                 "thrust_rise_time": 0.45, "thrust_fall_time": 0.2, "nozzle_velocity": 1.5, "min_angle": -0.45, "max_angle": 0.55}
+  }
+}

@@ -222,6 +222,131 @@ tables and the comment beside each value (source and kind); a part's `SOURCE.md`
 | `max_speed` | 2.4 | m/s | fitted from her 2026 control-station logs, through water, logged band 2.32-2.47 m/s (A-74 section 1); replace by the full-throttle runs of the sea trials (X-9 G14) | fitted |
 | `damping_ratios` | [0.3, 0.05, 0.5] | 1 | [heave, roll, pitch]: roll 0.05 fitted from her logs, band 0.03-0.08 (A-74 section 3, owner E-135); heave 0.3 and pitch 0.5 approved guess 2026-10-12 (owner E-135), no source, until the quay free decays (X-9 G12) | roll fitted; heave, pitch approved guess |
 
+## `more_dynamics::Propulsor`
+
+One propulsor: six sockets, each holding the part its selector names (`models/propulsor`); several propulsors on one vehicle are several entries of the vehicle's `actuators` list. Every number of every part is `unset()` here and given by a named part (a value the selected parts read and the part leaves out makes the build fail, naming it); a number a selected part does not read is left unset and is not asked for. The shaft-speed drive and the law must pass the same unit (`rev/s` for a shaft speed, `1` for a normalised effort), else the build refuses, naming both. The default selectors are a jet with a unit-length thrust direction (a normalised effort with a first-order lag, a servo with rate and angle limits, a rotation for the direction, a linear thrust law); no reference part carries numbers for them, so a build with the defaults alone names every number it lacks. The parts that exist are below.
+
+| Parameter | Default | Unit | Read by | Meaning |
+|---|---|---|---|---|
+| `drive` | "normalized_lag" | - | selector | the drive part: `speed_command_rpm`, `speed_command_rad_s`, `power_limited_speed_command_rpm`, `speed_command_normalized`, `normalized_lag` |
+| `steering` | "servo_lag_rate_angle" | - | selector | the steering part: `fixed`, `servo_ideal`, `servo_no_limits`, `servo_lag_rate_angle`, `servo_output_saturated`, `jet_nozzle_clamp` |
+| `mounting` | "steered_rotation" | - | selector | the mounting part: `fixed_euler`, `fixed_direction`, `azimuth`, `jet_nozzle_direction`, `steered_rotation` |
+| `inflow` | "none" | - | selector | the inflow part: `none`, `speed_magnitude`, `surge_component` |
+| `law` | "normalized_linear" | - | selector | the law part: `open_water_bollard`, `open_water_linearized`, `open_water_linearized_given`, `open_water_polynomial`, `open_water_signed_advance`, `quadratic_asymmetric`, `normalized_linear`, `jet_bollard_quadratic`, `jet_bilinear_speed`, `jet_momentum_flux_given`, `jet_momentum_flux_bollard_point`, `jet_pump_system_match` |
+| `housing` | "none" | - | selector | the housing part: `none`, `leg_normal_force` |
+| `steering_convention` | "port_positive" | - | mounting: azimuth | `port_positive` or `starboard_positive`: which way the boat turns for a positive angle when the unit is aft of the CO (selector; refused for a unit at or ahead of the CO) |
+| `shaft_torque_scale` | unset | 1 | skeleton | share of the shaft torque that reacts on the body (physical: 1) |
+| `min_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: power_limited_speed_command_rpm | lowest shaft-speed command (astern limit) |
+| `max_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: power_limited_speed_command_rpm | highest shaft-speed command (ahead limit) |
+| `max_power` | unset | W | drive: power_limited_speed_command_rpm | electrical input power limit P_max |
+| `efficiency` | unset | 1 | drive: power_limited_speed_command_rpm | drive efficiency eta: the shaft power cap is eta P_max |
+| `thrust_saturation` | unset | N | drive: power_limited_speed_command_rpm | thrust limit of the unit |
+| `max_shaft_speed` | unset | rev/s | drive: speed_command_normalized | shaft speed at a command of +1 (ahead) |
+| `min_shaft_speed` | unset | rev/s | drive: speed_command_normalized | shaft speed at a command of -1 (astern), not above zero |
+| `thrust_rise_time` | unset | s | drive: normalized_lag | time constant when the effort rises |
+| `thrust_fall_time` | unset | s | drive: normalized_lag | time constant when the effort falls |
+| `max_deflection` | unset | rad | steering: servo_ideal; steering: servo_lag_rate_angle; steering: servo_output_saturated | maximum commanded angle, limiting the target before the lag (MSS remus100.m 113-114 with no lag; Murray-Smith 2016 Fig. 1 p. 246 with the lag) |
+| `max_rate` | unset | rad/s | steering: servo_lag_rate_angle; steering: servo_output_saturated | maximum angular rate (Murray-Smith 2016 Fig. 1 p. 246; Sarhadi 2026 Fig. 4 p. 4) |
+| `time_constant` | unset | s | steering: servo_lag_rate_angle; steering: servo_output_saturated | first-order lag time constant (Murray-Smith 2016 Fig. 1 p. 246) |
+| `min_angle` | unset | rad | steering: jet_nozzle_clamp | lowest nozzle angle |
+| `max_angle` | unset | rad | steering: jet_nozzle_clamp | highest nozzle angle |
+| `nozzle_velocity` | unset | rad/s | steering: jet_nozzle_clamp | bound of the angle error that drives the nozzle |
+| `position` | unset | m | mounting: fixed_euler; mounting: fixed_direction; mounting: azimuth; mounting: jet_nozzle_direction; mounting: steered_rotation | CO to the thrust point, BODY (FRD) |
+| `orientation` | unset | rad | mounting: fixed_euler | shaft orientation (roll, pitch, yaw), zyx Euler angles |
+| `direction` | unset | 1 | mounting: fixed_direction | thrust direction, BODY (FRD), normalised inside |
+| `trim_angle` | unset | rad | mounting: jet_nozzle_direction; mounting: steered_rotation | nozzle trim |
+| `yaw_bias` | unset | rad | mounting: jet_nozzle_direction; mounting: steered_rotation | yaw bias of the nozzle |
+| `thrust_deduction` | unset | 1 | inflow: speed_magnitude; inflow: surge_component | thrust deduction t: thrust (1 - t) T |
+| `wake_fraction` | unset | 1 | inflow: speed_magnitude; inflow: surge_component | wake fraction w: Va = (1 - w) U_r |
+| `advance_speed_factor` | unset | 1 | inflow: surge_component | c_Va of Va = c_Va (1 - w) u_r |
+| `diameter` | unset | m | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | propeller diameter D |
+| `pitch_diameter_ratio` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | pitch ratio P/D |
+| `blade_area_ratio` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | expanded blade-area ratio A_E/A_O |
+| `blade_count` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | number of blades z |
+| `max_advance_number` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial | Ja_max = (1 - w) U_max / (D n_max), J >= 0 on the forward branch |
+| `thrust_torque_coefficients` | unset | 1 | law: open_water_linearized_given | [K_T0, K_Q0, K_Tmax, K_Qmax] |
+| `reverse_thrust_factor` | unset | 1 | law: open_water_signed_advance | factor on K_T for n < 0 |
+| `reverse_torque_factor` | unset | 1 | law: open_water_signed_advance | factor on K_Q for n < 0 |
+| `positive_thrust_coefficient` | unset | N*s^2/rad^2 | law: quadratic_asymmetric | k_pos: T = k_pos omega |omega| for omega > 0 |
+| `negative_thrust_coefficient` | unset | N*s^2/rad^2 | law: quadratic_asymmetric | k_neg: T = k_neg omega |omega| for omega <= 0 |
+| `max_thrust` | unset | N | law: normalized_linear | thrust at an effort of 1 |
+| `thrust_coefficient` | unset | 1 | law: normalized_linear | scale of the thrust |
+| `bollard_thrust_coefficient` | unset | N*s^2/rev^2 | law: jet_bollard_quadratic | k of T = k n^2 at the bollard |
+| `speed_squared_coefficient` | unset | N*s^2/rev^2 | law: jet_bilinear_speed | b1 of T = b1 n^2 + b2 n Va |
+| `speed_advance_coefficient` | unset | N*s^2/(rev*m) | law: jet_bilinear_speed | b2 of T = b1 n^2 + b2 n Va |
+| `nozzle_area` | unset | m^2 | law: jet_momentum_flux_given; law: jet_momentum_flux_bollard_point; law: jet_pump_system_match | nozzle outlet area A_n |
+| `flow_coefficient` | unset | m^3/rev | law: jet_momentum_flux_given | c_Q of Q = c_Q n |
+| `bollard_thrust` | unset | N | law: jet_momentum_flux_bollard_point | thrust T_b measured at the bollard |
+| `bollard_shaft_speed` | unset | rev/s | law: jet_momentum_flux_bollard_point | shaft speed n_b of that bollard point |
+| `impeller_diameter` | unset | m | law: jet_pump_system_match | impeller diameter D |
+| `pump_head_coefficient_at_zero_flow` | unset | 1 | law: jet_pump_system_match | psi_0 of the pump line psi = psi_0 - s phi |
+| `pump_head_slope` | unset | 1 | law: jet_pump_system_match | s of the pump line psi = psi_0 - s phi |
+| `nozzle_loss_coefficient` | unset | 1 | law: jet_pump_system_match | phi_n: nozzle loss as a fraction of the jet head |
+| `inlet_loss_coefficient` | unset | 1 | law: jet_pump_system_match | eps: share of the intake ram head lost |
+| `pump_efficiency` | unset | 1 | law: jet_pump_system_match | eta_p of the shaft torque |
+| `leg_area` | unset | m^2 | housing: leg_normal_force | leg and fin area A_leg |
+| `leg_aspect_ratio` | unset | 1 | housing: leg_normal_force | leg aspect ratio AR |
+
+## REMUS 100 propulsor (`more_dynamics::Propulsor`)
+
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `drive` | speed_command_rpm | - | shaft-speed command, rpm | selector |
+| `steering` | fixed | - | a fixed shaft | selector |
+| `mounting` | fixed_euler | - | shaft axis from Euler angles | selector |
+| `inflow` | speed_magnitude | - | remus100.m:151, 250 | selector |
+| `law` | open_water_linearized_given | - | remus100.m:168-178, coefficients as printed | selector |
+| `housing` | none | - | no housing load | selector |
+| `min_command` | -1525 | rpm | remus100.m:111, 116 (-n_max) | document |
+| `max_command` | 1525 | rpm | remus100.m:111 n_max | document |
+| `thrust_deduction` | 0.1 | 1 | remus100.m:150 t_prop | document |
+| `wake_fraction` | 0.05600000000000005 | 1 | remus100.m:151 Va = 0.944 U_r, w = 1 - 0.944 | derived |
+| `position` | [0, 0, 0] | m | remus100.m:250-253 (thrust on x_b through the CO) | document |
+| `orientation` | [0, 0, 0] | rad | remus100.m:250, 253 (shaft along x_b) | document |
+| `diameter` | 0.14 | m | remus100.m:149 D_prop | document |
+| `pitch_diameter_ratio` | 1 | 1 | remus100.m:157 | document |
+| `blade_area_ratio` | 0.718 | 1 | remus100.m:156-157 | document |
+| `blade_count` | 3 | 1 | remus100.m:156-157 | document |
+| `max_advance_number` | 0.6632 | 1 | remus100.m:154 Ja_max | document |
+| `thrust_torque_coefficients` | [0.4566, 0.07, 0.1798, 0.0312] | 1 | remus100.m:158, 159, 161, 162 | document |
+| `shaft_torque_scale` | 0.1 | 1 | remus100.m:253 K_prop / 10 | document (a comparison scale, not the physical 1) |
+
+## Otter port thruster (`more_dynamics::Propulsor`)
+
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `drive` | speed_command_rad_s | - | the shaft-speed command in rad/s, saturated (otter.m:230) | selector |
+| `steering` | fixed | - | a fixed thruster | selector |
+| `mounting` | fixed_direction | - | thrust along x_b at a lever arm (otter.m:139-140, 222-224) | selector |
+| `inflow` | none | - | otter.m takes nothing from the water for the thrust | selector |
+| `law` | quadratic_asymmetric | - | T = k n |n| with k_pos ahead and k_neg astern (otter.m:232-238) | selector |
+| `housing` | none | - | no housing load | selector |
+| `min_command` | -101.73666550381692 | rad/s | otter.m:146 with g = 9.81 (mssConstants.m:14): -sqrt(0.5 * 13.6 g / k_neg) | derived |
+| `max_command` | 103.93086427398005 | rad/s | otter.m:145 with g = 9.81: sqrt(0.5 * 24.4 g / k_pos) | derived |
+| `position` | [0.0, -0.395, 0.0] | m | otter.m:112, 139-140 (y_pont = 0.395) | document |
+| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:243 | document |
+| `positive_thrust_coefficient` | 0.01108 | N s^2/rad^2 | otter.m:143 | document |
+| `negative_thrust_coefficient` | 0.006445 | N s^2/rad^2 | otter.m:144 | document |
+| `shaft_torque_scale` | 0.0 | 1 | otter.m has no thruster torque | convention |
+
+## Otter starboard thruster (`more_dynamics::Propulsor`)
+
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `drive` | speed_command_rad_s | - | the shaft-speed command in rad/s, saturated (otter.m:230) | selector |
+| `steering` | fixed | - | a fixed thruster | selector |
+| `mounting` | fixed_direction | - | thrust along x_b at a lever arm (otter.m:139-140, 222-224) | selector |
+| `inflow` | none | - | otter.m takes nothing from the water for the thrust | selector |
+| `law` | quadratic_asymmetric | - | T = k n |n| with k_pos ahead and k_neg astern (otter.m:232-238) | selector |
+| `housing` | none | - | no housing load | selector |
+| `min_command` | -101.73666550381692 | rad/s | otter.m:146 with g = 9.81 (mssConstants.m:14): -sqrt(0.5 * 13.6 g / k_neg) | derived |
+| `max_command` | 103.93086427398005 | rad/s | otter.m:145 with g = 9.81: sqrt(0.5 * 24.4 g / k_pos) | derived |
+| `position` | [0.0, 0.395, 0.0] | m | otter.m:112, 139-140 (y_pont = 0.395) | document |
+| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:243 | document |
+| `positive_thrust_coefficient` | 0.01108 | N s^2/rad^2 | otter.m:143 | document |
+| `negative_thrust_coefficient` | 0.006445 | N s^2/rad^2 | otter.m:144 | document |
+| `shaft_torque_scale` | 0.0 | 1 | otter.m has no thruster torque | convention |
+
 ## Plugins without a named part yet
 
 `DerivativeAuv` and `CoefficientHullLoads` (the NPS AUV II vehicle): the named part is not landed (its own job); until it is, their
@@ -240,6 +365,7 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
 | Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
 | NPS AUV II (MSS) | not yet landed | n/a |
+| REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, not wired into a vehicle part) | yes, each |
 | Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `...__catamaran/09d55b0c-...`, `...__catamaran/287972df-...` (two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
 
 
