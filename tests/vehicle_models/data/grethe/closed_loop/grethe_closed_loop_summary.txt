@@ -1,0 +1,7 @@
+SIMgrethe, batch, seed 20261023, h = 0.05 s, simulated time 415.4 s
+Control: ALOS path-following control using cubic Hermite splines
+Speed order 1.50 m/s; look-ahead 10.0 m
+Speed: max 2.328 m/s, mean 1.535 m/s
+Cross-track error to the Hermite path (true position): mean 0.271 m, max 0.869 m, RMS 0.346 m
+Position estimate error RMS 0.255 m; SOG estimate error RMS 0.155 m/s
+Maximum |steering angle| 23.7 deg, maximum thrust 486 N

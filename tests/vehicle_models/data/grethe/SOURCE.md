@@ -35,4 +35,20 @@ Several `kind: "owner decision"` / entries name a **library option that does not
 
 `tests/vehicle_models/test_monohull_grethe.py`.
 
-Author: Enio Krizman · Date: 2026-10-09
+
+## Frozen references of the MATLAB model file (`grethe_m_*`, 2026-10-23)
+
+A second implementation of the same craft in MSS style (`CRAFT/USV/models/grethe.m`, `SIMgrethe.m`, `exGrethe.m`, on a local branch of an MSS fork, revision `99fdf4d` plus one commit `f47418b`; not in this repository). **A self-made reference, not a validation:** it was written from the same cited equations and the same part values, so agreement shows two implementations of one set of equations, never that the boat behaves so (field level is G7a). Generator: `generate_grethe_mss.m`, run with `MSS_DIR=<MSS checkout holding grethe.m> OUT_DIR=<this folder>` (and `TMPDIR` unset); seeds 20261023 (derivative cases), 20261024 (payload cases). Closed-loop run: `closed_loop/` (plot and summary of `SIMgrethe(true, <folder>)`), a demonstration, not a gate.
+
+| File | Holds |
+|---|---|
+| `grethe_m_derivative.csv` | 300 states and commands (thrust N, angle rad): outboard wrench `tau_out`, `xdot` (thrust vector, restoring at the body origin), `xdot_x_ref` (restoring at x = -2.24 m), leg-force variants |
+| `grethe_m_payload_derivative.csv` | 12 cases, 25 kg payload at a seeded position (red gate: the library has no payload trim form) |
+| `grethe_m_mass_matrix.csv`, `grethe_m_outboard.json` | `M` and the outboard limits read from the model file |
+| `grethe_m_trajectory_<run>[_x_ref|_leg].csv`, `grethe_m_trajectory_tolerances*.csv` | open-loop RK4 runs (h = 0.05 s, command held 0.5 s) and the per-state tolerance (largest effect of a 1e-9 derivative error or of reordering the RK4 sum) |
+
+Runs: straight from rest (400 N), coast-down from 2.40 m/s, turning circle (20 deg, 450 N), steering square wave (5 deg, 20 s), roll free decay (5 deg), pitch free decay (3 deg). No heading zigzag: in open loop the craft is yaw-unstable (Y_r = N_v = 0, Munk moment kept), a switching rule at 0.5 s does not recover it.
+
+**Disagreements found (not tuned):** (1) the part's `reference_point` [-2.24, 0, 0] places the restoring matrix at the outboard, not at the body origin (the point P of `Gmtrx.m`); the model file defaults to the origin and both are gated (`gate`, `x_ref`); (2) payload: the model file includes the payload lever-arm trim moment, the library has no form for it (red test); (3) the outboard leg normal force exists only in the model file (red test).
+
+Author: Enio Krizman · Date: 2026-10-09 (references of 2026-10-23 added)

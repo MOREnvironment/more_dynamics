@@ -1,0 +1,10 @@
+{
+  "max_thrust": 511.5,
+  "max_propulsive_power": 1120,
+  "position": [
+    -2.24,
+    0,
+    0.55
+  ],
+  "steering_convention": "starboard_positive"
+}

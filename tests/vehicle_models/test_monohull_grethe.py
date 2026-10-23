@@ -519,3 +519,152 @@ def test_named_part_grethe_with_the_full_g0_target_set_does_not_build_yet(tmp_pa
         hydrodynamics_params={**_part_values(vc.plugins().SurfaceHullLoads, "Grethe hull loads"),
                               "surge_resistance": "ittc_residual", "time_constants": GRETHE_TODAY["time_constants"]})
     _build_named_part(tmp_path, description_path)
+
+
+# ---------------------------------------------------------------------------
+# (8) G1 / G3 against the MATLAB model file of the same craft (MSS style, ``data/grethe/generate_grethe_mss.m``)
+#
+# A self-made reference, not a validation: the model file was written beside the library's Monohull from the same
+# cited equations and the same part values, so agreement shows the two implementations compute the same
+# equations; it says nothing about the real boat (field level is G7a). Tolerances: G1 1e-9 as every gate here; G3
+# the per-run, per-state tolerance file of the generator (the largest effect of a 1e-9 derivative error or of
+# reordering the RK4 sum), not widened.
+# ---------------------------------------------------------------------------
+
+STEP = 0.05  # s, the MATLAB runs' RK4 step
+HOLD_STEPS = 10  # steps over which the command is held (one row of a run)
+G3_RUNS = ["straight_from_rest_thrust_step", "coast_down_from_2p4", "turning_circle_20deg",
+           "steering_square_wave_5deg", "roll_free_decay", "pitch_free_decay"]
+# reference set -> (restoring point of the part, file suffix): the model file's own default is the body origin
+SETS = {"gate": ([0.0, 0.0, 0.0], ""), "x_ref": ([-2.24, 0.0, 0.0], "_x_ref")}
+
+
+def _table(name):
+    rows = _read_csv(name)
+    return {key: np.array([float(r[key]) for r in rows]) for key in rows[0]}
+
+
+def _columns(table, prefix, count):
+    return np.column_stack([table[f"{prefix}_{i + 1:02d}"] for i in range(count)])
+
+
+def _mss_vehicle(restoring_point):
+    p = vc.plugins()
+    return _grethe(values={**GRETHE_RAW, "surge_resistance": "ittc_residual", "wetted_surface_method": "regression_table"},
+                   hydrostatics_params={"reference_point": restoring_point},
+                   hydrodynamics_params=_part_values(p.SurfaceHullLoads, "Grethe hull loads"),
+                   actuators=[p.PrescribedWrench])
+
+
+def _outboard():
+    from more_dynamics.models.outboard.outboard_motor import outboard_motor_throttle_casadi
+    block = outboard_motor_throttle_casadi()
+    data = json.loads((DATA / "grethe_m_outboard.json").read_text())
+
+    def wrench(nu, thrust, delta):
+        return np.asarray(block(thrust=thrust, delta=delta, nu_r=nu, max_thrust=data["max_thrust"],
+                                max_propulsive_power=data["max_propulsive_power"],
+                                position=data["position"])["tau"]).ravel()
+    return wrench
+
+
+@pytest.mark.parametrize("set_name", ["gate", "x_ref"])
+def test_G1_monohull_derivative_equals_the_matlab_model_file(set_name):
+    point, _ = SETS[set_name]
+    vehicle = _mss_vehicle(point)
+    table = _table("grethe_m_derivative.csv")
+    n = len(table["case_id"])
+    x, tau = _columns(table, "x", 12), _columns(table, "tau_out", 6)
+    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x).T, tau.T)
+    reference = _columns(table, "xdot" if set_name == "gate" else "xdot_x_ref", 12)
+    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T) - reference).max(axis=0)
+    assert error.max() <= G1_TOLERANCE, f"max |diff| per state {error}"
+
+
+def test_G1_mass_matrix_equals_the_matlab_model_file():
+    table = _table("grethe_m_mass_matrix.csv")
+    reference = np.column_stack([table[f"M_{j}"] for j in range(1, 7)])
+    mass = _mass_matrix(_mss_vehicle(SETS["gate"][0]))
+    assert np.abs(mass - reference).max() <= G1_TOLERANCE
+
+
+def test_G1_outboard_wrench_equals_the_matlab_model_file_thrust_vector():
+    table = _table("grethe_m_derivative.csv")
+    wrench = _outboard()
+    worst = 0.0
+    for i in range(len(table["case_id"])):
+        nu = _columns(table, "x", 12)[i, :6]
+        mine = wrench(nu, table["ui_01"][i], table["ui_02"][i])
+        worst = max(worst, np.abs(mine - _columns(table, "tau_out", 6)[i]).max())
+    assert worst <= G1_TOLERANCE, worst
+
+
+def test_G1_payload_derivative_equals_the_matlab_model_file():
+    """Red on purpose (rule 21): the model file shifts the roll and pitch equilibrium by the moment of the payload's
+    lever arm (``G eta_0 = g_0``, without the heave double count of otter.m); the library's ``Monohull`` has no
+    payload trim form (the planned ``payload_trim_form`` option is not built), so a 25 kg payload off the
+    centreline differs in the roll acceleration (0.09-0.54 rad/s^2 over the seeded cases), the other states by
+    < 1e-2. Not tuned: the missing term is the finding."""
+    table = _table("grethe_m_payload_derivative.csv")
+    p = vc.plugins()
+    n = len(table["case_id"])
+    wrench = _outboard()
+    worst = 0.0
+    for i in range(n):
+        position = [table[f"payload_position_{j:02d}"][i] for j in (1, 2, 3)]
+        vehicle = _grethe(values={**GRETHE_RAW, "surge_resistance": "ittc_residual",
+                                  "wetted_surface_method": "regression_table"},
+                          vehicle_params={"payload_mass": float(table["payload_mass"][i]), "payload_position": position},
+                          hydrostatics_params={"reference_point": [0.0, 0.0, 0.0]},
+                          actuators=[p.PrescribedWrench])
+        x = _columns(table, "x", 12)[i]
+        tau = wrench(x[:6], table["ui_01"][i], table["ui_02"][i])
+        xdot = vc.dynamics_map(vehicle, 1)(vc.mss_to_ours(x).reshape(12, 1), tau.reshape(6, 1))
+        worst = max(worst, np.abs(vc.ours_to_mss(np.asarray(xdot).T)[0] - _columns(table, "xdot", 12)[i]).max())
+    assert worst <= G1_TOLERANCE, worst
+
+
+def _run_rk4(vehicle, table):
+    """The frozen run stepped with RK4 at the frozen step; the outboard wrench is evaluated at every stage from
+    the stage's state, as the model file does."""
+    dynamics = vc.graph_of(vehicle).step
+    wrench = _outboard()
+    commands = np.column_stack([table["ui_01"], table["ui_02"]])
+
+    def rate(x, ui):
+        tau = wrench(x[6:12], ui[0], ui[1])  # x is ours: [eta; nu]
+        return np.asarray(dynamics(x, tau)).ravel()
+
+    x = vc.mss_to_ours(_columns(table, "x", 12)[0])
+    states = np.zeros((len(table["t"]), 12))
+    for row in range(len(table["t"])):
+        states[row] = vc.ours_to_mss(x)
+        if row < len(table["t"]) - 1:
+            for _ in range(HOLD_STEPS):
+                k1 = rate(x, commands[row]); k2 = rate(x + 0.5 * STEP * k1, commands[row])
+                k3 = rate(x + 0.5 * STEP * k2, commands[row]); k4 = rate(x + STEP * k3, commands[row])
+                x = x + STEP / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+    return states
+
+
+@pytest.mark.parametrize("set_name", ["gate", "x_ref"])
+@pytest.mark.parametrize("name", G3_RUNS)
+def test_G3_monohull_trajectory_equals_the_matlab_model_file_rk4_run(name, set_name):
+    point, suffix = SETS[set_name]
+    table = _table(f"grethe_m_trajectory_{name}{suffix}.csv")
+    tolerances = {}
+    for r in _read_csv(f"grethe_m_trajectory_tolerances{suffix}.csv"):
+        if r["scenario"] == name:
+            tolerances[int(r["state"])] = float(r["tolerance"])
+    error = np.abs(_run_rk4(_mss_vehicle(point), table) - _columns(table, "x", 12)).max(axis=0)
+    over = [f"x{i + 1}: {error[i]:.3g} > {tolerances[i + 1]:.3g}" for i in range(12) if error[i] > tolerances[i + 1]]
+    assert not over, f"{name}: " + "; ".join(over)
+
+
+def test_the_outboard_leg_normal_force_is_a_form_of_the_library():
+    """The model file's ``leg`` set (turning circle and square wave with the normal force of the outboard leg,
+    ``grethe_m_trajectory_*_leg.csv``) has no counterpart in the library: the outboard model carries thrust
+    vectoring only (``models/outboard/outboard_motor.py``). Red until a leg-force form exists (not tuned away)."""
+    import more_dynamics.models.outboard.outboard_motor as outboard
+    assert hasattr(outboard, "outboard_leg_normal_force"), (
+        "no leg normal-force form in more_dynamics.models.outboard: the 'leg' reference set cannot be gated")
