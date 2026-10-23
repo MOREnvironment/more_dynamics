@@ -1,0 +1,49 @@
+{
+  "part": "REMUS 100 (Munk + body lift)",
+  "configuration": "remus100_munk_body_lift",
+  "what": "The MSS one-value REMUS 100 hull, mass, site, hull loads and propeller (base file), with every added-mass Coriolis term kept, the body lift in both planes as one point force, and four effective-angle fins whose lift slope is computed from the fin geometry. Straight-line stable at its cruise speed; a sibling of REMUS 100 (MSS), not a vehicle identification.",
+  "base": {
+    "file": "../remus100/remus100_parameters_consistent.json",
+    "what": "every value not listed below: SpheroidAuv (length, diameter = beam, body_mass from one_value.mass, body_center_of_gravity, roll_added_inertia_ratio), Site (latitude from gravity.latitude_rad, water_density), SubmergedRestoring (center_of_buoyancy, neutral), AuvHullLoads (time_constants, damping_ratios, planform_area, parasitic_drag_coefficient, oswald_efficiency, span, hull_frontal_drag_coefficient), Propeller (all its entries); kinematic viscosity 1e-6 m^2/s (cylinderDrag.m 81)"
+  },
+  "vehicle": {
+    "coriolis_form": {"value": "kirchhoff_full", "kind": "selector", "source": "every added-mass Coriolis term kept (m2c.m 33-48; Fossen 2011, eq. 6.43, p. 120); kept only with the point-force body lift and effective-angle fins with the geometric lift slope, and only with the straight-line stability gate green"},
+    "current_form": {"value": "none", "kind": "selector", "source": "still water (the gates run without current)"}
+  },
+  "hydrodynamics": {
+    "body_lift_form": {"value": "point_force_both_planes", "kind": "selector", "source": "Prestero 2001, eqs. 4.27-4.29, 4.33-4.34, pp. 30-31; Fossen 2011, eq. 12.226, p. 400"},
+    "body_lift_slope_method": {"value": "slender_body_hoerner", "kind": "selector", "source": "Prestero 2001, eqs. 4.30-4.32, p. 30 (Hoerner 1965, p. 13-3, not read); l/d = 1.6 / 0.19 = 8.42, inside the stated 6.7-10"},
+    "body_lift_slope_per_degree": {"value": 0.003, "unit": "1/deg", "kind": "published", "source": "Prestero 2001, eq. 4.31, p. 30 (c_y_beta = 0.003, after Hoerner 1965, not read)"},
+    "pressure_centre_method": {"value": "fraction_of_length_from_nose", "kind": "selector", "source": "Prestero 2001, eq. 4.35, p. 31; nose at +L/2 (hull centred on the body origin, remus100.m 131, 134)"},
+    "pressure_centre_fraction": {"value": 0.65, "kind": "published", "source": "Prestero 2001, eq. 4.35, p. 31 (0.65 l); Hoerner's range 0.6-0.7 l as Prestero p. 31 gives it -- the gates also run 0.60 and 0.70; owner's choice of the one value, 2026-10-13"},
+    "hull_drag_form": {"value": "wing_drag", "kind": "selector", "source": "the drag half of forceLiftDrag.m 28-40 kept, so that only the lift changes against REMUS 100 (MSS); its induced part still uses the wing's vertical-plane lift coefficient (an MSS residual, stated)"},
+    "roll_damping_form": {"value": "linear", "kind": "selector", "source": "Dmtrx.m 39-55 (no identified quadratic roll coefficient for this vehicle)"}
+  },
+  "fin": {
+    "what": "four Fin parts: two rudder fins on the rudder command, two stern-plane fins on the stern-plane command (the vehicle's inputs are the four fin commands in this order, then the shaft speed; a pair receives one command twice)",
+    "fin_area": {"value": 0.00665, "unit": "m^2", "kind": "published", "source": "Prestero 2001, Table 2.2, p. 17 (S_fin, one fin); the same area remus100.m 179 uses"},
+    "lift_slope_method": {"value": "low_aspect_ratio", "kind": "selector", "source": "Prestero 2001, eqs. 4.38-4.39, p. 31"},
+    "fin_span": {"value": 0.0857, "unit": "m", "kind": "published", "source": "Prestero 2001, Table 2.2, p. 17 (b_fin)"},
+    "section_lift_efficiency": {"value": 0.9, "kind": "published", "source": "Prestero 2001, Table 2.2, p. 17 and eq. 4.38, p. 31 (the empirical factor a-bar, after Hoerner 1965 p. 3-2, not read)"},
+    "lift_slope_computed": {"value_note": "3.1158 1/rad per fin = [1/(2 pi 0.9) + 1/(pi 2 0.0857^2/0.00665)]^-1; Prestero 2001, Table 2.2, p. 17 prints 3.12 (derived, not declared)", "kind": "derived"},
+    "inflow": {"value": "rigid_point", "kind": "selector", "source": "Prestero 2001, eq. 4.40, p. 32"},
+    "flow_angle": {"value": "small_angle", "kind": "selector", "source": "Prestero 2001, eqs. 4.41-4.43, pp. 32-33"},
+    "interference": {"value": "none", "kind": "selector", "source": "Prestero 2001, eq. 4.41, p. 32 (both factors one)"},
+    "section": {"value": "quadratic_drag", "kind": "selector", "source": "remus100.m 238-239 (C_D = C_L_alpha alpha^2)"},
+    "servo_dynamics": {"value": "none", "kind": "selector", "source": "remus100.m 113-114: the command is the deflection, saturated"},
+    "servo_rate_limit": {"value": false, "kind": "selector", "source": "remus100.m 113-114 (no rate limit)"},
+    "servo_angle_limit": {"value": "on_command", "kind": "selector", "source": "remus100.m 113-114 (sat on the command)"},
+    "max_deflection": {"base": "max_deflection", "kind": "published", "source": "remus100.m 109, delta_max = deg2rad(20)"},
+    "chord_axis": {"value": [1, 0, 0], "kind": "geometry", "source": "chord along x_b (remus100.m 230-245)"},
+    "convention": {"value": "starboard_down_positive", "kind": "selector", "source": "MSS's command convention of remus100.m 242, 245, 254: a positive rudder command moves the trailing edge to starboard (lift -y, starboard turn), a positive stern-plane command moves it down (lift -z, nose down)"}
+  },
+  "fins": [
+    {"role": "rudder", "command": "rudder", "lift_axis": [0, -1, 0], "fin_position": {"derived": "[-L/2, 0, 0]", "source": "remus100.m 184 x_r = -a, a = L/2"}},
+    {"role": "rudder", "command": "rudder", "lift_axis": [0, -1, 0], "fin_position": {"derived": "[-L/2, 0, 0]", "source": "remus100.m 184 x_r = -a, a = L/2"}},
+    {"role": "stern_plane", "command": "stern_plane", "lift_axis": [0, 0, -1], "fin_position": {"derived": "[-L/2, 0, 0]", "source": "remus100.m 189 x_s = -a, a = L/2"}},
+    {"role": "stern_plane", "command": "stern_plane", "lift_axis": [0, 0, -1], "fin_position": {"derived": "[-L/2, 0, 0]", "source": "remus100.m 189 x_s = -a, a = L/2"}}
+  ],
+  "cruise": {
+    "shaft_speed": {"file": "../remus100/remus100_trajectory_rudder_step_4deg_at_1p54ms_consistent.csv", "column": "ui_03", "row": 0, "what": "920.088 rpm, the speed holding 1.54 m/s straight in the one-value MSS model (fzero; Prestero 2001, Table 8.1, p. 60: u = 1.54 m/s); the part's straight-running equilibrium at this shaft speed is its cruise state"}
+  }
+}

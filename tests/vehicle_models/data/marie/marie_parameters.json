@@ -1,0 +1,828 @@
+{
+ "description": "Parameter set of the research AUV Marie's one named part: values named by where they come from (estimated, until the quay weighing and identification replace them). Values are grouped by the component that declares them; every entry names its kind and source; see SOURCE.md.",
+ "part": "Marie (estimated)",
+ "parameters": {
+  "vehicle": {
+   "length": {
+    "value": 2.15,
+    "kind": "published",
+    "source": "NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: length 215 cm",
+    "route_to_measured": "tape the hull as deployed (quay sheet)"
+   },
+   "diameter": {
+    "value": 0.15,
+    "kind": "published_second_hand",
+    "source": "OceanScan LAUV-family hull diameter as printed in the MSS-Capytaine example README",
+    "route_to_measured": "calipers on the hull"
+   },
+   "body_mass": {
+    "value": 34.0,
+    "kind": "published",
+    "source": "NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: weight in air 34 kg",
+    "route_to_measured": "weigh the vehicle in air as deployed (quay sheet)"
+   },
+   "body_center_of_gravity": {
+    "value": [
+     0.0,
+     0.0,
+     0.01
+    ],
+    "kind": "estimate",
+    "source": "MSS-Capytaine example README: centre of gravity 0.01 m below the centre of buoyancy (read from the file as main.CG)",
+    "route_to_measured": "in-water roll and pitch period; the manufacturer's mass sheet"
+   },
+   "rigid_body_form": {
+    "value": "given_inertia",
+    "kind": "convention",
+    "source": "inertia of a uniform cylinder (the file's radii of gyration), the same body the added mass was computed for"
+   },
+   "inertia_diagonal": {
+    "value": [
+     0.098906,
+     13.148998160000001,
+     13.145598160000002
+    ],
+    "kind": "derived",
+    "source": "file MRB (about the centre of gravity) moved to the origin by H(r)^T MRB H(r), Fossen 2011 eq. 3.24 p. 49; an estimate (a uniform cylinder's radii of gyration)",
+    "route_to_measured": "the manufacturer's mass properties; a pendulum test"
+   },
+   "inertia_products": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "derived",
+    "source": "as inertia_diagonal"
+   },
+   "body_density_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "unread with rigid_body_form 'given_inertia'"
+   },
+   "body_density": {
+    "value": 1003.8294381680125,
+    "kind": "derived",
+    "source": "mean density of the idealised hull, mass / full volume; unread with rigid_body_form 'given_inertia'"
+   },
+   "roll_added_inertia_ratio": {
+    "value": 0.0,
+    "kind": "convention",
+    "source": "unread with added_mass_form 'given'"
+   },
+   "added_mass_form": {
+    "value": "given",
+    "kind": "convention",
+    "source": "boundary-element added mass of the idealised hull"
+   },
+   "added_mass_matrix": {
+    "value": [
+     [
+      0.650876182439565,
+      2.022683093236305e-08,
+      0.002259894443090271,
+      -1.606157545139094e-14,
+      -1.894046287655854e-05,
+      5.536778937752587e-12
+     ],
+     [
+      2.022683093236305e-08,
+      33.900835456329794,
+      -1.5083614521033822e-08,
+      -2.372633691399839e-05,
+      7.81512649464555e-12,
+      0.000336725009504768
+     ],
+     [
+      0.002259894443090271,
+      -1.5083614521033822e-08,
+      33.88973217612151,
+      -6.4081645399008184e-15,
+      -0.0003465573582675008,
+      5.7338137180579405e-11
+     ],
+     [
+      -1.606157545139094e-14,
+      -2.372633691399839e-05,
+      -6.4081645399008184e-15,
+      2.1269449183146783e-05,
+      7.1010424099078635e-12,
+      0.0003602157495188174
+     ],
+     [
+      -1.894046287655854e-05,
+      7.81512649464555e-12,
+      -0.0003465573582675008,
+      7.101042409907864e-12,
+      9.761585561479444,
+      1.4881112502764757e-08
+     ],
+     [
+      5.536778937752587e-12,
+      0.000336725009504768,
+      5.7338137180579405e-11,
+      0.0003602157495188174,
+      1.4881112502764757e-08,
+      9.764638648944754
+     ]
+    ],
+    "kind": "bem",
+    "source": "LAUV_marie.mat A(infinity) (frequency entry 36, the 10 rad/s sentinel; zero speed, 5 m submergence), shifted from the centre of gravity to the body origin by H(r)^T A H(r), r = main.CG, Fossen 2011 eq. 3.24 p. 49",
+    "route_to_measured": "a boundary-element run of the real hull with fins, sonar head and antenna"
+   },
+   "coriolis_form": {
+    "value": "kirchhoff_full",
+    "kind": "convention",
+    "source": "every added-mass Coriolis term"
+   },
+   "current_form": {
+    "value": "none",
+    "kind": "convention",
+    "source": "still water"
+   },
+   "integration_max_step": {
+    "value": 0.05,
+    "kind": "convention",
+    "source": "numerical step of the vehicle's own integrator"
+   }
+  },
+  "hydrostatics": {
+   "buoyancy_method": {
+    "value": "floating",
+    "kind": "convention",
+    "source": "partly submerged hull form, integrated over the hull profile: exact at the surface and fully submerged (a regime is a state, not a separate part)"
+   },
+   "center_of_buoyancy": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "the body origin is the centre of buoyancy of the idealised hull (the file's CB differs by 2 micrometres)"
+   },
+   "displaced_volume": {
+    "value": 0.03387029579651495,
+    "kind": "derived",
+    "source": "pi R^2 (Lc + 2 (Lf + La)/3) of the idealised hull profile; read by 'from_volume' only (the floating method integrates the profile)",
+    "route_to_measured": "the hull lines; a weighing in water (reserve buoyancy)"
+   },
+   "buoyancy": {
+    "value": 340.574291807907,
+    "kind": "derived",
+    "source": "rho g V of the full hull; read by 'given' only"
+   },
+   "cylinder_length": {
+    "value": 1.45,
+    "kind": "estimate",
+    "source": "MSS-Capytaine example README: generic body, 1.45 m cylindrical midbody",
+    "route_to_measured": "tape the hull and photograph its profile"
+   },
+   "forward_cap_length": {
+    "value": 0.35,
+    "kind": "estimate",
+    "source": "MSS-Capytaine example README: 0.35 m ellipsoidal taper",
+    "route_to_measured": "tape the nose profile"
+   },
+   "aft_cap_length": {
+    "value": 0.35,
+    "kind": "estimate",
+    "source": "MSS-Capytaine example README: 0.35 m ellipsoidal taper",
+    "route_to_measured": "tape the tail profile"
+   }
+  },
+  "hydrodynamics": {
+   "time_constants": {
+    "value": [
+     50.0,
+     5.0,
+     5.0
+    ],
+    "kind": "placeholder",
+    "source": "MSS-Capytaine example: stored inputs of a damping recipe (surge 50 s, sway 5 s, yaw 5 s), read from the file as powerBased.T_1236; not a measurement",
+    "route_to_measured": "speed steps (surge) and turns (sway, yaw) from the vehicle's logs"
+   },
+   "damping_ratios": {
+    "value": [
+     0.2,
+     0.2
+    ],
+    "kind": "placeholder",
+    "source": "MSS-Capytaine example: stored inputs (roll 0.2, pitch 0.2), read from the file as powerBased.delta_zeta_45; not a measurement",
+    "route_to_measured": "roll and pitch decay from the vehicle's logs"
+   },
+   "oswald_efficiency": {
+    "value": 0.3,
+    "kind": "published",
+    "source": "MSS coeffLiftDrag.m 51-53: 0.3-0.4 for cylinder-shaped AUVs (generic)",
+    "route_to_measured": "body-lift slope from logged turns and depth changes"
+   },
+   "planform_area_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "S = f L D"
+   },
+   "planform_fraction": {
+    "value": 0.7,
+    "kind": "estimate",
+    "source": "MSS rule S = 70 % of the rectangle length x diameter (remus100.m 133), applied to this hull's own length and diameter",
+    "route_to_measured": "body-lift slope from logged turns and depth changes"
+   },
+   "planform_area": {
+    "value": 0.22574999999999998,
+    "kind": "derived",
+    "source": "f L D; unread with planform_area_method 'computed'"
+   },
+   "parasitic_drag_coefficient_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "C_D0 = Cd pi (D/2)^2 / S"
+   },
+   "hull_frontal_drag_coefficient": {
+    "value": 0.63,
+    "kind": "published",
+    "source": "de Moraes et al. (2025), p. 9: 0.63 on the bare-hull frontal area (0.38 on 0.03 m^2 with all appendages), a different, 1.8 m, fully appendaged vehicle of the same family, 3 hull diameters deep",
+    "route_to_measured": "steady speed-versus-thrust pairs with a measured thrust law"
+   },
+   "parasitic_drag_coefficient": {
+    "value": 0.049315698631932796,
+    "kind": "derived",
+    "source": "Cd pi (D/2)^2 / S; unread with 'computed'"
+   },
+   "smooth_speed": {
+    "value": true,
+    "kind": "convention",
+    "source": "numerical guard"
+   },
+   "smooth_speed_epsilon": {
+    "value": 1e-09,
+    "kind": "convention",
+    "source": "numerical guard"
+   }
+  },
+  "fin_common": {
+   "chord_axis": {
+    "value": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "unit chord direction along the hull axis"
+   },
+   "fin_area": {
+    "value": 0.0064,
+    "kind": "published",
+    "source": "Silva et al. (2007), p. 4: fin face area S_fin = 64 cm^2 of the 2007 prototype (1.08 m, 18 kg), not Marie's fins",
+    "route_to_measured": "calipers on Marie's fins"
+   },
+   "lift_slope": {
+    "value": 3.0,
+    "kind": "placeholder",
+    "source": "Silva et al. (2007), p. 4: C_LF = 3, read as the per-fin slope of 1/2 rho A C u^2 delta for the pair formula F = rho C_LF S u^2 delta (two fins: rho C_LF S = 2 * 1/2 rho C S); the 2007 prototype's, not Marie's",
+    "route_to_measured": "turn and pitch rate versus fin angle from the vehicle's logs"
+   },
+   "zero_lift_drag": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this fin; read only by the linear section form"
+   },
+   "servo_dynamics": {
+    "value": "first_order_lag",
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "servo_rate_limit": {
+    "value": true,
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "servo_angle_limit": {
+    "value": "on_command",
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "time_constant": {
+    "value": 0.1,
+    "kind": "placeholder",
+    "source": "no measured servo time constant exists for the vehicle; 0.1 s is a published value for an AUV fin servo (Sarhadi 2026, arXiv:2601.01302v2, Fig. 4, p. 4)",
+    "route_to_measured": "logged step: commanded versus measured fin position"
+   },
+   "max_deflection": {
+    "value": 0.4363323129985824,
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 76: Maximum Fin Rotation = 25.0 (degrees)",
+    "route_to_measured": "maximum measured fin position in the logs"
+   },
+   "max_rate": {
+    "value": 5.235987755982989,
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 77: Maximum Rotation Rate = 300.0 (degrees per second)",
+    "route_to_measured": "fin position rate in the logs"
+   },
+   "inflow": {
+    "value": "rigid_point",
+    "kind": "convention",
+    "source": "velocity at the fin's own point of the rigid body"
+   },
+   "flow_angle": {
+    "value": "small_angle",
+    "kind": "convention",
+    "source": "small-angle flow angle"
+   },
+   "interference": {
+    "value": "none",
+    "kind": "convention",
+    "source": "no body interference on the fin"
+   },
+   "section": {
+    "value": "quadratic_drag",
+    "kind": "convention",
+    "source": "lift slope with drag proportional to the squared angle"
+   }
+  },
+  "fins": [
+   {
+    "label": "vertical fin, z = +0.08 m (below the axis, FRD)",
+    "fin_position": {
+     "value": [
+      -0.455,
+      0.0,
+      0.08
+     ],
+     "kind": "deployed_configuration",
+     "source": "Config.ini line 1785 (fin 0)"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "horizontal fin, y = -0.08 m (port)",
+    "fin_position": {
+     "value": [
+      -0.455,
+      -0.08,
+      0.0
+     ],
+     "kind": "deployed_configuration",
+     "source": "Config.ini line 1786 (fin 1)"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "horizontal fin, y = +0.08 m (starboard)",
+    "fin_position": {
+     "value": [
+      -0.455,
+      0.08,
+      0.0
+     ],
+     "kind": "deployed_configuration",
+     "source": "Config.ini line 1787 (fin 2)"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "vertical fin, z = -0.08 m (above the axis, FRD)",
+    "fin_position": {
+     "value": [
+      -0.455,
+      0.0,
+      -0.08
+     ],
+     "kind": "deployed_configuration",
+     "source": "Config.ini line 1788 (fin 3)"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   }
+  ],
+  "propulsor": {
+   "selectors": {
+    "drive": {
+     "value": "speed_command_rpm",
+     "kind": "convention",
+     "source": "shaft speed in revolutions per minute"
+    },
+    "steering": {
+     "value": "fixed",
+     "kind": "convention",
+     "source": "fixed propeller"
+    },
+    "mounting": {
+     "value": "fixed_euler",
+     "kind": "convention",
+     "source": "shaft along the hull axis"
+    },
+    "inflow": {
+     "value": "none",
+     "kind": "convention",
+     "source": "the lumped law reads no advance speed"
+    },
+    "law": {
+     "value": "quadratic_asymmetric",
+     "kind": "placeholder",
+     "source": "thrust = k w |w|, w = 2 pi n: a lumped law, because no propeller geometry of the vehicle exists in any document"
+    },
+    "housing": {
+     "value": "none",
+     "kind": "convention",
+     "source": "no housing force"
+    }
+   },
+   "min_command": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no document says whether the vehicle runs its motor astern; none modelled",
+    "route_to_measured": "the logged shaft speed range"
+   },
+   "max_command": {
+    "value": 2340.0,
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 235: Maximum Motor RPMs = 2340",
+    "route_to_measured": "maximum measured motor speed in the logs"
+   },
+   "position": {
+    "value": [
+     -0.555,
+     0.0,
+     0.0
+    ],
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 1779 (simulator engine position); origin as for the fins",
+    "route_to_measured": "tape from the body origin to the propeller"
+   },
+   "orientation": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "shaft along the hull axis"
+   },
+   "positive_thrust_coefficient": {
+    "value": 0.0007588471708572374,
+    "kind": "placeholder",
+    "source": "one fit: thrust equal to the modelled hull drag at 1.4 m/s and 1160 rpm, the speed table's 50 % row (a configured table, not a measurement), written for w in rad/s",
+    "route_to_measured": "thrust against shaft speed from a bollard pull and the logs"
+   },
+   "negative_thrust_coefficient": {
+    "value": 0.0007588471708572374,
+    "kind": "placeholder",
+    "source": "equal to the forward coefficient; unread with min_command 0",
+    "route_to_measured": "bollard pull astern"
+   },
+   "shaft_torque_scale": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for the share of shaft torque that rolls the vehicle; not modelled",
+    "route_to_measured": "steady roll offset against shaft speed in straight runs"
+   }
+  },
+  "site": {
+   "site_form": {
+    "value": "given",
+    "kind": "convention",
+    "source": "gravity and density as in the hydrodynamic file"
+   },
+   "latitude": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "unread with site_form 'given'"
+   },
+   "gravity": {
+    "value": 9.81,
+    "kind": "bem",
+    "source": "LAUV_marie.mat main.g"
+   },
+   "water_density": {
+    "value": 1025.0,
+    "kind": "bem",
+    "source": "LAUV_marie.mat main.rho"
+   },
+   "kinematic_viscosity": {
+    "value": 1e-06,
+    "kind": "published",
+    "source": "Fossen 2011, p. 125, below eq. 6.85 (20 degC)",
+    "route_to_measured": "water temperature from the vehicle's CTD"
+   }
+  }
+ },
+ "derived": {
+  "mat_sha256": "7eed3a0c4643ad446b6e45db9f74659052cc56866b3bc3a9c540bd5befcadb61",
+  "scale": 1.0,
+  "rho": 1025.0,
+  "g": 9.81,
+  "mass": 34.0,
+  "weight": 333.54,
+  "full_volume": 0.03387029579651495,
+  "full_buoyancy": 340.574291807907,
+  "reserve": 0.02108979974787726,
+  "mesh_volume": 0.033224317683393435,
+  "mesh_reserve": 0.0016154595728903483,
+  "rigid_body_mass_matrix_at_origin": [
+   [
+    34.0,
+    0.0,
+    0.0,
+    0.0,
+    0.34,
+    0.0
+   ],
+   [
+    0.0,
+    34.0,
+    0.0,
+    -0.34,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    34.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -0.34,
+    0.0,
+    0.098906,
+    0.0,
+    0.0
+   ],
+   [
+    0.34,
+    0.0,
+    0.0,
+    0.0,
+    13.148998160000001,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    13.145598160000002
+   ]
+  ],
+  "added_mass_at_origin": [
+   [
+    0.650876182439565,
+    2.022683093236305e-08,
+    0.002259894443090271,
+    -1.606157545139094e-14,
+    -1.894046287655854e-05,
+    5.536778937752587e-12
+   ],
+   [
+    2.022683093236305e-08,
+    33.900835456329794,
+    -1.5083614521033822e-08,
+    -2.372633691399839e-05,
+    7.81512649464555e-12,
+    0.000336725009504768
+   ],
+   [
+    0.002259894443090271,
+    -1.5083614521033822e-08,
+    33.88973217612151,
+    -6.4081645399008184e-15,
+    -0.0003465573582675008,
+    5.7338137180579405e-11
+   ],
+   [
+    -1.606157545139094e-14,
+    -2.372633691399839e-05,
+    -6.4081645399008184e-15,
+    2.1269449183146783e-05,
+    7.1010424099078635e-12,
+    0.0003602157495188174
+   ],
+   [
+    -1.894046287655854e-05,
+    7.81512649464555e-12,
+    -0.0003465573582675008,
+    7.101042409907864e-12,
+    9.761585561479444,
+    1.4881112502764757e-08
+   ],
+   [
+    5.536778937752587e-12,
+    0.000336725009504768,
+    5.7338137180579405e-11,
+    0.0003602157495188174,
+    1.4881112502764757e-08,
+    9.764638648944754
+   ]
+  ],
+  "added_mass_at_centre_of_gravity": [
+   [
+    0.650876182439565,
+    2.022683093236305e-08,
+    0.002259894443090271,
+    2.0225224774817914e-10,
+    -0.006527702287272209,
+    5.536778937752587e-12
+   ],
+   [
+    2.022683093236305e-08,
+    33.900835456329794,
+    -1.5083614521033822e-08,
+    0.338984628226384,
+    -1.9445318282898498e-10,
+    0.000336725009504768
+   ],
+   [
+    0.002259894443090271,
+    -1.5083614521033822e-08,
+    33.88973217612151,
+    -1.5084255337487814e-10,
+    -0.0003691563026984035,
+    5.7338137180579405e-11
+   ],
+   [
+    2.0225224774817914e-10,
+    0.338984628226384,
+    -1.5084255337487814e-10,
+    0.0034108784680778464,
+    5.156671197372528e-12,
+    0.0003635829996138651
+   ],
+   [
+    -0.006527702287272209,
+    -1.9445318282898498e-10,
+    -0.0003691563026984035,
+    5.156671197372528e-12,
+    9.761651027906947,
+    1.488105713497538e-08
+   ],
+   [
+    5.536778937752587e-12,
+    0.000336725009504768,
+    5.7338137180579405e-11,
+    0.0003635829996138651,
+    1.488105713497538e-08,
+    9.764638648944754
+   ]
+  ],
+  "lamb_spheroid": {
+   "diagonal": {
+    "0": 0.30355,
+    "1": 25.369,
+    "2": 25.369,
+    "4": 5.6225,
+    "5": 5.6225
+   },
+   "ratio_to_bem": {
+    "0": 0.466,
+    "1": 0.748,
+    "2": 0.749,
+    "4": 0.576,
+    "5": 0.576
+   },
+   "source": "the equivalent spheroid of the same length and diameter (Lamb's added mass), printed for Marie's hull by an independent computation (2026-10-06), and its ratio to the boundary-element diagonal (2026-10-09); at another scale, by similitude (s^3, s^5; the ratios do not change)"
+  },
+  "m11": 34.65087618243957,
+  "thrust_coefficient": 0.029958085508987195,
+  "speed_table": {
+   "rpm": [
+    580.0,
+    760.0,
+    1160.0,
+    1535.0,
+    1755.0
+   ],
+   "table_speed": [
+    0.65,
+    0.8,
+    1.4,
+    1.9,
+    2.2
+   ],
+   "model_speed": [
+    0.6928994267548098,
+    0.9139318313711852,
+    1.3999999999999997,
+    1.8535573426553849,
+    2.119375591889642
+   ],
+   "max_rpm": 2340.0,
+   "max_model_speed": 2.825961782481412,
+   "published_max_speed": 2.5,
+   "published_max_speed_source": "NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: speed 0.5-2.5 m/s (the upper bound)"
+  },
+  "anchor_check": [
+   {
+    "reserve": 0.005,
+    "weight_error": 3.4617619348864537e-07,
+    "z_error": 2.123406020460017e-09,
+    "volume_error": 2.0394796962364126e-13,
+    "q_b_error": 1.5911703205029326e-10
+   },
+   {
+    "reserve": 0.01,
+    "weight_error": 1.1673961353153572e-07,
+    "z_error": 3.632352599258759e-09,
+    "volume_error": 1.8313128791191957e-13,
+    "q_b_error": 1.753131757603263e-10
+   },
+   {
+    "reserve": 0.02,
+    "weight_error": 4.824441361961362e-07,
+    "z_error": 2.437093402085644e-09,
+    "volume_error": 4.755293381286663e-13,
+    "q_b_error": 2.538719158940578e-10
+   },
+   {
+    "reserve": 0.03,
+    "weight_error": 2.406864041404333e-07,
+    "z_error": 1.676252942006684e-09,
+    "volume_error": 2.864514181410982e-13,
+    "q_b_error": 3.6119066288212154e-10
+   },
+   {
+    "reserve": 0.05,
+    "weight_error": 3.884828174705035e-07,
+    "z_error": 2.9877186835669534e-10,
+    "volume_error": 1.0946799022804043e-13,
+    "q_b_error": 6.535932082010754e-11
+   }
+  ],
+  "full_volume_anchor_error": 4.85049500564827e-13,
+  "full_buoyancy_anchor_error": 9.299583325628191e-11,
+  "pitch_cells": [
+   {
+    "reserve": 0.01,
+    "dx": -0.01,
+    "pitch_deg": 7.406007780434343,
+    "printed_deg": 7.4
+   },
+   {
+    "reserve": 0.02,
+    "dx": -0.01,
+    "pitch_deg": 0.8162482870266347,
+    "printed_deg": 0.8
+   },
+   {
+    "reserve": 0.02,
+    "dx": -0.02,
+    "pitch_deg": 11.26972629227826,
+    "printed_deg": 11.3
+   },
+   {
+    "reserve": 0.03,
+    "dx": -0.02,
+    "pitch_deg": 2.065032614760343,
+    "printed_deg": 2.1
+   },
+   {
+    "reserve": 0.05,
+    "dx": -0.02,
+    "pitch_deg": 0.9304484538714967,
+    "printed_deg": 0.9
+   },
+   {
+    "reserve": 0.05,
+    "dx": -0.005,
+    "pitch_deg": 0.21360759668060766,
+    "printed_deg": 0.2
+   }
+  ]
+ }
+}

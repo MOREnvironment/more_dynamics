@@ -1,0 +1,743 @@
+{
+ "description": "Parameter set of not a vehicle: Marie's body scaled geometrically by 1.6, every value derived by similitude, so the same test file runs on a second torpedo geometry with only the data swapped. Values are grouped by the component that declares them; every entry names its kind and source; see SOURCE.md.",
+ "part": "Scaled torpedo (generality check)",
+ "parameters": {
+  "vehicle": {
+   "length": {
+    "value": 3.44,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (published: NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: length 215 cm)"
+   },
+   "diameter": {
+    "value": 0.24,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (published_second_hand: OceanScan LAUV-family hull diameter as printed in the MSS-Capytaine example README)"
+   },
+   "body_mass": {
+    "value": 139.26400000000004,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 3, of Marie's value (published: NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: weight in air 34 kg)"
+   },
+   "body_center_of_gravity": {
+    "value": [
+     0.0,
+     0.0,
+     0.016
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6, of Marie's value (estimate: MSS-Capytaine example README: centre of gravity 0.01 m below the centre of buoyancy (read from the file as main.CG))"
+   },
+   "rigid_body_form": {
+    "value": "given_inertia",
+    "kind": "convention",
+    "source": "inertia of a uniform cylinder (the file's radii of gyration), the same body the added mass was computed for"
+   },
+   "inertia_diagonal": {
+    "value": [
+     1.0371045785600002,
+     137.87723894620166,
+     137.84158736220166
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6, of Marie's value (derived: file MRB (about the centre of gravity) moved to the origin by H(r)^T MRB H(r), Fossen 2011 eq. 3.24 p. 49; an estimate (a uniform cylinder's radii of gyration))"
+   },
+   "inertia_products": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6, of Marie's value (derived: as inertia_diagonal)"
+   },
+   "body_density_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "unread with rigid_body_form 'given_inertia'"
+   },
+   "body_density": {
+    "value": 1003.8294381680128,
+    "kind": "derived",
+    "source": "mean density of the idealised hull, mass / full volume; unread with rigid_body_form 'given_inertia'"
+   },
+   "roll_added_inertia_ratio": {
+    "value": 0.0,
+    "kind": "convention",
+    "source": "unread with added_mass_form 'given'"
+   },
+   "added_mass_form": {
+    "value": "given",
+    "kind": "convention",
+    "source": "boundary-element added mass of the idealised hull"
+   },
+   "added_mass_matrix": {
+    "value": [
+     [
+      2.6659888432724594,
+      8.28490994989591e-08,
+      0.009256527638897755,
+      -1.0526114087840772e-13,
+      -0.0001241282175078115,
+      3.6285834446455366e-11
+     ],
+     [
+      8.28490994989591e-08,
+      138.85782202912688,
+      -6.178248507815455e-08,
+      -0.00015549292159944272,
+      5.121721299530923e-11,
+      0.0022067610222904484
+     ],
+     [
+      0.009256527638897755,
+      -6.178248507815455e-08,
+      138.81234299339374,
+      -4.1996547128660255e-14,
+      -0.002271198303141894,
+      3.757712158266453e-10
+     ],
+     [
+      -1.0526114087840772e-13,
+      -0.00015549292159944272,
+      -4.1996547128660255e-14,
+      0.00022302633946666629,
+      7.44598264601155e-11,
+      0.003777135897674436
+     ],
+     [
+      -0.0001241282175078115,
+      5.121721299530923e-11,
+      -0.002271198303141894,
+      7.44598264601155e-11,
+      102.35764341713873,
+      1.5603977423699062e-07
+     ],
+     [
+      3.6285834446455366e-11,
+      0.0022067610222904484,
+      3.757712158266453e-10,
+      0.003777135897674436,
+      1.5603977423699062e-07,
+      102.38965735955898
+     ]
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6, of Marie's value (bem: LAUV_marie.mat A(infinity) (frequency entry 36, the 10 rad/s sentinel; zero speed, 5 m submergence), shifted from the centre of gravity to the body origin by H(r)^T A H(r), r = main.CG, Fossen 2011 eq. 3.24 p. 49)"
+   },
+   "coriolis_form": {
+    "value": "kirchhoff_full",
+    "kind": "convention",
+    "source": "every added-mass Coriolis term"
+   },
+   "current_form": {
+    "value": "none",
+    "kind": "convention",
+    "source": "still water"
+   },
+   "integration_max_step": {
+    "value": 0.05,
+    "kind": "convention",
+    "source": "numerical step of the vehicle's own integrator"
+   }
+  },
+  "hydrostatics": {
+   "buoyancy_method": {
+    "value": "floating",
+    "kind": "convention",
+    "source": "partly submerged hull form, integrated over the hull profile: exact at the surface and fully submerged (a regime is a state, not a separate part)"
+   },
+   "center_of_buoyancy": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "the body origin is the centre of buoyancy of the idealised hull (the file's CB differs by 2 micrometres)"
+   },
+   "displaced_volume": {
+    "value": 0.13873273158252525,
+    "kind": "derived",
+    "source": "pi R^2 (Lc + 2 (Lf + La)/3) of the idealised hull profile; read by 'from_volume' only (the floating method integrates the profile)",
+    "route_to_measured": "the hull lines; a weighing in water (reserve buoyancy)"
+   },
+   "buoyancy": {
+    "value": 1394.992299245187,
+    "kind": "derived",
+    "source": "rho g V of the full hull; read by 'given' only"
+   },
+   "cylinder_length": {
+    "value": 2.32,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (estimate: MSS-Capytaine example README: generic body, 1.45 m cylindrical midbody)"
+   },
+   "forward_cap_length": {
+    "value": 0.5599999999999999,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (estimate: MSS-Capytaine example README: 0.35 m ellipsoidal taper)"
+   },
+   "aft_cap_length": {
+    "value": 0.5599999999999999,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (estimate: MSS-Capytaine example README: 0.35 m ellipsoidal taper)"
+   }
+  },
+  "hydrodynamics": {
+   "time_constants": {
+    "value": [
+     63.245553203367585,
+     6.324555320336759,
+     6.324555320336759
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 0.5, of Marie's value (placeholder: MSS-Capytaine example: stored inputs of a damping recipe (surge 50 s, sway 5 s, yaw 5 s), read from the file as powerBased.T_1236; not a measurement)"
+   },
+   "damping_ratios": {
+    "value": [
+     0.2,
+     0.2
+    ],
+    "kind": "placeholder",
+    "source": "MSS-Capytaine example: stored inputs (roll 0.2, pitch 0.2), read from the file as powerBased.delta_zeta_45; not a measurement",
+    "route_to_measured": "roll and pitch decay from the vehicle's logs"
+   },
+   "oswald_efficiency": {
+    "value": 0.3,
+    "kind": "published",
+    "source": "MSS coeffLiftDrag.m 51-53: 0.3-0.4 for cylinder-shaped AUVs (generic)",
+    "route_to_measured": "body-lift slope from logged turns and depth changes"
+   },
+   "planform_area_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "S = f L D"
+   },
+   "planform_fraction": {
+    "value": 0.7,
+    "kind": "estimate",
+    "source": "MSS rule S = 70 % of the rectangle length x diameter (remus100.m 133), applied to this hull's own length and diameter",
+    "route_to_measured": "body-lift slope from logged turns and depth changes"
+   },
+   "planform_area": {
+    "value": 0.57792,
+    "kind": "derived",
+    "source": "f L D; unread with planform_area_method 'computed'"
+   },
+   "parasitic_drag_coefficient_method": {
+    "value": "computed",
+    "kind": "convention",
+    "source": "C_D0 = Cd pi (D/2)^2 / S"
+   },
+   "hull_frontal_drag_coefficient": {
+    "value": 0.63,
+    "kind": "published",
+    "source": "de Moraes et al. (2025), p. 9: 0.63 on the bare-hull frontal area (0.38 on 0.03 m^2 with all appendages), a different, 1.8 m, fully appendaged vehicle of the same family, 3 hull diameters deep",
+    "route_to_measured": "steady speed-versus-thrust pairs with a measured thrust law"
+   },
+   "parasitic_drag_coefficient": {
+    "value": 0.049315698631932796,
+    "kind": "derived",
+    "source": "Cd pi (D/2)^2 / S; unread with 'computed'"
+   },
+   "smooth_speed": {
+    "value": true,
+    "kind": "convention",
+    "source": "numerical guard"
+   },
+   "smooth_speed_epsilon": {
+    "value": 1e-09,
+    "kind": "convention",
+    "source": "numerical guard"
+   }
+  },
+  "fin_common": {
+   "chord_axis": {
+    "value": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "unit chord direction along the hull axis"
+   },
+   "fin_area": {
+    "value": 0.016384000000000003,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 2, of Marie's value (published: Silva et al. (2007), p. 4: fin face area S_fin = 64 cm^2 of the 2007 prototype (1.08 m, 18 kg), not Marie's fins)"
+   },
+   "lift_slope": {
+    "value": 3.0,
+    "kind": "placeholder",
+    "source": "Silva et al. (2007), p. 4: C_LF = 3, read as the per-fin slope of 1/2 rho A C u^2 delta for the pair formula F = rho C_LF S u^2 delta (two fins: rho C_LF S = 2 * 1/2 rho C S); the 2007 prototype's, not Marie's",
+    "route_to_measured": "turn and pitch rate versus fin angle from the vehicle's logs"
+   },
+   "zero_lift_drag": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this fin; read only by the linear section form"
+   },
+   "servo_dynamics": {
+    "value": "first_order_lag",
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "servo_rate_limit": {
+    "value": true,
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "servo_angle_limit": {
+    "value": "on_command",
+    "kind": "convention",
+    "source": "servo with a lag, a rate limit and an angle limit"
+   },
+   "time_constant": {
+    "value": 0.1,
+    "kind": "placeholder",
+    "source": "no measured servo time constant exists for the vehicle; 0.1 s is a published value for an AUV fin servo (Sarhadi 2026, arXiv:2601.01302v2, Fig. 4, p. 4)",
+    "route_to_measured": "logged step: commanded versus measured fin position"
+   },
+   "max_deflection": {
+    "value": 0.4363323129985824,
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 76: Maximum Fin Rotation = 25.0 (degrees)",
+    "route_to_measured": "maximum measured fin position in the logs"
+   },
+   "max_rate": {
+    "value": 5.235987755982989,
+    "kind": "deployed_configuration",
+    "source": "Config.ini line 77: Maximum Rotation Rate = 300.0 (degrees per second)",
+    "route_to_measured": "fin position rate in the logs"
+   },
+   "inflow": {
+    "value": "rigid_point",
+    "kind": "convention",
+    "source": "velocity at the fin's own point of the rigid body"
+   },
+   "flow_angle": {
+    "value": "small_angle",
+    "kind": "convention",
+    "source": "small-angle flow angle"
+   },
+   "interference": {
+    "value": "none",
+    "kind": "convention",
+    "source": "no body interference on the fin"
+   },
+   "section": {
+    "value": "quadratic_drag",
+    "kind": "convention",
+    "source": "lift slope with drag proportional to the squared angle"
+   }
+  },
+  "fins": [
+   {
+    "label": "vertical fin, z = +0.128 m (below the axis, FRD)",
+    "fin_position": {
+     "value": [
+      -0.7280000000000001,
+      0.0,
+      0.128
+     ],
+     "kind": "derived",
+     "source": "geometric similitude, scale 1.6, of Marie's value (deployed_configuration: Config.ini line 1785 (fin 0))"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "horizontal fin, y = -0.128 m (port)",
+    "fin_position": {
+     "value": [
+      -0.7280000000000001,
+      -0.128,
+      0.0
+     ],
+     "kind": "derived",
+     "source": "geometric similitude, scale 1.6, of Marie's value (deployed_configuration: Config.ini line 1786 (fin 1))"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "horizontal fin, y = +0.128 m (starboard)",
+    "fin_position": {
+     "value": [
+      -0.7280000000000001,
+      0.128,
+      0.0
+     ],
+     "kind": "derived",
+     "source": "geometric similitude, scale 1.6, of Marie's value (deployed_configuration: Config.ini line 1787 (fin 2))"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      0.0,
+      -1.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   },
+   {
+    "label": "vertical fin, z = -0.128 m (above the axis, FRD)",
+    "fin_position": {
+     "value": [
+      -0.7280000000000001,
+      0.0,
+      -0.128
+     ],
+     "kind": "derived",
+     "source": "geometric similitude, scale 1.6, of Marie's value (deployed_configuration: Config.ini line 1788 (fin 3))"
+    },
+    "lift_axis": {
+     "value": [
+      0.0,
+      1.0,
+      0.0
+     ],
+     "kind": "convention",
+     "source": "unit direction of positive lift in body axes (forward-right-down); the simulator's fin force directions, Config.ini lines 1781-1784"
+    }
+   }
+  ],
+  "propulsor": {
+   "selectors": {
+    "drive": {
+     "value": "speed_command_rpm",
+     "kind": "convention",
+     "source": "shaft speed in revolutions per minute"
+    },
+    "steering": {
+     "value": "fixed",
+     "kind": "convention",
+     "source": "fixed propeller"
+    },
+    "mounting": {
+     "value": "fixed_euler",
+     "kind": "convention",
+     "source": "shaft along the hull axis"
+    },
+    "inflow": {
+     "value": "none",
+     "kind": "convention",
+     "source": "the lumped law reads no advance speed"
+    },
+    "law": {
+     "value": "quadratic_asymmetric",
+     "kind": "placeholder",
+     "source": "thrust = k w |w|, w = 2 pi n: a lumped law, because no propeller geometry of the vehicle exists in any document"
+    },
+    "housing": {
+     "value": "none",
+     "kind": "convention",
+     "source": "no housing force"
+    }
+   },
+   "min_command": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no document says whether the vehicle runs its motor astern; none modelled",
+    "route_to_measured": "the logged shaft speed range"
+   },
+   "max_command": {
+    "value": 1849.9324311985017,
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power -0.5, of Marie's value (deployed_configuration: Config.ini line 235: Maximum Motor RPMs = 2340)"
+   },
+   "position": {
+    "value": [
+     -0.8880000000000001,
+     0.0,
+     0.0
+    ],
+    "kind": "derived",
+    "source": "geometric similitude, scale 1.6 to the power 1, of Marie's value (deployed_configuration: Config.ini line 1779 (simulator engine position); origin as for the fins)"
+   },
+   "orientation": {
+    "value": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "kind": "convention",
+    "source": "shaft along the hull axis"
+   },
+   "positive_thrust_coefficient": {
+    "value": 0.004968843090724158,
+    "kind": "placeholder",
+    "source": "one fit: thrust equal to the modelled hull drag at 1.771 m/s and 917 rpm, the speed table's 50 % row (a configured table, not a measurement), written for w in rad/s",
+    "route_to_measured": "thrust against shaft speed from a bollard pull and the logs"
+   },
+   "negative_thrust_coefficient": {
+    "value": 0.004968843090724158,
+    "kind": "placeholder",
+    "source": "equal to the forward coefficient; unread with min_command 0",
+    "route_to_measured": "bollard pull astern"
+   },
+   "shaft_torque_scale": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for the share of shaft torque that rolls the vehicle; not modelled",
+    "route_to_measured": "steady roll offset against shaft speed in straight runs"
+   }
+  },
+  "site": {
+   "site_form": {
+    "value": "given",
+    "kind": "convention",
+    "source": "gravity and density as in the hydrodynamic file"
+   },
+   "latitude": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "unread with site_form 'given'"
+   },
+   "gravity": {
+    "value": 9.81,
+    "kind": "bem",
+    "source": "LAUV_marie.mat main.g"
+   },
+   "water_density": {
+    "value": 1025.0,
+    "kind": "bem",
+    "source": "LAUV_marie.mat main.rho"
+   },
+   "kinematic_viscosity": {
+    "value": 1e-06,
+    "kind": "published",
+    "source": "Fossen 2011, p. 125, below eq. 6.85 (20 degC)",
+    "route_to_measured": "water temperature from the vehicle's CTD"
+   }
+  }
+ },
+ "derived": {
+  "mat_sha256": "7eed3a0c4643ad446b6e45db9f74659052cc56866b3bc3a9c540bd5befcadb61",
+  "scale": 1.6,
+  "rho": 1025.0,
+  "g": 9.81,
+  "mass": 139.26400000000004,
+  "weight": 1366.1798400000005,
+  "full_volume": 0.13873273158252525,
+  "full_buoyancy": 1394.992299245187,
+  "reserve": 0.021089799747876944,
+  "mesh_volume": 0.13608680523117955,
+  "mesh_reserve": 0.0016154595728902958,
+  "rigid_body_mass_matrix_at_origin": [
+   [
+    139.26400000000004,
+    0.0,
+    0.0,
+    0.0,
+    2.228224000000001,
+    0.0
+   ],
+   [
+    0.0,
+    139.26400000000004,
+    0.0,
+    -2.228224000000001,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    139.26400000000004,
+    0.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    -2.228224000000001,
+    0.0,
+    1.0371045785600002,
+    0.0,
+    0.0
+   ],
+   [
+    2.228224000000001,
+    0.0,
+    0.0,
+    0.0,
+    137.87723894620166,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    137.84158736220166
+   ]
+  ],
+  "added_mass_at_origin": [
+   [
+    2.6659888432724594,
+    8.28490994989591e-08,
+    0.009256527638897755,
+    -1.0526114087840772e-13,
+    -0.0001241282175078115,
+    3.6285834446455366e-11
+   ],
+   [
+    8.28490994989591e-08,
+    138.85782202912688,
+    -6.178248507815455e-08,
+    -0.00015549292159944272,
+    5.121721299530923e-11,
+    0.0022067610222904484
+   ],
+   [
+    0.009256527638897755,
+    -6.178248507815455e-08,
+    138.81234299339374,
+    -4.1996547128660255e-14,
+    -0.002271198303141894,
+    3.757712158266453e-10
+   ],
+   [
+    -1.0526114087840772e-13,
+    -0.00015549292159944272,
+    -4.1996547128660255e-14,
+    0.00022302633946666629,
+    7.44598264601155e-11,
+    0.003777135897674436
+   ],
+   [
+    -0.0001241282175078115,
+    5.121721299530923e-11,
+    -0.002271198303141894,
+    7.44598264601155e-11,
+    102.35764341713873,
+    1.5603977423699062e-07
+   ],
+   [
+    3.6285834446455366e-11,
+    0.0022067610222904484,
+    3.757712158266453e-10,
+    0.003777135897674436,
+    1.5603977423699062e-07,
+    102.38965735955898
+   ]
+  ],
+  "added_mass_at_centre_of_gravity": [
+   [
+    2.6659888432724594,
+    8.28490994989591e-08,
+    0.009256527638897755,
+    1.3254803308424672e-09,
+    -0.04277994970986716,
+    3.6285834446455366e-11
+   ],
+   [
+    8.28490994989591e-08,
+    138.85782202912688,
+    -6.178248507815455e-08,
+    2.2215696595444308,
+    -1.2743683789880364e-09,
+    0.0022067610222904484
+   ],
+   [
+    0.009256527638897755,
+    -6.178248507815455e-08,
+    138.81234299339374,
+    -9.885617577976016e-10,
+    -0.002419302745364258,
+    3.757712158266453e-10
+   ],
+   [
+    1.3254803308424672e-09,
+    2.2215696595444308,
+    -9.885617577976016e-10,
+    0.03576565300543197,
+    5.4071616574560975e-11,
+    0.0038124440740310832
+   ],
+   [
+    -0.04277994970986716,
+    -1.2743683789880364e-09,
+    -0.002419302745364258,
+    5.4071616574560975e-11,
+    102.35832988238558,
+    1.5603919366363949e-07
+   ],
+   [
+    3.6285834446455366e-11,
+    0.0022067610222904484,
+    3.757712158266453e-10,
+    0.0038124440740310832,
+    1.5603919366363949e-07,
+    102.38965735955898
+   ]
+  ],
+  "lamb_spheroid": {
+   "diagonal": {
+    "0": 1.2433408000000001,
+    "1": 103.91142400000003,
+    "2": 103.91142400000003,
+    "4": 58.95618560000001,
+    "5": 58.95618560000001
+   },
+   "ratio_to_bem": {
+    "0": 0.466,
+    "1": 0.748,
+    "2": 0.749,
+    "4": 0.576,
+    "5": 0.576
+   },
+   "source": "the equivalent spheroid of the same length and diameter (Lamb's added mass), printed for Marie's hull by an independent computation (2026-10-06), and its ratio to the boundary-element diagonal (2026-10-09); at another scale, by similitude (s^3, s^5; the ratios do not change)"
+  },
+  "m11": 141.9299888432725,
+  "thrust_coefficient": 0.19616206254613439,
+  "speed_table": {
+   "rpm": [
+    458.530260724415,
+    600.832755431992,
+    917.06052144883,
+    1213.5240520896155,
+    1387.4493233988762
+   ],
+   "table_speed": [
+    0.8221921916437787,
+    1.0119288512538815,
+    1.7708754896942924,
+    2.4033310217279684,
+    2.782804340948174
+   ],
+   "model_speed": [
+    0.8801648164911986,
+    1.1580991339833595,
+    1.7708754896942929,
+    2.34378989252302,
+    2.6797604999192015
+   ],
+   "max_rpm": 1849.9324311985017,
+   "max_model_speed": 3.5730453369256505,
+   "published_max_speed": 3.1622776601683795,
+   "published_max_speed_source": "geometric similitude, scale 1.6 to the power 0.5, of Marie's value (published: NTNU AUR-Lab, LAUV Marie page (https://www.ntnu.edu/web/aur-lab/lauv-marie), read 2026-10-10, technical specifications: speed 0.5-2.5 m/s (the upper bound))"
+  },
+  "similitude_check": {
+   "against": "marie_floating_reference.csv",
+   "pitch_error_rad": 1.2739809207573671e-14,
+   "draft_error_m": 1.765254609153999e-14
+  }
+ }
+}
