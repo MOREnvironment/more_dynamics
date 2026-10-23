@@ -536,7 +536,7 @@ HOLD_STEPS = 10  # steps over which the command is held (one row of a run)
 G3_RUNS = ["straight_from_rest_thrust_step", "coast_down_from_2p4", "turning_circle_20deg",
            "steering_square_wave_5deg", "roll_free_decay", "pitch_free_decay"]
 # reference set -> (restoring point of the part, file suffix): the model file's own default is the body origin
-SETS = {"gate": ([0.0, 0.0, 0.0], ""), "x_ref": ([-2.24, 0.0, 0.0], "_x_ref")}
+SETS = {"gate": ([0.0, 0.0, 0.0], ""), "x_ref": ([-2.24, 0.0, 0.0], "_x_ref")}  # both with the residual zero below Fn_V 0.6
 
 
 def _table(name):
@@ -548,11 +548,25 @@ def _columns(table, prefix, count):
     return np.column_stack([table[f"{prefix}_{i + 1:02d}"] for i in range(count)])
 
 
-def _mss_vehicle(restoring_point):
+# values the MATLAB model file chooses that differ from Grethe's part (a fitted waterplane coefficient and chosen
+# yaw damping, labelled in its header); the part itself is not changed
+MODEL_FILE_WATERPLANE_COEFFICIENT = 0.41
+MODEL_FILE_YAW = {"time_constants": (8.0, 4.0), "N_v": 2500.0}  # T_sway, T_yaw (s); N_v (N m s/m)
+
+
+def _mss_vehicle(restoring_point, **vehicle_params):
     p = vc.plugins()
-    return _grethe(values={**GRETHE_RAW, "surge_resistance": "ittc_residual", "wetted_surface_method": "regression_table"},
+    values = {**GRETHE_RAW, "surge_resistance": "ittc_residual", "wetted_surface_method": "regression_table",
+              "hull_waterplane_coefficient": MODEL_FILE_WATERPLANE_COEFFICIENT}
+    bare = _grethe(values=values, hydrostatics_params={"reference_point": restoring_point}, actuators=[p.PrescribedWrench],
+                   vehicle_params=vehicle_params)
+    mass = _mass_matrix(bare)
+    t_sway, t_yaw = MODEL_FILE_YAW["time_constants"]
+    sway_yaw = [-mass[1, 1] / t_sway, 0.0, MODEL_FILE_YAW["N_v"], -mass[5, 5] / t_yaw]  # [Y_v, Y_r, N_v, N_r]
+    return _grethe(values=values, vehicle_params=vehicle_params,
                    hydrostatics_params={"reference_point": restoring_point},
-                   hydrodynamics_params=_part_values(p.SurfaceHullLoads, "Grethe hull loads"),
+                   hydrodynamics_params={**_part_values(p.SurfaceHullLoads, "Grethe hull loads"),
+                                         "sway_yaw_derivatives": sway_yaw},
                    actuators=[p.PrescribedWrench])
 
 
@@ -606,17 +620,12 @@ def test_G1_payload_derivative_equals_the_matlab_model_file():
     centreline differs in the roll acceleration (0.09-0.54 rad/s^2 over the seeded cases), the other states by
     < 1e-2. Not tuned: the missing term is the finding."""
     table = _table("grethe_m_payload_derivative.csv")
-    p = vc.plugins()
     n = len(table["case_id"])
     wrench = _outboard()
     worst = 0.0
     for i in range(n):
         position = [table[f"payload_position_{j:02d}"][i] for j in (1, 2, 3)]
-        vehicle = _grethe(values={**GRETHE_RAW, "surge_resistance": "ittc_residual",
-                                  "wetted_surface_method": "regression_table"},
-                          vehicle_params={"payload_mass": float(table["payload_mass"][i]), "payload_position": position},
-                          hydrostatics_params={"reference_point": [0.0, 0.0, 0.0]},
-                          actuators=[p.PrescribedWrench])
+        vehicle = _mss_vehicle([0.0, 0.0, 0.0], payload_mass=float(table["payload_mass"][i]), payload_position=position)
         x = _columns(table, "x", 12)[i]
         tau = wrench(x[:6], table["ui_01"][i], table["ui_02"][i])
         xdot = vc.dynamics_map(vehicle, 1)(vc.mss_to_ours(x).reshape(12, 1), tau.reshape(6, 1))
@@ -668,3 +677,12 @@ def test_the_outboard_leg_normal_force_is_a_form_of_the_library():
     import more_dynamics.models.outboard.outboard_motor as outboard
     assert hasattr(outboard, "outboard_leg_normal_force"), (
         "no leg normal-force form in more_dynamics.models.outboard: the 'leg' reference set cannot be gated")
+
+
+def test_the_residual_resistance_ramp_below_the_regression_range_is_a_form_of_the_library():
+    """The model file's default ramps the residual coefficient from zero to its value at Fn_V = 0.6 with a smoothstep
+    (``grethe_m_trajectory_*_ramp.csv``, ``xdot_ramp`` columns); the library's residual is zero below 0.6 and steps
+    at 1.805 m/s. Red until a ramp form exists (the gates above use the model file's ``ramp = false`` set)."""
+    from more_dynamics.models.surge_resistance import ra14_residual_resistance as ra14
+    assert hasattr(ra14, "residual_coefficient_ramped"), (
+        "no ramped residual form in more_dynamics.models.surge_resistance: the 'ramp' reference set cannot be gated")

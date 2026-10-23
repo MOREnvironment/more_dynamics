@@ -7,8 +7,9 @@
 %    grethe_m_derivative.csv         G1: 300 seeded states and commands,
 %                                    xdot of grethe.m (thrust vector only),
 %                                    the outboard wrench tau_out, and the
-%                                    same with the leg force and with the
-%                                    restoring matrix given at x = -2.24 m
+%                                    same with the leg force, with the
+%                                    restoring matrix given at x = -2.24 m,
+%                                    and with the smoothstep residual (ramp)
 %    grethe_m_mass_matrix.csv        [~,~,M] = grethe()
 %    grethe_m_payload_derivative.csv G1: 12 seeded states with a payload of
 %                                    25 kg at a seeded position
@@ -59,10 +60,11 @@ fclose(fid);
 % --- derivative cases (G1) ---------------------------------------------------
 rng(20261023,'twister');
 N = 300;
-opt_gate = struct('leg',false,'x_ref',0);
-opt_leg  = struct('leg',true,'x_ref',0);
-opt_xref = struct('leg',false,'x_ref',-2.24);
-rows = zeros(N, 1 + 12 + 2 + 6 + 12 + 6 + 12 + 12);
+opt_gate = struct('leg',false,'x_ref',0,'ramp',false);   % ramp = false: residual zero below Fn_V 0.6
+opt_leg  = struct('leg',true,'x_ref',0,'ramp',false);
+opt_xref = struct('leg',false,'x_ref',-2.24,'ramp',false);
+opt_ramp = struct('leg',false,'x_ref',0,'ramp',true);
+rows = zeros(N, 1 + 12 + 2 + 6 + 12 + 6 + 12 + 12 + 12);
 for k = 1:N
     if k == 1
         x = zeros(12,1); ui = [0; 0];                            % at rest
@@ -86,7 +88,8 @@ for k = 1:N
     [xd, ~, ~, ~, tau_out]   = grethe(x,ui,0,zeros(3,1),0,0,opt_gate);
     [xd_leg, ~, ~, ~, tau_leg] = grethe(x,ui,0,zeros(3,1),0,0,opt_leg);
     xd_xref = grethe(x,ui,0,zeros(3,1),0,0,opt_xref);
-    rows(k,:) = [k x' ui' tau_out' xd' tau_leg' xd_leg' xd_xref'];
+    xd_ramp = grethe(x,ui,0,zeros(3,1),0,0,opt_ramp);
+    rows(k,:) = [k x' ui' tau_out' xd' tau_leg' xd_leg' xd_xref' xd_ramp'];
 end
 names = ['case_id', arrayfun(@(i) sprintf('x_%02d',i),1:12,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('ui_%02d',i),1:2,'UniformOutput',false), ...
@@ -94,7 +97,8 @@ names = ['case_id', arrayfun(@(i) sprintf('x_%02d',i),1:12,'UniformOutput',false
          arrayfun(@(i) sprintf('xdot_%02d',i),1:12,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('tau_out_leg_%02d',i),1:6,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('xdot_leg_%02d',i),1:12,'UniformOutput',false), ...
-         arrayfun(@(i) sprintf('xdot_x_ref_%02d',i),1:12,'UniformOutput',false)];
+         arrayfun(@(i) sprintf('xdot_x_ref_%02d',i),1:12,'UniformOutput',false), ...
+         arrayfun(@(i) sprintf('xdot_ramp_%02d',i),1:12,'UniformOutput',false)];
 fid = fopen(fullfile(outDir,'grethe_m_derivative.csv'),'w');
 fprintf(fid,'%s\n',strjoin(names,','));
 fprintf(fid,[repmat('%.17g,',1,size(rows,2)-1) '%.17g\n'],rows');
@@ -128,4 +132,5 @@ fclose(fid);
 exGrethe(outDir,'gate');
 exGrethe(outDir,'leg');
 exGrethe(outDir,'x_ref');
+exGrethe(outDir,'ramp');
 fprintf('Saved to %s\n',outDir);
