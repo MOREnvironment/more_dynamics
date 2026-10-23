@@ -85,3 +85,7 @@ accounts for the volume-driven (sway/heave) and volume-squared-times-length-squa
 
 `more_dynamics/tests/vessel_database/test_vessel_database_reader.py` (red until U10b lands the
 reader named in that file's module docstring).
+
+## Re-pin to MSS `99fdf4d` (2026-10-23, MATLAB R2026a Update 4; `99fdf4dbdfe0b3f124e26a689c6aabe0beb5654f`, 41 commits after `cc07579`)
+
+MSS replaced `HYDRO/vessels_capytaine/LAUV_marie/LAUV_marie.mat` (`f345057`, 2026-10-14: 38 frequencies instead of 36, 147501 bytes instead of 133536). The loader contract and its tests pin the `cc07579` file (36 frequencies, the infinite-frequency entry at index 36), so `LAUV_marie.mat` and `vessel_database_lauv_marie_mss_reference.csv` stay as they are. The dump of the new file sits beside them: `vessel_database_lauv_marie_mss_reference_mss_99fdf4d.csv` (sha256 `3196917889e4f57e5cc622ee503db11b34b8181a1aaadcd3d71860cfdd47e8d6`): `n_freq` 38, `freq_inf_idx` 38, `A_zero` and `A_inf` moved (surge 0.651 -> 0.658 kg at zero frequency). Adopting it is the loader's job (Marie, parked: E-144 Q1).

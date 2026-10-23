@@ -15,6 +15,6 @@ class ComponentParameters:
     payload_position = [0.05, 0.0, -0.35]
     radii_of_gyration = [0.4, 0.25, 0.25]
     added_mass_coefficients = [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]
-    added_mass_form = 'scaled_derivatives'
+    added_mass_form = 'scaled_derivatives_loaded_surge'
     coriolis_form = 'kirchhoff_full'
     current_form = 'none'

@@ -131,10 +131,13 @@ outFileMat = fullfile(outDir, 'catamaran_dynamics_full_debug_template.csv');
 % --- Write MATLAB CSV ---
 writetable(allRecords, outFileMat);
 disp("Saved MATLAB results to: " + string(outFileMat));
-dataDir = fileparts(scriptDir);
-for target = {'hydrodynamics/catamaran_matlab_reference.csv', 'rigid_body/matlab_reference.csv'}
-    [d, ~] = fileparts(target{1}); if ~exist(fullfile(outRoot, d), 'dir'), mkdir(fullfile(outRoot, d)); end
-    extract_like(outFileMat, fullfile(dataDir, target{1}), fullfile(outRoot, target{1}));
+testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
+% {frozen file under tests/, output name under OUT_DIR}
+for target = {{'hydrodynamic_loads/data/catamaran_matlab_reference.csv', 'hydrodynamics/catamaran_matlab_reference.csv'}, ...
+              {'rigid_body/data/matlab_reference.csv', 'rigid_body/matlab_reference.csv'}}
+    t = target{1};
+    [d, ~] = fileparts(t{2}); if ~exist(fullfile(outRoot, d), 'dir'), mkdir(fullfile(outRoot, d)); end
+    extract_like(outFileMat, fullfile(testsDir, t{1}), fullfile(outRoot, t{2}));
 end
 
 

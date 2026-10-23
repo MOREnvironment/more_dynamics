@@ -4,15 +4,16 @@
 %  Reference data for more_dynamics/models/vehicles (torpedo-AUV class) on the
 %  REMUS 100 parameter set of MSS CRAFT/AUV/models/remus100.m (T. I. Fossen,
 %  MIT), with every quantity holding one value in the whole model:
-%    - one water density, 1026 kg/m^3 (remus100.m 98), in the added mass, the
-%      hull lift and drag, the cross-flow, the propeller and the fins
-%      (remus100.m runs spheroid.m at 1025, imlay61.m at 1026,
-%      forceLiftDrag.m at 1026 and crossFlowDrag.m at 1025);
-%    - one geometry, the hull's L = 1.6 m and D = 0.19 m (remus100.m 131-132),
+%    - one water density, 1025 kg/m^3 (remus100.m 98-99, mssConstants.m 12), in
+%      the added mass, the hull lift and drag, the cross-flow, the propeller
+%      and the fins (remus100.m, imlay61.m, forceLiftDrag.m and
+%      crossFlowDrag.m all read it from mssConstants.m; the copies take it as
+%      an input so the density-invariance check can scale it);
+%    - one geometry, the hull's L = 1.6 m and D = 0.19 m (remus100.m 132-133),
 %      also for the mass, the added mass, CD_0 and the fin positions
-%      (remus100.m 134-135 scale both by 1.0096 for those only);
+%      (remus100.m 135-136 scale both by 1.0096 for those only);
 %    - the mass given, 31.9 kg (remus100.m 3), W = m g_mu and B = W
-%      (remus100.m 214).
+%      (remus100.m 215).
 %  The model is the marked copy remus100_consistent.m beside this file, with
 %  marked copies spheroid_consistent.m, imlay61_consistent.m,
 %  forceLiftDrag_consistent.m and crossFlowDrag_consistent.m (each takes the
@@ -25,7 +26,7 @@
 %    remus100_mass_matrix_consistent.csv      [~,~,M] = remus100_consistent()
 %    remus100_derivative_consistent.csv       the cases of
 %        remus100_derivative_mss.csv: xdot, its actuator wrench tau,
-%        xdot_munk (couplings of remus100.m 207-210 kept) and
+%        xdot_munk (couplings of remus100.m 208-211 kept) and
 %        xdot_one_density (MSS geometry and mass rule, one density: history)
 %    remus100_hull_derivative_consistent.csv  the cases of
 %        remus100_hull_derivative_mss.csv: xdot, xdot_munk
@@ -100,11 +101,11 @@ one_density = @(x, u, a1, a2, a3) remus100_consistent(x, u, a1, a2, a3, struct('
 [~, ~, ~, ~, wsR] = remusC_ws(zeros(12, 1), zeros(3, 1), 0, 0, 0);
 [~, ~, wsCL] = call_ws('coeffLiftDrag', 3, wsR.D_auv, wsR.S, wsR.CD_0, 0, 0);
 % Numbers that remus100.m writes inside an expression, read from its text
-wake = regexp(txt{150}, '^Va = ([0-9.]+) \* U_r;', 'tokens', 'once');
-roll = regexp(txt{252}, '^tau\(4\) = K_prop / ([0-9.]+);', 'tokens', 'once');
-wag  = regexp(txt{156}, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)', 'tokens', 'once');
+wake = regexp(txt{151}, '^Va = ([0-9.]+) \* U_r;', 'tokens', 'once');
+roll = regexp(txt{253}, '^tau\(4\) = K_prop / ([0-9.]+);', 'tokens', 'once');
+wag  = regexp(txt{157}, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)', 'tokens', 'once');
 if isempty(wake) || isempty(roll) || isempty(wag)
-    error('remus100.m lines 150, 156 or 252 moved: re-read the line numbers');
+    error('remus100.m lines 151, 157 or 253 moved: re-read the line numbers');
 end
 oneMinusW = str2double(wake{1});
 rollScale = 1 / str2double(roll{1});
@@ -119,43 +120,43 @@ fprintf('mass %.17g kg, displaced water at rho = %g: %.17g kg; W = B = %.17g N\n
     wsR.m_given, wsR.rho, wsR.rho * volume, wsR.W);
 
 P = {};   % name, value, unit, block, MSS place, stage, kind
-P(end+1, :) = {'semi_major_axis', wsR.a, 'm', 'rigid_body', 'remus100.m:131 L_auv / 2 (one geometry; MSS scales by 1.0096 at :134)', 'hull', 'published'};
-P(end+1, :) = {'semi_minor_axis', wsR.b, 'm', 'rigid_body', 'remus100.m:132 D_auv / 2 (one geometry; MSS scales by 1.0096 at :135)', 'hull', 'published'};
-P(end+1, :) = {'body_density', bodyDensity, 'kg/m^3', 'rigid_body', 'mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35', 'hull', 'derived'};
-P(end+1, :) = {'water_density', wsR.rho, 'kg/m^3', 'rigid_body, lift_drag, cross_flow, propeller, fins', 'remus100.m:98 rho = 1026, the one value (MSS: 1026 at imlay61.m:31 and forceLiftDrag.m:26, 1025 at crossFlowDrag.m:36)', 'hull', 'published'};
-P(end+1, :) = {'roll_added_inertia_ratio', wsR.r44, '1', 'rigid_body', 'remus100.m:136 r44', 'hull', 'published'};
-P(end+1, :) = {'body_center_of_gravity', wsR.r_bG, 'm', 'rigid_body', 'remus100.m:137 r_bG', 'hull', 'published'};
-P(end+1, :) = {'center_of_buoyancy', wsR.r_bB, 'm', 'submerged_hydrostatics, submerged_linear_damping', 'remus100.m:138 r_bB', 'hull', 'published'};
-P(end+1, :) = {'weight', wsR.W, 'N', 'submerged_hydrostatics, submerged_linear_damping', 'remus100.m:214 W = m * g_mu, m = 31.9 kg given (remus100.m:3), g_mu = gravity(mu) (remus100.m:96-97)', 'hull', 'derived'};
-P(end+1, :) = {'buoyancy', wsR.B, 'N', 'submerged_hydrostatics', 'remus100.m:214 B = W (neutral, as REMUS states)', 'hull', 'derived'};
-P(end+1, :) = {'time_constants', [wsR.T1; wsR.T2; wsR.T6], 's', 'submerged_linear_damping', 'remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)', 'hull', 'published'};
-P(end+1, :) = {'damping_ratios', [wsR.zeta4; wsR.zeta5], '1', 'submerged_linear_damping', 'remus100.m:194, 195 [zeta4 zeta5]', 'hull', 'published'};
-P(end+1, :) = {'span', wsR.D_auv, 'm', 'lift_drag', 'remus100.m:132 D_auv, passed as b at :220', 'hull', 'published'};
-P(end+1, :) = {'planform_area', wsR.S, 'm^2', 'lift_drag', 'remus100.m:133 S = 0.7 * L_auv * D_auv', 'hull', 'derived'};
-P(end+1, :) = {'parasitic_drag_coefficient', wsR.CD_0, '1', 'lift_drag', 'remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)', 'hull', 'derived'};
+P(end+1, :) = {'semi_major_axis', wsR.a, 'm', 'rigid_body', 'remus100.m:132 L_auv / 2 (one geometry; MSS scales by 1.0096 at :135)', 'hull', 'published'};
+P(end+1, :) = {'semi_minor_axis', wsR.b, 'm', 'rigid_body', 'remus100.m:133 D_auv / 2 (one geometry; MSS scales by 1.0096 at :136)', 'hull', 'published'};
+P(end+1, :) = {'body_density', bodyDensity, 'kg/m^3', 'rigid_body', 'mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: mssConstants.m:12 = 1025 at spheroid.m:35-36', 'hull', 'derived'};
+P(end+1, :) = {'water_density', wsR.rho, 'kg/m^3', 'rigid_body, lift_drag, cross_flow, propeller, fins', 'remus100.m:98-99 rho = constant.rho_water, the one value (mssConstants.m:12 = 1025; read the same way at imlay61.m:31-32, forceLiftDrag.m:26-27 and crossFlowDrag.m:36-37)', 'hull', 'published'};
+P(end+1, :) = {'roll_added_inertia_ratio', wsR.r44, '1', 'rigid_body', 'remus100.m:137 r44', 'hull', 'published'};
+P(end+1, :) = {'body_center_of_gravity', wsR.r_bG, 'm', 'rigid_body', 'remus100.m:138 r_bG', 'hull', 'published'};
+P(end+1, :) = {'center_of_buoyancy', wsR.r_bB, 'm', 'submerged_hydrostatics, submerged_linear_damping', 'remus100.m:139 r_bB', 'hull', 'published'};
+P(end+1, :) = {'weight', wsR.W, 'N', 'submerged_hydrostatics, submerged_linear_damping', 'remus100.m:215 W = m * g_mu, m = 31.9 kg given (remus100.m:3), g_mu = gravity(mu) (remus100.m:96-97)', 'hull', 'derived'};
+P(end+1, :) = {'buoyancy', wsR.B, 'N', 'submerged_hydrostatics', 'remus100.m:215 B = W (neutral, as REMUS states)', 'hull', 'derived'};
+P(end+1, :) = {'time_constants', [wsR.T1; wsR.T2; wsR.T6], 's', 'submerged_linear_damping', 'remus100.m:193, 194, 197 [T1 T2 T6] (Dmtrx.m call at :218)', 'hull', 'published'};
+P(end+1, :) = {'damping_ratios', [wsR.zeta4; wsR.zeta5], '1', 'submerged_linear_damping', 'remus100.m:195, 196 [zeta4 zeta5]', 'hull', 'published'};
+P(end+1, :) = {'span', wsR.D_auv, 'm', 'lift_drag', 'remus100.m:133 D_auv, passed as b at :221', 'hull', 'published'};
+P(end+1, :) = {'planform_area', wsR.S, 'm^2', 'lift_drag', 'remus100.m:134 S = 0.7 * L_auv * D_auv', 'hull', 'derived'};
+P(end+1, :) = {'parasitic_drag_coefficient', wsR.CD_0, '1', 'lift_drag', 'remus100.m:144-145 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)', 'hull', 'derived'};
 P(end+1, :) = {'oswald_efficiency', wsCL.e, '1', 'lift_drag', 'coeffLiftDrag.m:54 e = 0.3', 'hull', 'published'};
-P(end+1, :) = {'length', wsR.L_auv, 'm', 'cross_flow', 'remus100.m:131 L_auv, passed as L at :221', 'hull', 'published'};
-P(end+1, :) = {'beam', wsR.D_auv, 'm', 'cross_flow', 'remus100.m:132 D_auv, passed as B at :221', 'hull', 'published'};
-P(end+1, :) = {'draft', wsR.D_auv, 'm', 'cross_flow', 'remus100.m:132 D_auv, passed as T at :221', 'hull', 'published'};
-P(end+1, :) = {'diameter', wsR.D_prop, 'm', 'propeller', 'remus100.m:148 D_prop', 'actuators', 'published'};
-P(end+1, :) = {'max_speed', wsR.n_max, 'rpm', 'propeller', 'remus100.m:110 n_max', 'actuators', 'published'};
-P(end+1, :) = {'thrust_deduction', wsR.t_prop, '1', 'propeller', 'remus100.m:149 t_prop', 'actuators', 'published'};
-P(end+1, :) = {'wake_fraction', 1 - oneMinusW, '1', 'propeller', sprintf('remus100.m:150 Va = %s * U_r, w = 1 - %s', wake{1}, wake{1}), 'actuators', 'published'};
-P(end+1, :) = {'pitch_diameter_ratio', str2double(wag{1}), '1', 'propeller', 'remus100.m:156 wageningen(0,1,0.718,3), second argument', 'actuators', 'published'};
-P(end+1, :) = {'blade_area_ratio', str2double(wag{2}), '1', 'propeller', 'remus100.m:155-156 blade-area ratio 0.718', 'actuators', 'published'};
-P(end+1, :) = {'blade_count', str2double(wag{3}), '1', 'propeller', 'remus100.m:155-156 3 blades', 'actuators', 'published'};
-P(end+1, :) = {'max_advance_number', wsR.Ja_max, '1', 'propeller', 'remus100.m:153 Ja_max', 'actuators', 'published'};
-P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', sprintf('remus100.m:252 tau(4) = K_prop / %s', roll{1}), 'actuators', 'published'};
-P(end+1, :) = {'position', zeros(3, 1), 'm', 'propeller', 'remus100.m:249-252 thrust on x_b through the CO (no moment arm)', 'actuators', 'published'};
-P(end+1, :) = {'orientation', zeros(3, 1), 'rad', 'propeller', 'remus100.m:249, 252 shaft along x_b (thrust in tau(1), torque in tau(4))', 'actuators', 'published'};
-P(end+1, :) = {'thrust_torque_coefficients', [wsR.KT_0; wsR.KQ_0; wsR.KT_max; wsR.KQ_max], '1', 'propeller', 'remus100.m:157, 158, 160, 161 [KT_0 KQ_0 KT_max KQ_max]', 'actuators', 'published'};
-P(end+1, :) = {'rudder_area', wsR.A_r, 'm^2', 'fins', 'remus100.m:183 A_r = 2 * S_fin (S_fin :179)', 'actuators', 'published'};
-P(end+1, :) = {'stern_plane_area', wsR.A_s, 'm^2', 'fins', 'remus100.m:188 A_s = 2 * S_fin (S_fin :179)', 'actuators', 'published'};
-P(end+1, :) = {'rudder_lift_coefficient', wsR.CL_delta_r, '1/rad', 'fins', 'remus100.m:182 CL_delta_r', 'actuators', 'published'};
-P(end+1, :) = {'stern_plane_lift_coefficient', wsR.CL_delta_s, '1/rad', 'fins', 'remus100.m:187 CL_delta_s', 'actuators', 'published'};
-P(end+1, :) = {'rudder_position', wsR.x_r, 'm', 'fins', 'remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry)', 'actuators', 'derived'};
-P(end+1, :) = {'stern_plane_position', wsR.x_s, 'm', 'fins', 'remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry)', 'actuators', 'derived'};
-P(end+1, :) = {'max_deflection', wsR.delta_max, 'rad', 'fins', 'remus100.m:109 delta_max = deg2rad(20)', 'actuators', 'published'};
+P(end+1, :) = {'length', wsR.L_auv, 'm', 'cross_flow', 'remus100.m:132 L_auv, passed as L at :222', 'hull', 'published'};
+P(end+1, :) = {'beam', wsR.D_auv, 'm', 'cross_flow', 'remus100.m:133 D_auv, passed as B at :222', 'hull', 'published'};
+P(end+1, :) = {'draft', wsR.D_auv, 'm', 'cross_flow', 'remus100.m:133 D_auv, passed as T at :222', 'hull', 'published'};
+P(end+1, :) = {'diameter', wsR.D_prop, 'm', 'propeller', 'remus100.m:149 D_prop', 'actuators', 'published'};
+P(end+1, :) = {'max_speed', wsR.n_max, 'rpm', 'propeller', 'remus100.m:111 n_max', 'actuators', 'published'};
+P(end+1, :) = {'thrust_deduction', wsR.t_prop, '1', 'propeller', 'remus100.m:150 t_prop', 'actuators', 'published'};
+P(end+1, :) = {'wake_fraction', 1 - oneMinusW, '1', 'propeller', sprintf('remus100.m:151 Va = %s * U_r, w = 1 - %s', wake{1}, wake{1}), 'actuators', 'published'};
+P(end+1, :) = {'pitch_diameter_ratio', str2double(wag{1}), '1', 'propeller', 'remus100.m:157 wageningen(0,1,0.718,3), second argument', 'actuators', 'published'};
+P(end+1, :) = {'blade_area_ratio', str2double(wag{2}), '1', 'propeller', 'remus100.m:156-157 blade-area ratio 0.718', 'actuators', 'published'};
+P(end+1, :) = {'blade_count', str2double(wag{3}), '1', 'propeller', 'remus100.m:156-157 3 blades', 'actuators', 'published'};
+P(end+1, :) = {'max_advance_number', wsR.Ja_max, '1', 'propeller', 'remus100.m:154 Ja_max', 'actuators', 'published'};
+P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', sprintf('remus100.m:253 tau(4) = K_prop / %s', roll{1}), 'actuators', 'published'};
+P(end+1, :) = {'position', zeros(3, 1), 'm', 'propeller', 'remus100.m:250-253 thrust on x_b through the CO (no moment arm)', 'actuators', 'published'};
+P(end+1, :) = {'orientation', zeros(3, 1), 'rad', 'propeller', 'remus100.m:250, 253 shaft along x_b (thrust in tau(1), torque in tau(4))', 'actuators', 'published'};
+P(end+1, :) = {'thrust_torque_coefficients', [wsR.KT_0; wsR.KQ_0; wsR.KT_max; wsR.KQ_max], '1', 'propeller', 'remus100.m:158, 159, 161, 162 [KT_0 KQ_0 KT_max KQ_max]', 'actuators', 'published'};
+P(end+1, :) = {'rudder_area', wsR.A_r, 'm^2', 'fins', 'remus100.m:184 A_r = 2 * S_fin (S_fin :180)', 'actuators', 'published'};
+P(end+1, :) = {'stern_plane_area', wsR.A_s, 'm^2', 'fins', 'remus100.m:189 A_s = 2 * S_fin (S_fin :180)', 'actuators', 'published'};
+P(end+1, :) = {'rudder_lift_coefficient', wsR.CL_delta_r, '1/rad', 'fins', 'remus100.m:183 CL_delta_r', 'actuators', 'published'};
+P(end+1, :) = {'stern_plane_lift_coefficient', wsR.CL_delta_s, '1/rad', 'fins', 'remus100.m:188 CL_delta_s', 'actuators', 'published'};
+P(end+1, :) = {'rudder_position', wsR.x_r, 'm', 'fins', 'remus100.m:185 x_r = -a, a = L_auv / 2 (one geometry)', 'actuators', 'derived'};
+P(end+1, :) = {'stern_plane_position', wsR.x_s, 'm', 'fins', 'remus100.m:190 x_s = -a, a = L_auv / 2 (one geometry)', 'actuators', 'derived'};
+P(end+1, :) = {'max_deflection', wsR.delta_max, 'rad', 'fins', 'remus100.m:110 delta_max = deg2rad(20)', 'actuators', 'published'};
 write_parameters_json(fullfile(outDir, 'remus100_parameters_consistent.json'), P, rev, wsR, str2double(massText{1}));
 
 % ------------------------------------------------
@@ -209,7 +210,7 @@ for k = 1:N
     % density invariance: one density rho and the mass scaled together
     s = max(abs(xdot(1:6)));
     for kk = 1:3
-        f = [1000 / 1026, 0.5, 2.0];
+        f = [1000 / 1025, 0.5, 2.0];
         xk = remus100_consistent(x, ui, c(1), c(2), c(3), ...
             struct('rho', f(kk) * wsR.rho, 'mass', f(kk) * wsR.m_given));
         invC(kk) = max(invC(kk), max(abs(xk(1:6) - xdot(1:6))) / max(s, 1e-300));
@@ -231,10 +232,10 @@ for k = 1:N
 end
 fprintf('split: hull copy with the actuator wrench of the full copy vs the full copy, max |diff| = %.3g\n', maxSplit);
 if maxSplit > 1e-12, error('the hull split is not exact (%.3g)', maxSplit); end
-fprintf('density invariance, (rho, m) scaled by 1000/1026, 0.5, 2: max |d nudot| / max |nudot| = %.3g, %.3g, %.3g (%d cases)\n', invC, N);
-fprintf('density invariance, MSS geometry and mass = rho * volume, rho 1000 vs 1026: %.3g\n', invMss);
+fprintf('density invariance, (rho, m) scaled by 1000/1025, 0.5, 2: max |d nudot| / max |nudot| = %.3g, %.3g, %.3g (%d cases)\n', invC, N);
+fprintf('density invariance, MSS geometry and mass = rho * volume, rho 1000 vs 1025: %.3g\n', invMss);
 % 0.5 and 2 scale every number exactly (powers of two): the derivative must
-% not move at all; 1000/1026 rounds rho and m, so rounding is all that moves
+% not move at all; 1000/1025 rounds rho and m, so rounding is all that moves
 if any(invC(2:3) ~= 0) || invC(1) > 1e-13 || invMss > 1e-13
     error('the copy is not density-invariant');
 end
@@ -265,7 +266,7 @@ invH = 0;
 for k = 1:NH
     x = Xh(:, k); t6 = Th(:, k); c = Ch(:, k);
     xd = hull(x, t6, c(1), c(2), c(3));
-    f = 1000 / 1026;
+    f = 1000 / 1025;
     xk = remus100_consistent(x, zeros(3, 1), c(1), c(2), c(3), ...
         struct('tau_ext', f * t6, 'rho', f * wsR.rho, 'mass', f * wsR.m_given));
     if max(abs(xd(1:6))) > 0
@@ -273,7 +274,7 @@ for k = 1:NH
     end
     rows(k, :) = [k x' t6' c' xd' hull_munk(x, t6, c(1), c(2), c(3))'];
 end
-fprintf('density invariance, hull, (rho, m, tau_ext) scaled by 1000/1026: %.3g (%d cases)\n', invH, NH);
+fprintf('density invariance, hull, (rho, m, tau_ext) scaled by 1000/1025: %.3g (%d cases)\n', invH, NH);
 if invH > 1e-13, error('the hull copy is not density-invariant'); end
 names = [{'case_id'}, vec_names('x', 12), vec_names('tau_ext', 6), {'Vc', 'betaVc', 'w_c'}, ...
     vec_names('xdot', 12), vec_names('xdot_munk', 12)];
@@ -517,7 +518,7 @@ function write_parameters_json(file, P, rev, wsR, massGiven)
     fprintf(fid, '{\n');
     fprintf(fid, '  "vehicle": "REMUS 100, the MSS 1.6 m REMUS-like model with one value per quantity",\n');
     fprintf(fid, '  "source": {"repository": "MSS (T. I. Fossen), MIT licence", "revision": "%s", "file": "CRAFT/AUV/models/remus100.m", "copy": "remus100_consistent.m"},\n', rev);
-    fprintf(fid, '  "one_value": {"water_density": "%.17g kg/m^3 everywhere (remus100.m:98)", "geometry": "L = %.17g m, D = %.17g m everywhere (remus100.m:131-132)", "mass": %.17g, "mass_place": "remus100.m:3 the mass of the vehicle is 31.9 kg (given; body_density = mass / (4/3 pi a b^2))", "buoyancy": "B = W (remus100.m:214)"},\n', ...
+    fprintf(fid, '  "one_value": {"water_density": "%.17g kg/m^3 everywhere (remus100.m:98-99)", "geometry": "L = %.17g m, D = %.17g m everywhere (remus100.m:132-133)", "mass": %.17g, "mass_place": "remus100.m:3 the mass of the vehicle is 31.9 kg (given; body_density = mass / (4/3 pi a b^2))", "buoyancy": "B = W (remus100.m:215)"},\n', ...
         wsR.rho, wsR.L_auv, wsR.D_auv, massGiven);
     fprintf(fid, '  "gravity": {"latitude_rad": %.17g, "g": %.17g, "place": "remus100.m:96-97 mu = deg2rad(63.446827), g_mu = gravity(mu); weight = mass * g"},\n', wsR.mu, wsR.g_mu);
     fprintf(fid, '  "selectors": {"mass_properties": "spheroid", "coriolis": "co", "form": "submerged", "drag_model": "cylinder", "strip_grid": "midpoint", "sway_damping_fade": false, "smooth_speed_epsilon": 0.0, "open_water_model": "linearized", "open_water_coefficients": "given", "clip_advance_ratio": false, "convention": "starboard_down_positive"},\n');

@@ -151,10 +151,13 @@ end
 
 outFile = fullfile(outDir, 'spheroid_auv_dynamics_full_debug_template.csv');
 writetable(allRecords, outFile);
-dataDir = fileparts(scriptDir);
-for target = {'hydrodynamics/spheroid_matlab_reference.csv', 'hydrostatics/spheroid_matlab_reference.csv'}
-    [d, ~] = fileparts(target{1}); if ~exist(fullfile(outRoot, d), 'dir'), mkdir(fullfile(outRoot, d)); end
-    extract_like(outFile, fullfile(dataDir, target{1}), fullfile(outRoot, target{1}));
+testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
+% {frozen file under tests/, output name under OUT_DIR}
+for target = {{'hydrodynamic_loads/data/spheroid_matlab_reference.csv', 'hydrodynamics/spheroid_matlab_reference.csv'}, ...
+              {'restoring/data/spheroid_matlab_reference.csv', 'hydrostatics/spheroid_matlab_reference.csv'}}
+    t = target{1};
+    [d, ~] = fileparts(t{2}); if ~exist(fullfile(outRoot, d), 'dir'), mkdir(fullfile(outRoot, d)); end
+    extract_like(outFile, fullfile(testsDir, t{1}), fullfile(outRoot, t{2}));
 end
 
 disp("📁 Saved MATLAB results to: " + string(outFile));

@@ -18,13 +18,13 @@
 | `osv_surge_damping_mss_cc07579.csv` | the same at `cc07579`: `osv.m` no longer zeroes its persistent `vessel.D(1,1)` after reading it (lines 187–189 removed, `de9a316`), so `*_second` = `*_first` to 0 on all 44 speeds (−8.458e-4 m/s² at 1 m/s); only `D_nl_11_osv_second`, `nu_dot_1_osv_second` differ from the 2.0.2 file | `generate_osv_surge_mss.m` | `cc07579` | new | `870de3f6a5a99d61746c478c572c1f85dee4a47aa24f832f0bb0915b6afd086b` |
 | `spheroid_matlab_reference.csv` | 50 × 128, the spheroid columns from the **template** REMUS model (inline copies of `remus100.m`, `imlay61.m`, `forceLiftDrag.m` as of 2026-02: rho = 1025 everywhere, sway damping faded too) | `generate_spheroid_template.m` | MSS of 2026-02 | template record: at `cc07579` the generator differs in `tau_crossflow_02/03/05/06` only (≤ 163; `crossFlowDrag.m` and `cylinderDrag.m` changed since) | `2ba042b128b366fc059916d964d929db35e43d9c93303c0c853ab3fc869a390a` |
 | `catamaran_matlab_reference.csv` | 50 × 126, the catamaran columns from the **template** Otter model (latitude gravity `g = gravity(63.446827 deg)` in `Xu = −24.4 g/Umax` and `G`, 21 strip end points) | `generate_catamaran_template.m` | MSS of 2026-02 | template record: differs in `tau_crossflow_02/03/05/06` only (≤ 42.2) | `7c6e805825cced99449fdb2b8f6612b2395f26fb90e875503caa4bbc93b8b8fb` |
-| `cited_lines_snapshot.json` | the stripped text of the 134 MSS / template-generator lines and the 4 MSS tables the tests cite, with the MSS revision (`cc07579`, clean); the gates read it, so they run without an MSS checkout | `snapshot_cited_lines.py` | `cc07579` | made 2026-10-07 | `ac64f3df54690a453b98b35cd227208bcd93ade5b72f75f3c258806eba0d8dfe` |
-| `generate_spheroid_mss.m` | spheroid generator (writes the full CSV and the column extracts for this folder, `../hydrostatics`, `../rigid_body`) | — | — | re-run 2026-10-07: identical at `72656d1` and `cc07579` | `40b50c64235724f2353be637fe2384a5d8ae38564bc27f9a6cfc25472faa322f` |
-| `generate_catamaran_mss.m` | catamaran generator (names its extract `_mss_current` or `_mss_cc07579` by the `otter.m` KB it finds; also writes `../rigid_body/matlab_reference_mss_current.csv`) | — | — | as above | `1e4e1fea5ceabc05646bd2142d6d6759d2a86713c6ba03888efaaeca23a0e7b6` |
+| `cited_lines_snapshot.json` | the stripped text of the 134 MSS / template-generator lines and the 4 MSS tables the tests cite, with the MSS revision (`cc07579`, clean); the gates read it, so they run without an MSS checkout | `snapshot_cited_lines.py` | `cc07579` | made 2026-10-07 | `89c75864b0a4015ce47161477e7434cb7b63c94b3fb81324120b9ede32f6a464` |
+| `generate_spheroid_mss.m` | spheroid generator (writes the full CSV and the column extracts for this folder, `../hydrostatics`, `../rigid_body`) | — | — | re-run 2026-10-07: identical at `72656d1` and `cc07579` | `1bb41b5e2d39dfd22ff7867775120f42199bddc5c05ec702ad198fbe59b1132e` |
+| `generate_catamaran_mss.m` | catamaran generator (names its extract `_mss_current` or `_mss_cc07579` by the `otter.m` KB it finds; also writes `../rigid_body/matlab_reference_mss_current.csv`) | — | — | as above | `98d4c640d8b40774a6170be6a39c578cdb290f1bd190a78608b34d9d6cc52f6f` |
 | `generate_osv_surge_mss.m` | OSV surge generator | — | — | as above | `b71311f91c5edf0b44d2bdf0b5ffe31a6cfb6a8256b1b0ca3196df491ac780d9` |
 | `generate_u3_surge_floating_mss.m` | surge / ITTC / floating-damping generator; runs only where `forceSurgeDamping.m` exists (MSS ≤ `ac77394`); writes beside itself (`%.17g`) | — | — | unchanged | `e9e0610298e2559740ca73b0b9b39a822d019b23c23b201847e5c74afe0c95b5` |
 | `generate_spheroid_template.m`, `generate_catamaran_template.m` | the two template generators (MATLAB, first written 2026-02-18) | — | — | as stated per file above | `64b02930a6ccb82dcf6b1c82aab57f9cf2178eee24211e1674ebde35a79b1685`, `7f681c59f69168860a458a1fda526d2e551d027d48c27e84d079abcecf5df404` |
-| `snapshot_cited_lines.py` | writes the snapshot: `MSS_DIR=<MSS checkout> python tests/hydrodynamic_loads/data/snapshot_cited_lines.py`; refuses a cited line that no longer starts with its pinned text | — | — | — | `ed9f29bd7be5fd319bd88ed48493faaf490327b4bc10115b2963737a18cd7740` |
+| `snapshot_cited_lines.py` | writes the snapshot: `MSS_DIR=<MSS checkout> python tests/hydrodynamic_loads/data/snapshot_cited_lines.py`; refuses a cited line that no longer starts with its pinned text | — | — | — | `7bf99791ea084453f5258c1c2b2d1fdbbb3ccef730d9e06a1b31e00a9ca2b38c` |
 
 ## Layout and conventions
 
@@ -41,3 +41,14 @@ Written at the revision named beside them. From `72656d1` to `cc07579`: `otter.m
 ## Readers
 
 `tests/hydrodynamic_loads/test_hydrodynamics_block.py`. `osv_surge_damping_mss_*.csv`: none yet (a candidate third surge form, for the owner to decide).
+
+## Re-pin to MSS `99fdf4d` (2026-10-23, MATLAB R2026a Update 4; `99fdf4dbdfe0b3f124e26a689c6aabe0beb5654f`, 41 commits after `cc07579`)
+
+Moved by MSS: `forceLiftDrag.m`, `imlay61.m`, `spheroid.m`, `crossFlowDrag.m`, `Gmtrx.m`, `addedMassSurge.m`, `remus100.m` read `rho` from `mssConstants.m` (1025; `23c307e`); `otter.m` blends the surge damping (`Xu exp(-3|u|) u + Xuu |u| u`, `T_surge` 5 s, `be1f126`), `T_sway` 0.5 s, and takes `Xudot` from `m + mP` (`dd6b85f`); `Hoerner.m` clamps to the table (`b316692`).
+
+| File | What | sha256 |
+|---|---|---|
+| `catamaran_matlab_reference_mss_99fdf4d.csv` | the columns of the `cc07579` file at `99fdf4d`: `tau_damp` (blended surge, `T_sway` 0.5), `M_A` and what follows from the surge added mass on `m + mP` | `4ae9b478aacc0935608ed72f1ff52a1f0ac245b35896ab0e123f1b56712beccd` |
+| `spheroid_matlab_reference_mss_99fdf4d.csv` | the columns of the `ac77394` file at `99fdf4d`: added mass, lift and drag with `rho` = 1025 throughout | `75520a7b89fc2ae72b7beccc2651fdb10785a7017c5cf2f8f6e4d0d2ae9901d1` |
+
+The `cc07579`, `ac77394`, `current` and template files stay as the record of the earlier revisions (the retained linear surge form and the two-density spheroid are gated against them). `generate_catamaran_mss.m` and `generate_spheroid_mss.m` name the new files by revision and read the frozen files' column lists from the new `tests/<block>/data/` layout; `generate_*_template.m` read the same paths (their outputs are byte-identical to the `cc07579` run). `cited_lines_snapshot.json` was made again at `99fdf4d`; the lines of `otter.m` the retained linear form follows are pinned at `$MSS_DIR@cc07579` (`OTTER_OLD`, `FLD_OLD` in the test).

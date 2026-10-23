@@ -65,7 +65,8 @@ if nargin == 4
     drag_model = 'Hoerner'; 
 end 
 
-%<removed> rho = 1025;         % Density of water (kg/m3)
+%<removed> constant = mssConstants();
+%<removed> rho = constant.rho_water;
 nStrips = 20;       % Number of hull strips
 dx = L / nStrips;   % Strip width (m)
 

@@ -86,23 +86,23 @@ if ~isequal(M0, wsR.M)
 end
 
 P = {};   % name, value, unit, place (npsauv.m line), kind
-P(end+1, :) = {'length', wsR.L, 'm', 'npsauv.m:105 L = 5.3', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'gravity', wsR.g, 'm/s^2', 'npsauv.m:105 g = 9.81', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'body_center_of_gravity', [wsR.xG; wsR.yG; wsR.zG], 'm', 'npsauv.m:106 [xG yG zG]', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'center_of_buoyancy', [wsR.xB; wsR.yB; wsR.zB], 'm', 'npsauv.m:107 [xB yB zB]', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'weight', wsR.W, 'N', 'npsauv.m:108 W = 53400', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'buoyancy', wsR.B, 'N', 'npsauv.m:108 B = 53400 (neutral, W = B as given)', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'water_density', wsR.rho, 'kg/m^3', 'npsauv.m:109 rho = 1025', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'body_mass', wsR.mass, 'kg', 'npsauv.m:109 mass = W / g (derived from the given weight)', 'derived, via MSS'};
-P(end+1, :) = {'inertia_diagonal', [wsR.Ix; wsR.Iy; wsR.Iz], 'kg m^2', 'npsauv.m:110 [Ix Iy Iz]', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'inertia_products', [wsR.Ixy; wsR.Iyz; wsR.Ixz], 'kg m^2', 'npsauv.m:111 [Ixy Iyz Ixz] (full tensor, not diagonal)', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'cross_flow_drag_coefficients', [wsR.Cdy; wsR.Cdz], '1', 'npsauv.m:112 [Cdy Cdz]', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'cross_flow_section_dimensions', [wsR.Hx; wsR.Bx], 'm', 'npsauv.m:220-221 Hx, Bx (average height/width of the submerged body)', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'cross_flow_sections', 10, '1', 'npsauv.m:218 dxL = L/10 (number of strips; a numerical grid density, not a physical quantity)', 'numerical device'};
+P(end+1, :) = {'length', wsR.L, 'm', 'npsauv.m:106 L = 5.3', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'gravity', wsR.g, 'm/s^2', 'npsauv.m:105-106 g = constant.g, mssConstants.m:14 = 9.81', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'body_center_of_gravity', [wsR.xG; wsR.yG; wsR.zG], 'm', 'npsauv.m:107 [xG yG zG]', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'center_of_buoyancy', [wsR.xB; wsR.yB; wsR.zB], 'm', 'npsauv.m:108 [xB yB zB]', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'weight', wsR.W, 'N', 'npsauv.m:109 W = 53400', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'buoyancy', wsR.B, 'N', 'npsauv.m:109 B = 53400 (neutral, W = B as given)', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'water_density', wsR.rho, 'kg/m^3', 'npsauv.m:110 rho = constant.rho_water, mssConstants.m:12 = 1025', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'body_mass', wsR.mass, 'kg', 'npsauv.m:110 mass = W / g (derived from the given weight)', 'derived, via MSS'};
+P(end+1, :) = {'inertia_diagonal', [wsR.Ix; wsR.Iy; wsR.Iz], 'kg m^2', 'npsauv.m:111 [Ix Iy Iz]', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'inertia_products', [wsR.Ixy; wsR.Iyz; wsR.Ixz], 'kg m^2', 'npsauv.m:112 [Ixy Iyz Ixz] (full tensor, not diagonal)', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'cross_flow_drag_coefficients', [wsR.Cdy; wsR.Cdz], '1', 'npsauv.m:113 [Cdy Cdz]', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'cross_flow_section_dimensions', [wsR.Hx; wsR.Bx], 'm', 'npsauv.m:221-222 Hx, Bx (average height/width of the submerged body)', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'cross_flow_sections', 10, '1', 'npsauv.m:219 dxL = L/10 (number of strips; a numerical grid density, not a physical quantity)', 'numerical device'};
 P(end+1, :) = {'max_fin_deflection', wsR.max_u(1), 'rad', 'npsauv.m:93 deg2rad(20) (rudder, stern plane, two bow planes; one value, all four)', 'via MSS, Healey & Lienard 1993 not read'};
 P(end+1, :) = {'max_shaft_speed', wsR.max_u(5), 'rpm', 'npsauv.m:93 1500', 'via MSS, Healey & Lienard 1993 not read'};
 P(end+1, :) = {'actuator_time_constant', wsR.T_actuator, 's', 'npsauv.m:95 T_actuator = 0.1 (one value, all five channels)', 'via MSS, Healey & Lienard 1993 not read'};
-P(end+1, :) = {'propeller_thrust_drag_coefficient', wsR.Cd0, '1', 'npsauv.m:177 Cd0 = 0.00385', 'via MSS, Healey & Lienard 1993 not read'};
+P(end+1, :) = {'propeller_thrust_drag_coefficient', wsR.Cd0, '1', 'npsauv.m:178 Cd0 = 0.00385', 'via MSS, Healey & Lienard 1993 not read'};
 derivNames = {'Xpp','Xqq','Xrr','Xpr','Xudot','Xwq','Xvp','Xvr','Xqds','Xqdb2','Xrdr','Xvv', ...
     'Xww','Xvdr','Xwds','Xwdb2','Xdsds','Xdrdr','Xqdsn','Xwdsn','Xdsdsn', ...
     'Ypdot','Yrdot','Ypq','Yqr','Yvdot','Yp','Yr','Yvq','Ywp','Ywr','Yv','Yvw','Ydr', ...
@@ -222,7 +222,7 @@ deg = pi / 180;
 S = struct([]);
 % Flag (rule 21, not fixed, not guessed): npsauv.m's propeller thrust and its
 % epsilon/Ct correction terms are multiplied by the relative surge u_r or
-% u_r^2 (npsauv.m 179-192, 196, 198); at u_r = 0 exactly, with p = q = r = 0
+% u_r^2 (npsauv.m 180-193, 197, 199); at u_r = 0 exactly, with p = q = r = 0
 % too, every coupling term also vanishes, so xdot(1) = 0 exactly: zero
 % relative surge is a genuine fixed point of the model, not a numerical
 % artifact (checked: finite, non-NaN, exactly 0 at u = 0 with any n_p; a
@@ -395,7 +395,7 @@ function write_parameters_json(file, P, rev, wsR, B_delta0)
     fprintf(fid, '  "vehicle": "NPS AUV II, MSS npsauv.m (Healey and Lienard 1993)",\n');
     fprintf(fid, '  "source": {"repository": "MSS (T. I. Fossen), MIT licence", "revision": "%s", "file": "CRAFT/AUV/models/npsauv.m"},\n', rev);
     fprintf(fid, '  "needs_access": [{"citation": "A. J. Healey and D. Lienard (1993). Multivariable Sliding Mode Control for Autonomous Diving and Steering of Unmanned Underwater Vehicles, IEEE Journal of Ocean Engineering 18(3):327-339.", "status": "not read; every value here is read from MSS npsauv.m, not the paper"}],\n');
-    fprintf(fid, '  "derivative_scaling": {"published_form": "nondimensional, scaled by r2=0.5*rho*L^2, r3=0.5*rho*L^3, r4=0.5*rho*L^4, r5=0.5*rho*L^5 (npsauv.m 118-121, Fossen Appendix D.2 prime-scaling); dimensional form is an option beside it, not built here (U6e)"},\n');
+    fprintf(fid, '  "derivative_scaling": {"published_form": "nondimensional, scaled by r2=0.5*rho*L^2, r3=0.5*rho*L^3, r4=0.5*rho*L^4, r5=0.5*rho*L^5 (npsauv.m 119-122, Fossen Appendix D.2 prime-scaling); dimensional form is an option beside it, not built here (U6e)"},\n');
     fprintf(fid, '  "state_vector": "x = [u v w p q r xpos ypos zpos phi theta psi delta_r delta_s delta_bp delta_bs n_p] (17), npsauv.m 73-77; hull-only split (npsauv_hull.m) drops the last 5 (12)",\n');
     fprintf(fid, '  "input_vector": "ui = [delta_r_com delta_s_com delta_bp_com delta_bs_com n_com] (5), npsauv.m 28-35; one first-order actuator lag T_actuator for all five channels (npsauv.m 95), saturated at max_u (npsauv.m 93) before the lag",\n');
     fprintf(fid, '  "b_delta_empty_call": [%s],\n', strjoin(arrayfun(@(a) sprintf('%.17g', a), reshape(B_delta0', 1, []), 'UniformOutput', false), ', '));

@@ -210,6 +210,9 @@ REMUS = "$MSS_DIR/CRAFT/AUV/models/remus100.m"
 OTTER = "$MSS_DIR/CRAFT/USV/models/otter.m"
 DMTRX = "$MSS_DIR/LIBRARY/modeling/Dmtrx.m"
 FLD = "$MSS_DIR/LIBRARY/modeling/forceLiftDrag.m"
+MSSC = "$MSS_DIR/LIBRARY/mssConstants.m"
+FLD_OLD = "$MSS_DIR@cc07579/LIBRARY/modeling/forceLiftDrag.m"   # two densities in one MSS model: rho = 1026 here
+OTTER_OLD = "$MSS_DIR@cc07579/CRAFT/USV/models/otter.m"   # the linear-surge Otter the retained "surface" form follows
 CLD = "$MSS_DIR/LIBRARY/modeling/coeffLiftDrag.m"
 CFD = "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m"
 CYL = "$MSS_DIR/HYDRO/cylinderDrag.m"
@@ -237,52 +240,55 @@ GEN_CAT = "$TESTS/hydrodynamic_loads/data/generate_catamaran_template.m"
 # test_cited_lines_are_unchanged; every constant below is parsed from these.
 CITED_LINES = {
     (REMUS, 96): "mu = deg2rad(63.446827);",
-    (REMUS, 126): "alpha = atan2( nu_r(3), nu_r(1) );",
-    (REMUS, 127): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
-    (REMUS, 131): "L_auv = 1.6;",
-    (REMUS, 132): "D_auv = 0.19;",
-    (REMUS, 133): "S = 0.7 * L_auv * D_auv;",
-    (REMUS, 135): "b = 1.0096 * D_auv/2;",
-    (REMUS, 137): "r_bG = [ 0 0 0.02 ]';",
-    (REMUS, 138): "r_bB = [ 0 0 0 ]';",
-    (REMUS, 143): "Cd = 0.42;",
-    (REMUS, 144): "CD_0 = Cd * pi * b^2 / S;",
-    (REMUS, 192): "T1 = 20;",
-    (REMUS, 193): "T2 = 20;",
-    (REMUS, 194): "zeta4 = 0.3;",
-    (REMUS, 195): "zeta5 = 0.8;",
-    (REMUS, 196): "T6 = 1;",
-    (REMUS, 217): "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
-    (REMUS, 218): "D(1,1) = D(1,1) * exp(-3 * U_r);",
-    (REMUS, 220): "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
-    (REMUS, 221): "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
+    (REMUS, 127): "alpha = atan2( nu_r(3), nu_r(1) );",
+    (REMUS, 128): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
+    (REMUS, 132): "L_auv = 1.6;",
+    (REMUS, 133): "D_auv = 0.19;",
+    (REMUS, 134): "S = 0.7 * L_auv * D_auv;",
+    (REMUS, 136): "b = 1.0096 * D_auv/2;",
+    (REMUS, 138): "r_bG = [ 0 0 0.02 ]';",
+    (REMUS, 139): "r_bB = [ 0 0 0 ]';",
+    (REMUS, 144): "Cd = 0.42;",
+    (REMUS, 145): "CD_0 = Cd * pi * b^2 / S;",
+    (REMUS, 193): "T1 = 20;",
+    (REMUS, 194): "T2 = 20;",
+    (REMUS, 195): "zeta4 = 0.3;",
+    (REMUS, 196): "zeta5 = 0.8;",
+    (REMUS, 197): "T6 = 1;",
+    (REMUS, 218): "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
+    (REMUS, 219): "D(1,1) = D(1,1) * exp(-3 * U_r);",
+    (REMUS, 221): "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
+    (REMUS, 222): "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
     (DMTRX, 30): "M = MRB + MA;",
     (DMTRX, 44): "T3 = T2;",
     (DMTRX, 45): "w4 = sqrt( W * (r_bg(3)-r_bb(3)) / M(4,4) );",
     (DMTRX, 46): "w5 = sqrt( W * (r_bg(3)-r_bb(3)) / M(5,5) );",
     (DMTRX, 48): "D = diag( [M(1,1)/T1 M(2,2)/T2 M(3,3)/T3...",
     (DMTRX, 49): "M(4,4)*2*zeta4*w4  M(5,5)*2*zeta5*w5 M(6,6)/T6 ] );",
-    (FLD, 26): "rho = 1026;",
-    (FLD, 28): "[CL,CD] = coeffLiftDrag(b,S,CD_0,alpha,0);",
-    (FLD, 30): "F_drag = 1/2 * rho * U_r^2 * S * CD;",
-    (FLD, 31): "F_lift = 1/2 * rho * U_r^2 * S * CL;",
-    (FLD, 35): "cos(alpha) * (-F_drag) - sin(alpha) * (-F_lift)",
-    (FLD, 37): "sin(alpha) * (-F_drag) + cos(alpha) * (-F_lift)",
+    (FLD, 26): "constant = mssConstants();",
+    (FLD, 27): "rho = constant.rho_water;",
+    (FLD_OLD, 26): "rho = 1026;",
+    (FLD, 29): "[CL,CD] = coeffLiftDrag(b,S,CD_0,alpha,0);",
+    (FLD, 31): "F_drag = 1/2 * rho * U_r^2 * S * CD;",
+    (FLD, 32): "F_lift = 1/2 * rho * U_r^2 * S * CL;",
+    (FLD, 36): "cos(alpha) * (-F_drag) - sin(alpha) * (-F_lift)",
+    (FLD, 38): "sin(alpha) * (-F_drag) + cos(alpha) * (-F_lift)",
     (CLD, 54): "e = 0.3;",
     (CLD, 57): "AR = b^2/S;",
     (CLD, 60): "CL_alpha = pi * AR / ( 1 + sqrt(1 + (AR/2)^2) );",
     (CLD, 61): "CL_linear = CL_alpha * alpha;",
     (CLD, 68): "CD = CD_0 + CL.^2 / (pi * e * AR);",
-    (CFD, 36): "rho = 1025;",
-    (CFD, 37): "nStrips = 20;",
-    (CFD, 38): "dx = L / nStrips;",
-    (CFD, 56): "xL = -L/2 + (i - 0.5) * dx;",
-    (CFD, 61): "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
-    (CFD, 62): "U_v = abs(w_r + xL * q) * (w_r + xL * q);",
-    (CFD, 63): "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;",
-    (CFD, 64): "Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;",
-    (CFD, 65): "Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;",
-    (CFD, 66): "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;",
+    (CFD, 36): "constant = mssConstants();",
+    (CFD, 37): "rho = constant.rho_water;",
+    (CFD, 38): "nStrips = 20;",
+    (CFD, 39): "dx = L / nStrips;",
+    (CFD, 57): "xL = -L/2 + (i - 0.5) * dx;",
+    (CFD, 62): "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
+    (CFD, 63): "U_v = abs(w_r + xL * q) * (w_r + xL * q);",
+    (CFD, 64): "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;",
+    (CFD, 65): "Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;",
+    (CFD, 66): "Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;",
+    (CFD, 67): "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;",
     # cylinderDrag.m at ac77394 (issue #81): the Reynolds number on the diameter
     (CYL, 78): "U_crossflow = sqrt(nu_r(2)^2+nu_r(3)^2);",
     (CYL, 79): "nu_water = 1e-6;",
@@ -305,8 +311,8 @@ CITED_LINES = {
     (FSD, 74): "Xuu = -0.5 * rho * S * (1+k) * Cf;",
     (FSD, 79): "sigma = 1 - tanh(u_r / u_cross);",
     (FSD, 82): "X = sigma .* Xu .* u_r + (1 - sigma) .* Xuu .* abs(u_r) .* u_r;",
-    (AMS, 32): "nabla = m / rho;",
-    (AMS, 33): "A11 = 2.7 * rho * nabla^(5/3) / L^2;",
+    (AMS, 33): "nabla = m / rho;",
+    (AMS, 34): "A11 = 2.7 * rho * nabla^(5/3) / L^2;",
     (XITTC, 29): "C_B = 0.65;",
     (XITTC, 32): "nu_kin = 1e-6;",
     (XITTC, 33): "k = 0.1;",
@@ -318,59 +324,76 @@ CITED_LINES = {
     (OSV, 61): "vessel.L = 83;",
     (OSV, 62): "vessel.B = 18;",
     (OSV, 63): "vessel.T = 5;",
-    (OSV, 64): "vessel.rho = 1025;",
-    (OSV, 65): "vessel.Cb = 0.65;",
-    (OSV, 66): "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B;",
-    (OSV, 69): "vessel.K_max = [300e3 300e3 420e3 655e3]';",
-    (OSV, 75): "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4);",
-    (OSV, 76): "vessel.U_max = 7.7;",
-    (OSV, 78): "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T;",
-    (OSV, 79): "vessel.m = vessel.rho * vessel.nabla;",
-    (OSV, 128): "vessel.T1 = 100;",
+    (OSV, 64): "constant = mssConstants();",
+    (OSV, 65): "vessel.rho = constant.rho_water;",
+    (OSV, 66): "vessel.Cb = 0.65;",
+    (OSV, 67): "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B;",
+    (OSV, 70): "vessel.K_max = [300e3 300e3 420e3 655e3]';",
+    (OSV, 76): "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4);",
+    (OSV, 77): "vessel.U_max = 7.7;",
+    (OSV, 79): "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T;",
+    (OSV, 80): "vessel.m = vessel.rho * vessel.nabla;",
+    (OSV, 129): "vessel.T1 = 100;",
     (OSV_SURGE_CALL, 180): "[X,Xuu,Xu] = forceSurgeDamping(flag,nu_r(1),vessel.m,vessel.S,vessel.L, ...",
     (OSV_SURGE_CALL, 181): "vessel.T1,vessel.rho,vessel.U_max,vessel.thrust_max);",
     (OSV_2_0_2, 188): "vessel.D(1,1) = 0;",
-    (HOERNER, 47): "if B/(2*T) <= 4.00309",
-    (HOERNER, 48): "CY_2D = interp1(CD_DATA(:,1),CD_DATA(:,2),B/(2*T));",
-    (HOERNER, 50): "CY_2D = 0.559315;",
+    (HOERNER, 49): "if ~isnumeric(B) || ~isscalar(B) || ~isreal(B) || ~isfinite(B) || B <= 0",
+    (HOERNER, 57): "ratio = B / (2*T);",
+    (HOERNER, 58): "ratio = min(max(ratio, CD_DATA(1,1)), CD_DATA(end,1));",
+    (HOERNER, 59): "CY_2D = interp1(CD_DATA(:,1), CD_DATA(:,2), ratio);",
     (GRAVITY, 11): "g = 9.7803253359 * ( 1 + 0.001931850400 * sin(mu)^2 ) /...",
     (GRAVITY, 12): "sqrt( 1 - 0.006694384442 * sin(mu)^2 );",
-    (OTTER, 90): "g   = 9.81;",
-    (OTTER, 91): "rho = 1025;",
-    (OTTER, 92): "L = 2.0;",
-    (OTTER, 94): "m = 55.0;",
-    (OTTER, 99): "T_sway = 1;",
-    (OTTER, 100): "T_yaw = 1;",
-    (OTTER, 101): "Umax = 6 * 0.5144;",
-    (OTTER, 104): "B_pont  = 0.25;",
-    (OTTER, 107): "Cb_pont = 0.4;",
-    (OTTER, 121): "nabla = (m+mp)/rho;",
-    (OTTER, 122): "T = nabla / (2 * Cb_pont * B_pont * L);",
-    (OTTER, 192): "LCF = -0.2;",
-    (OTTER, 197): "w3 = sqrt( G33/M(3,3) );",
-    (OTTER, 198): "w4 = sqrt( G44/M(4,4) );",
-    (OTTER, 199): "w5 = sqrt( G55/M(5,5) );",
-    (OTTER, 202): "Xu = -24.4 * g / Umax;",
-    (OTTER, 203): "Yv = -M(2,2) / T_sway;",
-    (OTTER, 204): "Zw = -2 * 0.3 * w3 * M(3,3);",
-    (OTTER, 205): "Kp = -2 * 0.2 * w4 * M(4,4);",
-    (OTTER, 206): "Mq = -2 * 0.4 * w5 * M(5,5);",
-    (OTTER, 207): "Nr = -M(6,6) / T_yaw;",
-    (OTTER, 235): "Xh = Xu * nu_r(1);",
-    (OTTER, 236): "Yh = Yv * nu_r(2);",
-    (OTTER, 237): "Zh = Zw * nu_r(3);",
-    (OTTER, 238): "Kh = Kp * nu_r(4);",
-    (OTTER, 239): "Mh = Mq * nu_r(5);",
-    (OTTER, 240): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-    (OTTER, 245): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
-    (GEN_SPH, 231): "rho = 1025;",
-    (GEN_SPH, 292): "D(1,1) = D(1,1) * exp(-3*U_r);",
-    (GEN_SPH, 293): "D(2,2) = D(2,2) * exp(-3*U_r);",
-    (GEN_SPH, 492): "rho = 1025;",
+    (MSSC, 12): "constant.rho_water = 1025;",
+    (MSSC, 14): "constant.g = 9.81;",
+    (OTTER, 95): "constant = mssConstants();",
+    (OTTER, 96): "g = constant.g;",
+    (OTTER, 97): "rho = constant.rho_water;",
+    (OTTER, 98): "L = 2.0;",
+    (OTTER, 100): "m = 55.0;",
+    (OTTER, 105): "T_surge = 5;",
+    (OTTER, 107): "T_yaw = 1;",
+    (OTTER, 108): "Umax = 6 * 0.5144;",
+    (OTTER, 111): "B_pont  = 0.25;",
+    (OTTER, 114): "Cb_pont = 0.4;",
+    (OTTER, 128): "nabla = (m+mP)/rho;",
+    (OTTER, 129): "T = nabla / (2 * Cb_pont * B_pont * L);",
+    (OTTER, 106): "T_sway = 0.5;",
+    (OTTER_OLD, 99): "T_sway = 1;",
+    (OTTER_OLD, 100): "T_yaw = 1;",
+    (OTTER_OLD, 101): "Umax = 6 * 0.5144;",
+    (OTTER_OLD, 192): "LCF = -0.2;",
+    (OTTER_OLD, 202): "Xu = -24.4 * g / Umax;",
+    (OTTER_OLD, 204): "Zw = -2 * 0.3 * w3 * M(3,3);",
+    (OTTER_OLD, 205): "Kp = -2 * 0.2 * w4 * M(4,4);",
+    (OTTER_OLD, 206): "Mq = -2 * 0.4 * w5 * M(5,5);",
+    (OTTER_OLD, 240): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
+    (OTTER, 201): "LCF = -0.2;",
+    (OTTER, 206): "w3 = sqrt( G33/M(3,3) );",
+    (OTTER, 207): "w4 = sqrt( G44/M(4,4) );",
+    (OTTER, 208): "w5 = sqrt( G55/M(5,5) );",
+    (OTTER, 211): "Xu = -M(1,1) / T_surge;",
+    (OTTER, 212): "Xuu = -24.4 * g / Umax^2;",
+    (OTTER, 213): "Yv = -M(2,2) / T_sway;",
+    (OTTER, 214): "Zw = -2 * 0.3 * w3 * M(3,3);",
+    (OTTER, 215): "Kp = -2 * 0.2 * w4 * M(4,4);",
+    (OTTER, 216): "Mq = -2 * 0.4 * w5 * M(5,5);",
+    (OTTER, 217): "Nr = -M(6,6) / T_yaw;",
+    (OTTER, 245): "Xh = Xu  * exp(-3 * abs(nu_r(1))) * nu_r(1) + ...",
+    (OTTER, 246): "Xuu * abs(nu_r(1)) * nu_r(1);",
+    (OTTER, 247): "Yh = Yv * nu_r(2);",
+    (OTTER, 248): "Zh = Zw * nu_r(3);",
+    (OTTER, 249): "Kh = Kp * nu_r(4);",
+    (OTTER, 250): "Mh = Mq * nu_r(5);",
+    (OTTER, 251): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
+    (OTTER, 256): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
+    (GEN_SPH, 234): "rho = 1025;",
+    (GEN_SPH, 295): "D(1,1) = D(1,1) * exp(-3*U_r);",
+    (GEN_SPH, 296): "D(2,2) = D(2,2) * exp(-3*U_r);",
+    (GEN_SPH, 495): "rho = 1025;",
     (GEN_CAT, 35): "mp = 25;",
-    (GEN_CAT, 165): "mu = deg2rad(63.446827);",
-    (GEN_CAT, 166): "g = gravity(mu);",
-    (GEN_CAT, 216): "Xu = -24.4*g/Umax; Yv = -M(2,2)/T_sway; Zw = -2*0.3*w3*M(3,3);",
+    (GEN_CAT, 168): "mu = deg2rad(63.446827);",
+    (GEN_CAT, 169): "g = gravity(mu);",
+    (GEN_CAT, 219): "Xu = -24.4*g/Umax; Yv = -M(2,2)/T_sway; Zw = -2*0.3*w3*M(3,3);",
 }
 
 
@@ -487,11 +510,14 @@ MSS_SPHEROID = "spheroid_matlab_reference_mss_current.csv"      # MSS 99bf0b3
 MSS_CATAMARAN = "catamaran_matlab_reference_mss_current.csv"
 # MSS cc07579: otter.m KB with the waterplane area (cf349d4); G, Kp, Mq change
 MSS_CATAMARAN_CC07579 = "catamaran_matlab_reference_mss_cc07579.csv"
+# MSS 99fdf4d: surge damping blended from Xu and Xuu, surge added mass on m + mP (be1f126, dd6b85f)
+MSS_CATAMARAN_99FDF4D = "catamaran_matlab_reference_mss_99fdf4d.csv"
 # osv.m surge law of release 2.0.2 at cc07579 (generate_osv_surge_mss.m)
 MSS_OSV_SURGE = "osv_surge_damping_mss_cc07579.csv"
 # 2026-10-06: the same generator re-run unchanged at MSS ac77394; only the four
 # non-zero tau_crossflow columns differ from MSS_SPHEROID (test below)
 MSS_AC_SPHEROID = "spheroid_matlab_reference_mss_ac77394.csv"
+MSS_99_SPHEROID = "spheroid_matlab_reference_mss_99fdf4d.csv"   # the same columns at MSS 99fdf4d
 MSS_SURGE = "surge_damping_mss_ac77394.csv"          # forceSurgeDamping.m, direct calls
 MSS_XUU_ITTC = "xuu_ittc_mss_ac77394.csv"            # XuuITTC.m, direct calls
 MSS_FLOATING = "floating_damping_mss_ac77394.csv"    # Dmtrx.m surface branch, direct calls
@@ -543,10 +569,10 @@ def _max_diff(a, b):
 # Parameter sets (every number parsed from a pinned line)
 # --------------------------------------------------------------------------
 def _spheroid_geometry():
-    l_auv, d_auv = _value(REMUS, 131), _value(REMUS, 132)
-    s = _value(REMUS, 133, {"L_auv": l_auv, "D_auv": d_auv})
-    b = _value(REMUS, 135, {"D_auv": d_auv})
-    cd0 = _value(REMUS, 144, {"Cd": _value(REMUS, 143), "b": b, "S": s})
+    l_auv, d_auv = _value(REMUS, 132), _value(REMUS, 133)
+    s = _value(REMUS, 134, {"L_auv": l_auv, "D_auv": d_auv})
+    b = _value(REMUS, 136, {"D_auv": d_auv})
+    cd0 = _value(REMUS, 145, {"Cd": _value(REMUS, 144), "b": b, "S": s})
     return {"L": l_auv, "D": d_auv, "S": s, "CD_0": cd0}
 
 
@@ -559,10 +585,10 @@ def _spheroid_damping(fade, csv=LEGACY_SPHEROID):
         "rigid_body_mass_matrix": mrb,
         "added_mass_matrix": ma,
         "weight": mrb[0, 0] * ECEFNEDtransform.gravity(_value(REMUS, 96), unit="rad"),  # remus100.m 214
-        "center_of_gravity": _value(REMUS, 137),
-        "center_of_buoyancy": _value(REMUS, 138),
-        "time_constants": [_value(REMUS, 192), _value(REMUS, 193), _value(REMUS, 196)],
-        "damping_ratios": [_value(REMUS, 194), _value(REMUS, 195)],
+        "center_of_gravity": _value(REMUS, 138),
+        "center_of_buoyancy": _value(REMUS, 139),
+        "time_constants": [_value(REMUS, 193), _value(REMUS, 194), _value(REMUS, 197)],
+        "damping_ratios": [_value(REMUS, 195), _value(REMUS, 196)],
         "sway_damping_fade": fade,
     }
 
@@ -570,20 +596,20 @@ def _spheroid_damping(fade, csv=LEGACY_SPHEROID):
 def _cross_flow_spheroid(grid):
     geo = _spheroid_geometry()
     return {"length": geo["L"], "beam": geo["D"], "draft": geo["D"],   # remus100.m 221
-            "water_density": _value(CFD, 36), "drag_model": "cylinder",
+            "water_density": _value(MSSC, 12), "drag_model": "cylinder",
             "strip_grid": grid}
 
 
 def _catamaran_draft():
-    m, rho, mp = _value(OTTER, 94), _value(OTTER, 91), _value(GEN_CAT, 35)
-    nabla = _value(OTTER, 121, {"m": m, "mp": mp, "rho": rho})
-    return _value(OTTER, 122, {"nabla": nabla, "Cb_pont": _value(OTTER, 107),
-                               "B_pont": _value(OTTER, 104), "L": _value(OTTER, 92)})
+    m, rho, mp = _value(OTTER, 100), _value(MSSC, 12), _value(GEN_CAT, 35)
+    nabla = _value(OTTER, 128, {"m": m, "mP": mp, "rho": rho})
+    return _value(OTTER, 129, {"nabla": nabla, "Cb_pont": _value(OTTER, 114),
+                               "B_pont": _value(OTTER, 111), "L": _value(OTTER, 98)})
 
 
 def _cross_flow_catamaran(grid):
-    return {"length": _value(OTTER, 92), "beam": _value(OTTER, 104),
-            "draft": _catamaran_draft(), "water_density": _value(CFD, 36),
+    return {"length": _value(OTTER, 98), "beam": _value(OTTER, 111),
+            "draft": _catamaran_draft(), "water_density": _value(MSSC, 12),
             "drag_model": "hoerner", "strip_grid": grid}                # otter.m 244
 
 
@@ -596,23 +622,41 @@ def _lift_drag_spheroid(rho):
 
 def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
     """Mass and restoring matrices of the catamaran reference; G moved from
-    the CO to the CF with H(-r_f), r_f = [LCF 0 0] (otter.m 191-193)."""
+    the CO to the CF with H(-r_f), r_f = [LCF 0 0] (otter.m 191-193 at
+    cc07579, 201 at 99fdf4d). The 99fdf4d file takes the blended surge law
+    (``surge_time_constant``, ``surge_blend_decay``), the earlier files the
+    linear one of the retained ``surface`` form."""
     ref = _catamaran_reference(csv)
     m, g_co = ref["M"][0], ref["G"][0]
-    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER, 192), 0.0, 0.0]))
-    return {
+    blend = csv == MSS_CATAMARAN_99FDF4D
+    o = OTTER if blend else OTTER_OLD
+    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 201 if blend else 192), 0.0, 0.0]))
+    p = {
         "mass_matrix": m,
         "restoring_matrix": h_inv.T @ g_co @ h_inv,
-        "max_forward_thrust": _number_in(OTTER, 202, r"Xu = -([0-9.]+) \*") * gravity,
-        "max_speed": _value(OTTER, 101),
-        "time_constants": [_value(OTTER, 99), _value(OTTER, 100)],
-        "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (204, 205, 206)],
-        "yaw_damping_nonlinearity": _number_in(OTTER, 240, r"\(1 \+ ([0-9.]+) \* abs"),
+        "max_speed": _value(OTTER, 108) if blend else _value(OTTER_OLD, 101),
+        "yaw_damping_nonlinearity": _number_in(OTTER if blend else OTTER_OLD, 251 if blend else 240,
+                                               r"\(1 \+ ([0-9.]+) \* abs"),
     }
+    if blend:
+        p.update({
+            "max_forward_thrust": _number_in(OTTER, 212, r"Xuu = -([0-9.]+) \*") * gravity,
+            "surge_time_constant": _value(OTTER, 105),
+            "surge_blend_decay": _number_in(OTTER, 245, r"exp\(-([0-9.]+) \*"),
+            "time_constants": [_value(OTTER, 106), _value(OTTER, 107)],
+            "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (214, 215, 216)],
+        })
+    else:
+        p.update({
+            "max_forward_thrust": _number_in(OTTER_OLD, 202, r"Xu = -([0-9.]+) \*") * gravity,
+            "time_constants": [_value(OTTER_OLD, 99), _value(OTTER_OLD, 100)],
+            "damping_ratios": [_number_in(OTTER_OLD, n, r"-2 \* ([0-9.]+) \*") for n in (204, 205, 206)],
+        })
+    return p
 
 
 def _matlab_gravity_catamaran():
-    return ECEFNEDtransform.gravity(_value(GEN_CAT, 165), unit="rad")  # generator lines 136-137
+    return ECEFNEDtransform.gravity(_value(GEN_CAT, 168), unit="rad")  # generator lines 136-137
 
 
 # --------------------------------------------------------------------------
@@ -634,15 +678,22 @@ def _mss_dmtrx(p, nu_r):
 
 
 def _mss_otter_damping(p, nu_r):
-    """otter.m 196-206 and 234-239; returns (derivatives, tau_damp)."""
+    """otter.m 196-206 and 234-239 at cc07579 (linear surge), or 206-217 and
+    244-251 at 99fdf4d when ``p`` holds ``surge_time_constant`` (surge force
+    ``Xu exp(-c |u|) u + Xuu |u| u``); returns (derivatives, tau_damp)."""
     m, g_cf = p["mass_matrix"], p["restoring_matrix"]
     w3, w4, w5 = (np.sqrt(g_cf[i, i] / m[i, i]) for i in (2, 3, 4))
     z3, z4, z5 = p["damping_ratios"]
     t_sway, t_yaw = p["time_constants"]
-    deriv = np.array([-p["max_forward_thrust"] / p["max_speed"], -m[1, 1] / t_sway,
+    blend = "surge_time_constant" in p
+    x_u = -m[0, 0] / p["surge_time_constant"] if blend else -p["max_forward_thrust"] / p["max_speed"]
+    deriv = np.array([x_u, -m[1, 1] / t_sway,
                       -2 * z3 * w3 * m[2, 2], -2 * z4 * w4 * m[3, 3],
                       -2 * z5 * w5 * m[4, 4], -m[5, 5] / t_yaw])
     tau = deriv * nu_r
+    if blend:
+        x_uu = -p["max_forward_thrust"] / p["max_speed"] ** 2
+        tau[0] = x_u * np.exp(-p["surge_blend_decay"] * abs(nu_r[0])) * nu_r[0] + x_uu * abs(nu_r[0]) * nu_r[0]
     tau[5] *= 1 + p["yaw_damping_nonlinearity"] * abs(nu_r[5])
     return deriv, tau
 
@@ -673,9 +724,8 @@ def _mss_cylinder_cd(length, beam, nu_r, reynolds_length=None):
 def _mss_hoerner(beam, draft):
     """Hoerner.m 25-51."""
     data = _table(HOERNER, "CD_DATA")
-    ratio = beam / (2 * draft)
-    return float(np.interp(ratio, data[:, 0], data[:, 1])) if ratio <= data[-1, 0] \
-        else _number_in(HOERNER, 50, r"= ([0-9.]+);")
+    ratio = min(max(beam / (2 * draft), data[0, 0]), data[-1, 0])   # Hoerner.m 57-58 (clamped to the table)
+    return float(np.interp(ratio, data[:, 0], data[:, 1]))
 
 
 def _mss_cross_flow(p, nu_r, history_reynolds_on_length=False):
@@ -687,7 +737,7 @@ def _mss_cross_flow(p, nu_r, history_reynolds_on_length=False):
         cd = _mss_cylinder_cd(length, beam, nu_r, length if history_reynolds_on_length else None)
     else:
         cd = _mss_hoerner(beam, draft)
-    n_strips = int(_value(CFD, 37))
+    n_strips = int(_value(CFD, 38))
     dx = length / n_strips
     if p.get("strip_grid", "midpoint") == "midpoint":
         xs = -length / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx   # line 56
@@ -771,7 +821,7 @@ def _build_linear(form, p):
     smoothing, numbers = _smoothing(numbers)
     function = _bind(block.linear_damping_casadi(form=form, **selectors, **smoothing),
                      block.check_linear_damping_values(numbers, form=form, **smoothing))
-    name = "damping_derivatives" if form == "surface" else "damping_coefficients"
+    name = "damping_derivatives" if form in ("surface", "surface_blend") else "damping_coefficients"
     return SimpleNamespace(**_at_rest(function, name)), function
 
 
@@ -780,7 +830,7 @@ def _build_submerged(p):
 
 
 def _build_surface(p):
-    return _build_linear("surface", p)
+    return _build_linear("surface_blend" if "surge_time_constant" in p else "surface", p)
 
 
 def _build_cross_flow(p):
@@ -842,7 +892,7 @@ def _surge_parameters(set_id, model, mss=False):
     row = int(np.flatnonzero(ref["set"] == set_id)[0])
     common = {"mass": ref["m"][row], "length": ref["L"][row], "water_density": ref["rho"][row],
               "time_constant": ref["T1"][row], "crossover_speed": _value(FSD, 57),
-              "surge_added_mass_factor": _number_in(AMS, 33, r"A11 = ([0-9.]+) \*")}
+              "surge_added_mass_factor": _number_in(AMS, 34, r"A11 = ([0-9.]+) \*")}
     if mss:
         common["surge_blend"] = "signed"
     if model == "ittc":
@@ -863,7 +913,7 @@ def _surge_rows(set_id, model, probe=0):
 def _mss_added_mass_surge(m, length, rho):
     """addedMassSurge.m 32-33 (Soding 1982): A11 = 2.7 rho nabla^(5/3) / L^2,
     the exponent and the L^2 pinned by the line text."""
-    factor = _number_in(AMS, 33, r"A11 = ([0-9.]+) \*")
+    factor = _number_in(AMS, 34, r"A11 = ([0-9.]+) \*")
     return factor * rho * (m / rho) ** (5 / 3) / length ** 2
 
 
@@ -970,7 +1020,7 @@ def test_transcriptions_reproduce_the_stored_matlab_reference():
     sph, cat = _spheroid_reference(), _catamaran_reference()
     p_d = _spheroid_damping(True)
     p_cf = _cross_flow_spheroid("endpoint")
-    p_ld = _lift_drag_spheroid(_value(GEN_SPH, 492))
+    p_ld = _lift_drag_spheroid(_value(GEN_SPH, 495))
     p_cat = _surface_damping_catamaran(_matlab_gravity_catamaran())
     p_cat_cf = _cross_flow_catamaran("endpoint")
     for k in range(50):
@@ -1006,7 +1056,7 @@ def test_G1_block_spheroid_damping_with_sway_fade_flag():
 
 
 def test_G1_block_spheroid_lift_drag_template_density():
-    function = _build_lift_drag(_lift_drag_spheroid(_value(GEN_SPH, 492)))
+    function = _build_lift_drag(_lift_drag_spheroid(_value(GEN_SPH, 495)))
     ref = _spheroid_reference()
     for k in range(50):
         out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
@@ -1062,7 +1112,7 @@ def test_G2_function_signatures():
         (_build_submerged(_spheroid_damping(False))[1], ["D", "tau"]),
         (_build_surface(_surface_damping_catamaran(_matlab_gravity_catamaran()))[1], ["D", "tau"]),
         (_build_cross_flow(_cross_flow_spheroid("midpoint")), ["tau"]),
-        (_build_lift_drag(_lift_drag_spheroid(_value(FLD, 26))), ["tau"]),
+        (_build_lift_drag(_lift_drag_spheroid(_value(FLD_OLD, 26))), ["tau"]),
         (_build_floating(_floating_parameters(0))[1], ["D", "tau"]),
         (_build_surge(_surge_parameters(1, "ittc"))[1], ["tau"]),
         (_build_surge(_surge_parameters(1, "max_thrust"))[1], ["tau"]),
@@ -1099,6 +1149,19 @@ def test_G4_surface_damping_heave_ratio_times_zero_is_detected():
     assert _worst(_build_surface(broken)[1], ref["nu_r"], ref["tau_damp"], "tau") > G4_FACTOR * G1_TOLERANCE
 
 
+@pytest.mark.parametrize("perturbation", [
+    {"surge_blend_decay": 0.99 * 3.0}, {"surge_time_constant": 1.01 * 5.0}, {"max_forward_thrust": 1.01 * 239.364},
+    {"time_constants": [1.0, 1.0]}])
+def test_G4_blended_surge_damping_perturbations_are_detected(perturbation):
+    """The 99fdf4d surge force Xu exp(-c|u|) u + Xuu |u| u (and T_sway 0.5 s): a 1 % change of the
+    decay, the surge time constant or the thrust, or the earlier T_sway = 1 s, leaves the reference."""
+    ref = _catamaran_reference(MSS_CATAMARAN_99FDF4D)
+    p = _surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN_99FDF4D)
+    assert _worst(_build_surface(p)[1], ref["nu_r"], ref["tau_damp"], "tau") <= G1_TOLERANCE
+    broken = {**p, **perturbation}
+    assert _worst(_build_surface(broken)[1], ref["nu_r"], ref["tau_damp"], "tau") > G4_FACTOR * G1_TOLERANCE
+
+
 def test_G4_cross_flow_draft_plus_1_percent_is_detected():
     """Default path against MATLAB at ac77394 (before 2026-10-06: the legacy file + flag)."""
     ref = _spheroid_reference(MSS_AC_SPHEROID)
@@ -1110,7 +1173,7 @@ def test_G4_cross_flow_draft_plus_1_percent_is_detected():
 
 def test_G4_lift_drag_area_plus_1_percent_is_detected():
     ref = _spheroid_reference()
-    p = _lift_drag_spheroid(_value(GEN_SPH, 492))
+    p = _lift_drag_spheroid(_value(GEN_SPH, 495))
     assert _worst(_build_lift_drag(p), ref["nu_r"], ref["tau_lift_drag"], "tau") <= G1_TOLERANCE
     broken = {**p, "planform_area": 1.01 * p["planform_area"]}
     assert _worst(_build_lift_drag(broken), ref["nu_r"], ref["tau_lift_drag"], "tau") > G4_FACTOR * G1_TOLERANCE
@@ -1134,7 +1197,7 @@ def test_MSS_submerged_damping_default_fades_surge_only():
 
 def test_MSS_surface_damping_equals_otter():
     """otter.m 196-206, 234-239 with otter.m's own g = 9.81 (line 89)."""
-    p = _surface_damping_catamaran(_value(OTTER, 90))
+    p = _surface_damping_catamaran(_value(MSSC, 14))
     constants, function = _build_surface(p)
     for k, nu_r in enumerate(np.vstack([_catamaran_reference()["nu_r"], _random_nu_r()])):
         deriv, tau = _mss_otter_damping(p, nu_r)
@@ -1182,7 +1245,7 @@ def test_endpoint_grid_flag_reproduces_the_template():
 
 def test_MSS_lift_drag_equals_force_lift_drag():
     """forceLiftDrag.m rho = 1026 (line 26), e = 0.3 (coeffLiftDrag.m 54)."""
-    p = _lift_drag_spheroid(_value(FLD, 26))
+    p = _lift_drag_spheroid(_value(FLD_OLD, 26))
     function = _build_lift_drag(p)
     for k, nu_r in enumerate(_states()):
         out = _evaluate(function, nu_r)["tau"].reshape(-1)
@@ -1201,8 +1264,8 @@ def test_transcriptions_reproduce_the_current_mss_matlab_reference():
     sph_ac = _spheroid_reference(MSS_AC_SPHEROID)
     p_d = _spheroid_damping(False, MSS_SPHEROID)
     p_cf = _cross_flow_spheroid("midpoint")
-    p_ld = _lift_drag_spheroid(_value(FLD, 26))
-    p_cat = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN)
+    p_ld = _lift_drag_spheroid(_value(FLD_OLD, 26))
+    p_cat = _surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN)
     p_cat_cf = _cross_flow_catamaran("midpoint")
     for k in range(50):
         assert _max_diff(_mss_dmtrx(p_d, sph["nu_r"][k]), sph["D"][k]) <= G1_TOLERANCE, k
@@ -1216,11 +1279,14 @@ def test_transcriptions_reproduce_the_current_mss_matlab_reference():
         assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k]), cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
 
 
-def test_transcriptions_reproduce_the_cc07579_catamaran_reference():
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
+def test_transcriptions_reproduce_the_revision_tagged_catamaran_references(csv):
     """The otter.m transcriptions land on the cc07579 catamaran file (the KB
-    fix of cf349d4 moved G44, G55, Kp, Mq; the damping law did not change)."""
-    cat = _catamaran_reference(MSS_CATAMARAN_CC07579)
-    p_cat = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN_CC07579)
+    fix of cf349d4 moved G44, G55, Kp, Mq; linear surge law) and on the 99fdf4d
+    file (surge damping blended from Xu and Xuu, T_sway 0.5 s, surge added mass
+    on m + mP)."""
+    cat = _catamaran_reference(csv)
+    p_cat = _surface_damping_catamaran(_value(MSSC, 14), csv)
     p_cat_cf = _cross_flow_catamaran("midpoint")
     for k in range(50):
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
@@ -1293,26 +1359,35 @@ def test_cross_flow_reynolds_on_diameter_effect_vs_pre_fix_mss():
 def test_G1_MSS_lift_drag_equals_matlab():
     """forceLiftDrag.m rho = 1026 (line 26), e = 0.3 (coeffLiftDrag.m 54)."""
     ref = _spheroid_reference(MSS_SPHEROID)
-    function = _build_lift_drag(_lift_drag_spheroid(_value(FLD, 26)))
+    function = _build_lift_drag(_lift_drag_spheroid(_value(FLD_OLD, 26)))
     for k in range(50):
         out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
         assert _max_diff(out, ref["tau_lift_drag"][k]) <= G1_TOLERANCE, k
 
 
-@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579])
+def test_G1_MSS_lift_drag_equals_matlab_99fdf4d():
+    """forceLiftDrag.m reads rho = 1025 from mssConstants.m (line 27 at 99fdf4d)."""
+    ref = _spheroid_reference(MSS_99_SPHEROID)
+    function = _build_lift_drag(_lift_drag_spheroid(_value(MSSC, 12)))
+    for k in range(50):
+        out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
+        assert _max_diff(out, ref["tau_lift_drag"][k]) <= G1_TOLERANCE, k
+
+
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
 def test_G1_MSS_catamaran_surface_damping_equals_matlab(csv):
     """otter.m g = 9.81 (line 90); M and G of the 2026-10-05 file (inertia about the
     combined CG) and of the cc07579 file (the KB fix changes G44, G55 and with
     them Kp, Mq: the block takes G as input, so it must follow)."""
     ref = _catamaran_reference(csv)
-    _, function = _build_surface(_surface_damping_catamaran(_value(OTTER, 90), csv))
+    _, function = _build_surface(_surface_damping_catamaran(_value(MSSC, 14), csv))
     for k in range(50):
         out = _evaluate(function, ref["nu_r"][k])
         assert _max_diff(out["D"], -ref["D"][k]) <= G1_TOLERANCE, ("D", k)
         assert _max_diff(out["tau"].reshape(-1), ref["tau_damp"][k]) <= G1_TOLERANCE, ("tau", k)
 
 
-@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579])
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
 def test_G1_MSS_catamaran_cross_flow_default_equals_matlab(csv):
     """Hoerner on the default grid (20 midpoints): no deviation from MSS (at
     cc07579 too)."""
@@ -1335,11 +1410,11 @@ def test_hoerner_below_its_table_raises_naming_the_ratio():
     ratio = beam / (2 * draft)
     with pytest.raises(ValueError) as error:
         block.check_cross_flow_drag_values(
-            {"length": 2.0, "beam": beam, "draft": draft, "water_density": _value(CFD, 36)},
+            {"length": 2.0, "beam": beam, "draft": draft, "water_density": _value(MSSC, 12)},
             drag_model="hoerner")
     assert f"{ratio}" in str(error.value), str(error.value)
     block.check_cross_flow_drag_values(
-        {"length": 2.0, "beam": 2 * first * draft, "draft": draft, "water_density": _value(CFD, 36)},
+        {"length": 2.0, "beam": 2 * first * draft, "draft": draft, "water_density": _value(MSSC, 12)},
         drag_model="hoerner")
 
 
@@ -1392,12 +1467,12 @@ def test_surge_reference_set_1_is_osv():
     ref = _named_columns(MSS_SURGE)
     row = int(np.flatnonzero(ref["set"] == 1)[0])
     length, beam, draft = _value(OSV, 61), _value(OSV, 62), _value(OSV, 63)
-    rho, cb = _value(OSV, 64), _value(OSV, 65)
-    k_max = _value(OSV, 69)
+    rho, cb = _value(MSSC, 12), _value(OSV, 66)
+    k_max = _value(OSV, 70)
     assert ref["L"][row] == length and ref["rho"][row] == rho
     assert ref["m"][row] == rho * cb * length * beam * draft                  # lines 78-79
     assert ref["S"][row] == length * beam + 2 * draft * beam                  # line 66
-    assert ref["T1"][row] == _value(OSV, 128) and ref["u_max"][row] == _value(OSV, 76)
+    assert ref["T1"][row] == _value(OSV, 129) and ref["u_max"][row] == _value(OSV, 77)
     assert ref["thrust_max"][row] == k_max[2] + k_max[3]                      # line 75
 
 
@@ -1696,7 +1771,7 @@ def test_smooth_speed_epsilon_at_or_below_zero_is_refused(epsilon):
                                            form="submerged", smooth_speed=True)
     with pytest.raises(ValueError, match=r"'smooth_speed_epsilon' \[m/s\]"):
         check_values(lift.lift_drag_parameters(smooth_speed=True),
-                     {**_lift_drag_spheroid(_value(FLD, 26)), "smooth_speed_epsilon": epsilon})
+                     {**_lift_drag_spheroid(_value(FLD_OLD, 26)), "smooth_speed_epsilon": epsilon})
 
 
 REGULARISATION_PROBE = 0.1   # m/s; a probe value of this test, large enough to move the force near rest
@@ -1710,7 +1785,7 @@ def test_G4_smooth_speed_epsilon_moves_the_output():
     eps = REGULARISATION_PROBE
     nu_r = np.array([eps, 0.0, eps, 0.0, 0.0, 0.0])
     submerged = {k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items()}
-    lift = _lift_drag_spheroid(_value(FLD, 26))
+    lift = _lift_drag_spheroid(_value(FLD_OLD, 26))
     for label, build, p in (("submerged", lambda q: _build_submerged(q)[1], submerged),
                             ("lift_drag", _build_lift_drag, lift)):
         base = _evaluate(build({**p, "smooth_speed_epsilon": eps}), nu_r)["tau"].reshape(-1)
@@ -1756,7 +1831,7 @@ def test_inputs_outside_their_domain_raise_naming_the_input():
     _raises_naming(lambda: _build_surge({**thrust, "max_speed": -1.0}), "max_speed")
 
     submerged = {k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items()}
-    surface = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN)
+    surface = _surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN)
     for build, p, n in ((_build_submerged, submerged, 2), (_build_floating, floating, 3),
                         (_build_surface, surface, 3)):
         for k in range(n):
@@ -1777,7 +1852,7 @@ def test_physical_cross_flow_equals_first_principles_strip_integral():
     the first-principles form; a pure pitch or yaw rate must be opposed."""
     for p in (_cross_flow_spheroid("midpoint"), _cross_flow_catamaran("midpoint")):
         function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
-        n_strips = int(_value(CFD, 37))
+        n_strips = int(_value(CFD, 38))
         dx = p["length"] / n_strips
         xs = -p["length"] / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx
         for k, nu_r in enumerate(_states()):
@@ -1821,12 +1896,12 @@ def _jacobian_blocks():
     return {
         "submerged": _build_submerged({k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items()
                                        if k != "sway_damping_fade"})[1],
-        "surface": _build_surface(_surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN))[1],
+        "surface": _build_surface(_surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN))[1],
         "cross_flow_cylinder": _build_cross_flow({k: v for k, v in _cross_flow_spheroid("midpoint").items()
                                                   if k != "strip_grid"}),
         "cross_flow_hoerner": _build_cross_flow({k: v for k, v in _cross_flow_catamaran("midpoint").items()
                                                  if k != "strip_grid"}),
-        "lift_drag": _build_lift_drag(_lift_drag_spheroid(_value(FLD, 26))),
+        "lift_drag": _build_lift_drag(_lift_drag_spheroid(_value(FLD_OLD, 26))),
     }
 
 
@@ -1855,7 +1930,7 @@ def _smooth_blocks(epsilon):
     submerged = {k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items()}
     return {
         "submerged": _build_submerged({**submerged, "smooth_speed_epsilon": epsilon})[1],
-        "lift_drag": _build_lift_drag({**_lift_drag_spheroid(_value(FLD, 26)),
+        "lift_drag": _build_lift_drag({**_lift_drag_spheroid(_value(FLD_OLD, 26)),
                                        "smooth_speed_epsilon": epsilon}),
     }
 
@@ -1903,7 +1978,7 @@ def test_smooth_lift_drag_opposes_the_motion(epsilon):
         assert tau @ nu_r <= 0.0, (epsilon, state, tau)
     probe = _evaluate(function, np.array([-1.0, 0, 0, 0, 0, 0]))["tau"].reshape(-1)
     assert probe[0] > 0.0, probe
-    mss = _build_lift_drag(_lift_drag_spheroid(_value(FLD, 26)))
+    mss = _build_lift_drag(_lift_drag_spheroid(_value(FLD_OLD, 26)))
     for state in [[-1, 0, 0.3, 0, 0, 0], [-1, 0, -0.3, 0, 0, 0], [2, 0.1, 0.5, 0, 0, 0]]:
         nu_r = np.asarray(state, float)
         assert _evaluate(mss, nu_r)["tau"].reshape(-1) @ nu_r <= 0.0, state
@@ -1917,7 +1992,7 @@ def test_smooth_lift_drag_equals_mss_outside_the_band(epsilon):
     on 1000 seeded log-spaced states of both signs outside the band (|u|, |w|
     up to 30 m/s)."""
     k_band = 1000.0
-    p = _lift_drag_spheroid(_value(FLD, 26))
+    p = _lift_drag_spheroid(_value(FLD_OLD, 26))
     function = _build_lift_drag({**p, "smooth_speed_epsilon": epsilon})
     rng = np.random.default_rng(SEED)
     checked = 0
@@ -2138,7 +2213,7 @@ def _committed_cases(old):
         cases.append((f"floating {k}", _build_floating(p)[1],
                       old.linear_damping.floating_linear_damping_casadi(
                           old.linear_damping.preprocess_floating_linear_damping(**p)), ("D", "tau")))
-    p = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN)
+    p = _surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN)
     cases.append(("surface", _build_surface(p)[1],
                   old.linear_damping.surface_linear_damping_casadi(
                       old.linear_damping.preprocess_surface_linear_damping(**p)), ("D", "tau")))
@@ -2149,7 +2224,7 @@ def _committed_cases(old):
                           old.cross_flow.cross_flow_drag_casadi(old.cross_flow.preprocess_cross_flow_drag(**p)),
                           ("tau",)))
     for eps in (0.0, 1e-6, 1e-3):
-        p = {**_lift_drag_spheroid(_value(FLD, 26)), "smooth_speed_epsilon": eps}
+        p = {**_lift_drag_spheroid(_value(FLD_OLD, 26)), "smooth_speed_epsilon": eps}
         cases.append((f"lift_drag eps={eps}", _build_lift_drag(p),
                       old.lift_drag.lift_drag_casadi(old.lift_drag.preprocess_lift_drag(**p)), ("tau",)))
     for set_id in (2, 4):
@@ -2195,9 +2270,9 @@ def _frozen_cases():
     linear, cross, lift, surge = (_contract(m) for m in (LINEAR_DAMPING, CROSS_FLOW, LIFT_DRAG, SURGE_DAMPING))
     sub = {k: v for k, v in _spheroid_damping(False, MSS_SPHEROID).items() if k != "sway_damping_fade"}
     flo = _floating_parameters(0)
-    sur = _surface_damping_catamaran(_value(OTTER, 90), MSS_CATAMARAN)
+    sur = _surface_damping_catamaran(_value(MSSC, 14), MSS_CATAMARAN)
     cf = {k: v for k, v in _cross_flow_spheroid("midpoint").items() if k not in ("drag_model", "strip_grid")}
-    ld = _lift_drag_spheroid(_value(FLD, 26))
+    ld = _lift_drag_spheroid(_value(FLD_OLD, 26))
     sg = {**{k: v for k, v in _surge_parameters(2, "ittc").items() if k != "quadratic_model"},
           "ittc_reynolds_floor": _value(XITTC, 34)}
     sub_smooth = {**sub, "smooth_speed_epsilon": SMOOTH_EPSILONS[1]}

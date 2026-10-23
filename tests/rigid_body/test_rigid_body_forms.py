@@ -53,7 +53,8 @@ Contract of the block (all CasADi, no numpy in the block)
     1/5 m (a^2+b^2))``. Added mass (Lamb k-factors) from the displaced fluid,
     ``m_f`` and ``I_f`` with ``water_density``: ``diag(k1 m_f, k2 m_f, k2 m_f,
     r44 I_f,x, k' I_f,y, k' I_f,y)``. Two densities because MSS uses 1025 in
-    ``spheroid.m`` (line 35) and 1026 in ``imlay61.m`` (line 31).
+    ``spheroid.m`` (line 35) and 1026 in ``imlay61.m`` (line 31) at cc07579; both read
+    1025 from ``mssConstants.m`` at 99fdf4d.
   - ``"explicit"``: ``body_mass,
     principal_inertia`` (3x1, the principal moments about the CG: a
     non-diagonal inertia cannot be given), ``body_center_of_gravity``, ``origin`` (``r_g =
@@ -150,29 +151,29 @@ N_FROZEN = 50         # cases 1-50 of every reference CSV = nu of inputs.csv
 # MSS lines whose constants are typed below (pinned by test_mss_cited_lines_are_unchanged).
 MSS_LINES = {
     "CRAFT/AUV/models/remus100.m": {
-        131: "L_auv = 1.6;",
-        132: "D_auv = 0.19;",
-        134: "a = 1.0096 * L_auv/2;    % Scaled spheroid semi-axes a and b to obtain m = 31.9 kg",
-        135: "b = 1.0096 * D_auv/2;",
-        136: "r44 = 0.3;",
-        137: "r_bG = [ 0 0 0.02 ]';",
-        199: "[MRB,CRB] = spheroid(a,b,nu(4:6),r_bG);",
-        200: "[MA,CA] = imlay61(a, b, nu_r, r44);",
-        207: "CA(5,3) = 0; CA(3,5) = 0;",
-        208: "CA(5,1) = 0; CA(1,5) = 0;",
-        209: "CA(6,1) = 0; CA(1,6) = 0;",
-        210: "CA(6,2) = 0; CA(2,6) = 0;",
+        132: "L_auv = 1.6;",
+        133: "D_auv = 0.19;",
+        135: "a = 1.0096 * L_auv/2;    % Scaled spheroid semi-axes a and b to obtain m = 31.9 kg",
+        136: "b = 1.0096 * D_auv/2;",
+        137: "r44 = 0.3;",
+        138: "r_bG = [ 0 0 0.02 ]';",
+        200: "[MRB,CRB] = spheroid(a,b,nu(4:6),r_bG);",
+        201: "[MA,CA] = imlay61(a, b, nu_r, r44);",
+        208: "CA(5,3) = 0; CA(3,5) = 0;",
+        209: "CA(5,1) = 0; CA(1,5) = 0;",
+        210: "CA(6,1) = 0; CA(1,6) = 0;",
+        211: "CA(6,2) = 0; CA(2,6) = 0;",
     },
-    "LIBRARY/modeling/spheroid.m": {35: "rho = 1025;", 36: "m = 4/3 * pi * rho * a * b^2;"},
-    "LIBRARY/modeling/imlay61.m": {31: "rho = 1026;", 59: "MA = diag([m*k1 m*k2 m*k2 MA_44 k_prime*Iy k_prime*Iy]);"},
+    "LIBRARY/modeling/spheroid.m": {35: "constant = mssConstants();", 36: "rho = constant.rho_water;", 37: "m = 4/3 * pi * rho * a * b^2;"},
+    "LIBRARY/modeling/imlay61.m": {31: "constant = mssConstants();", 32: "rho = constant.rho_water;", 60: "MA = diag([m*k1 m*k2 m*k2 MA_44 k_prime*Iy k_prime*Iy]);"},
     "LIBRARY/modeling/rbody.m": {35: "I_G   = m * diag([R44^2, R55^2, R66^2]);"},
     "LIBRARY/modeling/m2c.m": {35: "M = 0.5 * (M + M');", 54: "p = M * nu;"},
 }
 REMUS = {  # remus100.m lines 131-137
     "L_auv": 1.6, "D_auv": 0.19, "scale": 1.0096, "r44": 0.3, "r_bG": [0.0, 0.0, 0.02],
 }
-SPHEROID_M_DENSITY = 1025.0  # spheroid.m line 35
-IMLAY61_DENSITY = 1026.0     # imlay61.m line 31
+SPHEROID_M_DENSITY = 1025.0  # spheroid.m line 36 (rho = constant.rho_water, mssConstants.m 12)
+IMLAY61_DENSITY = 1025.0     # imlay61.m line 32 (rho = constant.rho_water, mssConstants.m 12)
 REMUS_PRINTED_MASS = 31.9    # remus100.m line 134 comment ("to obtain m = 31.9 kg")
 
 # remus100.m 207-210, 0-based (row, col) pairs.
@@ -541,7 +542,7 @@ def test_G1_book_form_equals_rbody_plus_documented_term(set_id):
 @pytest.mark.parametrize("set_id", [1, 2])
 @pytest.mark.parametrize("stabilize", [False, True])
 def test_G1_spheroid_matches_spheroid_and_imlay61(set_id, stabilize):
-    """spheroid.m (rho 1025) + imlay61.m (rho 1026); set 2 calls imlay61 with
+    """spheroid.m + imlay61.m (both rho 1025 at 99fdf4d); set 2 calls imlay61 with
     nargin 3 (r44 = 0); stabilised C_A = remus100.m 207-210."""
     sph = _spheroid()
     rows = sph.rows(set_id)
@@ -676,7 +677,7 @@ def _g4_cases():
         "explicit_cg_x_plus_1_cm": ("explicit", lambda kw: {**kw, "body_center_of_gravity": kw["body_center_of_gravity"] + [0.01, 0, 0]}),
         "spheroid_body_density_plus_1_percent": ("spheroid", lambda kw: {**kw, "body_density": kw["body_density"] * 1.01}),
         "spheroid_r44_times_zero": ("spheroid", lambda kw: {**kw, "roll_added_inertia_ratio": 0.0}),
-        "spheroid_water_density_equals_body": ("spheroid", lambda kw: {**kw, "water_density": kw["body_density"]}),
+        "spheroid_water_density_plus_1_percent": ("spheroid", lambda kw: {**kw, "water_density": kw["water_density"] * 1.01}),
         "hull_block_coefficient_plus_1_percent": ("displacement_hull", lambda kw: {**kw, "block_coefficient": kw["block_coefficient"] * 1.01}),
         "hull_cg_z_plus_1_cm": ("displacement_hull", lambda kw: {**kw, "hull_center_of_gravity": kw["hull_center_of_gravity"] + [0, 0, 0.01]}),
         "hull_added_mass_sway_times_zero": ("displacement_hull", lambda kw: {**kw, "added_mass_coefficients": kw["added_mass_coefficients"] * [1, 0, 1, 1, 1, 1]}),

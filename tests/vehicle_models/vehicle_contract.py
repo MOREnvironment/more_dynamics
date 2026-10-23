@@ -32,7 +32,7 @@ SITE_NAMES = ("site_form", "latitude", "gravity", "water_density", "kinematic_vi
 
 REMUS_FILE = json.loads((DATA / "remus100" / "remus100_parameters_consistent.json").read_text())
 REMUS = {name: entry["value"] for name, entry in REMUS_FILE["parameters"].items()}
-OTTER = json.loads((DATA / "otter" / "otter_mss_cc07579.json").read_text())
+OTTER = json.loads((DATA / "otter" / "otter_mss_99fdf4d.json").read_text())
 
 _PLUGINS = {}
 
@@ -192,6 +192,8 @@ def otter(*, current="none", hydrostatics=None, hydrodynamics=None, actuators=()
     p = plugins()
     o = dict(OTTER)
     o["kinematic_viscosity"] = KINEMATIC_VISCOSITY
+    o["added_mass_form"] = "scaled_derivatives_loaded_surge"   # otter.m 162 at 99fdf4d: A11 from m + mP
+    o["manoeuvring_damping"] = "time_constants_surge_blend"    # otter.m 211-212, 245-246 at 99fdf4d
     site_p, vehicle_params = with_site(
         {"site_form": "given", "gravity": o["gravity"], "water_density": o["water_density"],
          "kinematic_viscosity": o["kinematic_viscosity"]}, vehicle_params)

@@ -52,29 +52,30 @@ GENERATOR = "generate_remus100_fins_mss.m"
 FROZEN = (MSS_FINS_CSV, GENERATOR, PRESTERO_JSON)
 REMUS = "CRAFT/AUV/models/remus100.m"
 CITED_LINES = {
-    98: "rho = 1026;",
-    109: "delta_max = deg2rad(20);",
-    113: "delta_r = sat(ui(1), delta_max);",
-    114: "delta_s = sat(ui(2), delta_max);",
-    179: "S_fin = 0.00665;",
-    182: "CL_delta_r = 0.5;",
-    183: "A_r = 2 * S_fin;",
-    184: "x_r = -a;",
-    187: "CL_delta_s = 0.7;",
-    188: "A_s = 2 * S_fin;",
-    189: "x_s = -a;",
-    234: "U_rh = sqrt( nu_r(1)^2 + nu_r(2)^2 );",
-    235: "U_rv = sqrt( nu_r(1)^2 + nu_r(3)^2 );",
-    238: "X_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r^2;",
-    239: "X_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s^2;",
-    242: "Y_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r;",
-    245: "Z_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s;",
-    249: "tau(1) = (1-t_prop) * X_prop + X_r + X_s;",
-    250: "tau(2) = Y_r;",
-    251: "tau(3) = Z_s;",
-    252: "tau(4) = K_prop / 10;",
-    253: "tau(5) = -x_s * Z_s;",
-    254: "tau(6) = x_r * Y_r;",
+    98: "constant = mssConstants();",
+    99: "rho = constant.rho_water;",
+    110: "delta_max = deg2rad(20);",
+    114: "delta_r = sat(ui(1), delta_max);",
+    115: "delta_s = sat(ui(2), delta_max);",
+    180: "S_fin = 0.00665;",
+    183: "CL_delta_r = 0.5;",
+    184: "A_r = 2 * S_fin;",
+    185: "x_r = -a;",
+    188: "CL_delta_s = 0.7;",
+    189: "A_s = 2 * S_fin;",
+    190: "x_s = -a;",
+    235: "U_rh = sqrt( nu_r(1)^2 + nu_r(2)^2 );",
+    236: "U_rv = sqrt( nu_r(1)^2 + nu_r(3)^2 );",
+    239: "X_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r^2;",
+    240: "X_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s^2;",
+    243: "Y_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r;",
+    246: "Z_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s;",
+    250: "tau(1) = (1-t_prop) * X_prop + X_r + X_s;",
+    251: "tau(2) = Y_r;",
+    252: "tau(3) = Z_s;",
+    253: "tau(4) = K_prop / 10;",
+    254: "tau(5) = -x_s * Z_s;",
+    255: "tau(6) = x_r * Y_r;",
 }
 
 
@@ -108,7 +109,7 @@ def test_matlab_file_constants_are_remus100s():
     ref = mss_fins()
     for name in ("rho", "delta_max", "A_r", "A_s", "CL_delta_r", "CL_delta_s", "x_r", "x_s"):
         mss_constant(ref, name)
-    assert mss_constant(ref, "rho") == 1026.0 and mss_constant(ref, "A_r") == mss_constant(ref, "A_s")
+    assert mss_constant(ref, "rho") == 1025.0 and mss_constant(ref, "A_r") == mss_constant(ref, "A_s")
 
 
 def test_matlab_file_reaches_the_cases_the_gates_need():

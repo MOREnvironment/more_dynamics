@@ -155,6 +155,7 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
 REMUS = "source-sim/MSS/CRAFT/AUV/models/remus100.m"
 OTTER = "source-sim/MSS/CRAFT/USV/models/otter.m"
 SIMOTTER = "source-sim/MSS/CRAFT/USV/SIMotter.m"
+MSSC = "source-sim/MSS/LIBRARY/mssConstants.m"
 GRAVITY = "source-sim/MSS/INS/functions/gravity.m"
 WAG_MAT = "source-sim/MSS/LIBRARY/modeling/utiles/WageningData.mat"
 WAG_TXT = "source-sim/MSS/LIBRARY/modeling/utiles/WageningData.txt"
@@ -165,64 +166,68 @@ GEN_PROP = "tests/force_producers/data/generate_propeller_template.m"
 GEN_DIFF = "tests/force_producers/data/generate_differential_thruster_template.m"
 
 CITED_LINES = {
-    (OTTER, 90): "g   = 9.81;",
-    (OTTER, 105): "y_pont  = 0.395;",
-    (OTTER, 132): "l1 = -y_pont;",
-    (OTTER, 133): "l2 = y_pont;",
-    (OTTER, 134): "k_pos = 0.02216/2;",
-    (OTTER, 135): "k_neg = 0.01289/2;",
-    (OTTER, 136): "n_max =  sqrt((0.5*24.4 * g)/k_pos);",
-    (OTTER, 137): "n_min = -sqrt((0.5*13.6 * g)/k_neg);",
-    (OTTER, 220): "n = satlim(n, n_min, n_max);",
-    (OTTER, 224): "if n(i) > 0",
-    (OTTER, 225): "Thrust(i) = k_pos * n(i) * abs(n(i));",
-    (OTTER, 227): "Thrust(i) = k_neg * n(i) * abs(n(i));",
-    (OTTER, 232): "tau = [Thrust(1) + Thrust(2) 0 0 0 0 -l1 * Thrust(1) - l2 * Thrust(2) ]';",
-    (REMUS, 98): "rho = 1026;",
-    (REMUS, 109): "delta_max = deg2rad(20);",
-    (REMUS, 110): "n_max = 1525;",
-    (REMUS, 113): "delta_r = sat(ui(1), delta_max);",
-    (REMUS, 114): "delta_s = sat(ui(2), delta_max);",
-    (REMUS, 115): "n_p = sat(ui(3),n_max) / 60;",
-    (REMUS, 127): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
-    (REMUS, 131): "L_auv = 1.6;",
-    (REMUS, 134): "a = 1.0096 * L_auv/2;",
-    (REMUS, 148): "D_prop = 0.14;",
-    (REMUS, 149): "t_prop = 0.1;",
-    (REMUS, 150): "Va = 0.944 * U_r;",
-    (REMUS, 153): "Ja_max = 0.6632;",
-    (REMUS, 156): "% >> [KT_0, KQ_0] = wageningen(0,1,0.718,3)",
-    (REMUS, 157): "KT_0 = 0.4566;",
-    (REMUS, 158): "KQ_0 = 0.0700;",
-    (REMUS, 159): "% >> [KT_max, KQ_max] = wageningen(0.6632,1,0.718,3)",
-    (REMUS, 160): "KT_max = 0.1798;",
-    (REMUS, 161): "KQ_max = 0.0312;",
-    (REMUS, 167): "if n_p > 0",
-    (REMUS, 169): "X_prop = rho * D_prop^4 * ( ...",
-    (REMUS, 170): "KT_0 * abs(n_p) * n_p + (KT_max-KT_0)/Ja_max * (Va/D_prop) * abs(n_p) );",
-    (REMUS, 171): "K_prop = rho * D_prop^5 * ( ...",
-    (REMUS, 172): "KQ_0 * abs(n_p) * n_p + (KQ_max-KQ_0)/Ja_max * (Va/D_prop) * abs(n_p) );",
-    (REMUS, 175): "X_prop = rho * D_prop^4 * KT_0 * abs(n_p) * n_p;",
-    (REMUS, 176): "K_prop = rho * D_prop^5 * KQ_0 * abs(n_p) * n_p;",
-    (REMUS, 179): "S_fin = 0.00665;",
-    (REMUS, 182): "CL_delta_r = 0.5;",
-    (REMUS, 183): "A_r = 2 * S_fin;",
-    (REMUS, 184): "x_r = -a;",
-    (REMUS, 187): "CL_delta_s = 0.7;",
-    (REMUS, 188): "A_s = 2 * S_fin;",
-    (REMUS, 189): "x_s = -a;",
-    (REMUS, 234): "U_rh = sqrt( nu_r(1)^2 + nu_r(2)^2 );",
-    (REMUS, 235): "U_rv = sqrt( nu_r(1)^2 + nu_r(3)^2 );",
-    (REMUS, 238): "X_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r^2;",
-    (REMUS, 239): "X_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s^2;",
-    (REMUS, 242): "Y_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r;",
-    (REMUS, 245): "Z_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s;",
-    (REMUS, 249): "tau(1) = (1-t_prop) * X_prop + X_r + X_s;",
-    (REMUS, 250): "tau(2) = Y_r;",
-    (REMUS, 251): "tau(3) = Z_s;",
-    (REMUS, 252): "tau(4) = K_prop / 10;",
-    (REMUS, 253): "tau(5) = -x_s * Z_s;",
-    (REMUS, 254): "tau(6) = x_r * Y_r;",
+    (MSSC, 12): "constant.rho_water = 1025;",
+    (MSSC, 14): "constant.g = 9.81;",
+    (OTTER, 95): "constant = mssConstants();",
+    (OTTER, 96): "g = constant.g;",
+    (OTTER, 112): "y_pont  = 0.395;",
+    (OTTER, 139): "l1 = -y_pont;",
+    (OTTER, 140): "l2 = y_pont;",
+    (OTTER, 143): "k_pos = 0.02216/2;",
+    (OTTER, 144): "k_neg = 0.01289/2;",
+    (OTTER, 145): "n_max =  sqrt((0.5*24.4 * g)/k_pos);",
+    (OTTER, 146): "n_min = -sqrt((0.5*13.6 * g)/k_neg);",
+    (OTTER, 230): "n = satlim(n, n_min, n_max);",
+    (OTTER, 234): "if n(i) > 0",
+    (OTTER, 235): "Thrust(i) = k_pos * n(i) * abs(n(i));",
+    (OTTER, 237): "Thrust(i) = k_neg * n(i) * abs(n(i));",
+    (OTTER, 242): "tau = [Thrust(1) + Thrust(2) 0 0 0 0 -l1 * Thrust(1) - l2 * Thrust(2) ]';",
+    (REMUS, 98): "constant = mssConstants();",
+    (REMUS, 99): "rho = constant.rho_water;",
+    (REMUS, 110): "delta_max = deg2rad(20);",
+    (REMUS, 111): "n_max = 1525;",
+    (REMUS, 114): "delta_r = sat(ui(1), delta_max);",
+    (REMUS, 115): "delta_s = sat(ui(2), delta_max);",
+    (REMUS, 116): "n_p = sat(ui(3),n_max) / 60;",
+    (REMUS, 128): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
+    (REMUS, 132): "L_auv = 1.6;",
+    (REMUS, 135): "a = 1.0096 * L_auv/2;",
+    (REMUS, 149): "D_prop = 0.14;",
+    (REMUS, 150): "t_prop = 0.1;",
+    (REMUS, 151): "Va = 0.944 * U_r;",
+    (REMUS, 154): "Ja_max = 0.6632;",
+    (REMUS, 157): "% >> [KT_0, KQ_0] = wageningen(0,1,0.718,3)",
+    (REMUS, 158): "KT_0 = 0.4566;",
+    (REMUS, 159): "KQ_0 = 0.0700;",
+    (REMUS, 160): "% >> [KT_max, KQ_max] = wageningen(0.6632,1,0.718,3)",
+    (REMUS, 161): "KT_max = 0.1798;",
+    (REMUS, 162): "KQ_max = 0.0312;",
+    (REMUS, 168): "if n_p > 0",
+    (REMUS, 170): "X_prop = rho * D_prop^4 * ( ...",
+    (REMUS, 171): "KT_0 * abs(n_p) * n_p + (KT_max-KT_0)/Ja_max * (Va/D_prop) * abs(n_p) );",
+    (REMUS, 172): "K_prop = rho * D_prop^5 * ( ...",
+    (REMUS, 173): "KQ_0 * abs(n_p) * n_p + (KQ_max-KQ_0)/Ja_max * (Va/D_prop) * abs(n_p) );",
+    (REMUS, 176): "X_prop = rho * D_prop^4 * KT_0 * abs(n_p) * n_p;",
+    (REMUS, 177): "K_prop = rho * D_prop^5 * KQ_0 * abs(n_p) * n_p;",
+    (REMUS, 180): "S_fin = 0.00665;",
+    (REMUS, 183): "CL_delta_r = 0.5;",
+    (REMUS, 184): "A_r = 2 * S_fin;",
+    (REMUS, 185): "x_r = -a;",
+    (REMUS, 188): "CL_delta_s = 0.7;",
+    (REMUS, 189): "A_s = 2 * S_fin;",
+    (REMUS, 190): "x_s = -a;",
+    (REMUS, 235): "U_rh = sqrt( nu_r(1)^2 + nu_r(2)^2 );",
+    (REMUS, 236): "U_rv = sqrt( nu_r(1)^2 + nu_r(3)^2 );",
+    (REMUS, 239): "X_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r^2;",
+    (REMUS, 240): "X_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s^2;",
+    (REMUS, 243): "Y_r = -0.5 * rho * U_rh^2 * A_r * CL_delta_r * delta_r;",
+    (REMUS, 246): "Z_s = -0.5 * rho * U_rv^2 * A_s * CL_delta_s * delta_s;",
+    (REMUS, 250): "tau(1) = (1-t_prop) * X_prop + X_r + X_s;",
+    (REMUS, 251): "tau(2) = Y_r;",
+    (REMUS, 252): "tau(3) = Z_s;",
+    (REMUS, 253): "tau(4) = K_prop / 10;",
+    (REMUS, 254): "tau(5) = -x_s * Z_s;",
+    (REMUS, 255): "tau(6) = x_r * Y_r;",
     (GRAVITY, 11): "g = 9.7803253359 * ( 1 + 0.001931850400 * sin(mu)^2 ) /...",
     (GRAVITY, 12): "sqrt( 1 - 0.006694384442 * sin(mu)^2 );",
     (GEN_DIFF, 25): "g      = gravity(deg2rad(63.446827));",
@@ -241,11 +246,13 @@ CITED_LINES = {
     (WAG_M, 35): "KT = sum(WagCThrust_stuv.*((Ja).^WagThrust_s).*(PD.^WagThrust_t).*...",
     (WAG_M, 37): "KQ = sum(WagCTorque_stuv.*((Ja).^WagTorque_s).*(PD.^WagTorque_t).*...",
     # added 2026-10-06
-    (OTTER, 212): "B_prop = k_pos * [...",
-    (OTTER, 213): "1 1",
-    (OTTER, 214): "y_pont -y_pont ];",
-    (SIMOTTER, 182): "u = Binv * [tau_X; tau_N];",
-    (SIMOTTER, 183): "n_c = sign(u) .* sqrt(abs(u));",
+    (OTTER, 222): "B_prop = k_pos * [...",
+    (OTTER, 223): "1 1",
+    (OTTER, 224): "y_pont -y_pont ];",
+    (SIMOTTER, 194): "thrust_c = B_thrust_inv * [tau_X; tau_N];",
+    (SIMOTTER, 197): "if thrust_c(j) >= 0",
+    (SIMOTTER, 198): "n_c(j) = sqrt(thrust_c(j) / k_pos);",
+    (SIMOTTER, 200): "n_c(j) = -sqrt(-thrust_c(j) / k_neg);",
     (WAG_M, 24): "%   Barnitsas, M.M., Ray, D. and Kinley, P. (1981).",
     (WAG_M, 25): "%   KT, KQ and Efficiency Curves for the Wageningen B-Series Propellers",
     (WAG_M, 26): "%   http://deepblue.lib.umich.edu/handle/2027.42/3557",
@@ -402,16 +409,16 @@ def test_cited_lines_are_unchanged():
 # ==========================================================================
 def _otter_differential(gravity):
     """otter.m 104, 131-136; positions [left, right] = [0, -/+ y_pont, 0]."""
-    y = _value(OTTER, 105)
-    k_pos = _value(OTTER, 134)
-    k_neg = _value(OTTER, 135)
-    f_fwd = _number_in(OTTER, 136, r"\(\(0\.5\*([0-9.]+) \* g\)")
-    f_rev = _number_in(OTTER, 137, r"\(\(0\.5\*([0-9.]+) \* g\)")
+    y = _value(OTTER, 112)
+    k_pos = _value(OTTER, 143)
+    k_neg = _value(OTTER, 144)
+    f_fwd = _number_in(OTTER, 145, r"\(\(0\.5\*([0-9.]+) \* g\)")
+    f_rev = _number_in(OTTER, 146, r"\(\(0\.5\*([0-9.]+) \* g\)")
     return {
         "positive_thrust_coefficients": [k_pos, k_pos],
         "negative_thrust_coefficients": [k_neg, k_neg],
-        "thruster_positions": [[0.0, _value(OTTER, 132, {"y_pont": y}), 0.0],
-                               [0.0, _value(OTTER, 133, {"y_pont": y}), 0.0]],
+        "thruster_positions": [[0.0, _value(OTTER, 139, {"y_pont": y}), 0.0],
+                               [0.0, _value(OTTER, 140, {"y_pont": y}), 0.0]],
         "thruster_directions": [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
         "max_forward_thrust": [0.5 * f_fwd * gravity] * 2,
         "max_reverse_thrust": [0.5 * f_rev * gravity] * 2,
@@ -495,7 +502,7 @@ def test_G1_MSS_differential_default_equals_matlab():
     and tau_X, tau_N match on all 1201 rows."""
     h, v = _load_csv("differential_thruster_mss_current.csv")
     n = v[:, [h.index("n_cmd_left"), h.index("n_cmd_right")]]
-    constants, function = _build("differential_thruster", _otter_differential(_value(OTTER, 90)))
+    constants, function = _build("differential_thruster", _otter_differential(_value(MSSC, 14)))
     np.testing.assert_allclose(constants.max_speed, [n.max()] * 2, atol=G1_TOLERANCE, rtol=0)
     np.testing.assert_allclose(constants.min_speed, [n.min()] * 2, atol=G1_TOLERANCE, rtol=0)
     for k in range(len(n)):
@@ -506,7 +513,7 @@ def test_G1_MSS_differential_default_equals_matlab():
 
 def test_MSS_differential_equals_otter():
     """otter.m 131-136, 219-231 with otter.m's own g = 9.81 (line 89)."""
-    p = _otter_differential(_value(OTTER, 90))
+    p = _otter_differential(_value(MSSC, 14))
     _, function = _build("differential_thruster", p)
     for k, n in enumerate(_rng().uniform(-150.0, 150.0, size=(N_RANDOM_STATES, 2))):
         assert _max_diff(_tau(function, n=n, nu_r=np.zeros(6)), _mss_otter_tau(p, n)) <= G1_TOLERANCE, (
@@ -539,18 +546,18 @@ def _matlab_propeller():
 def _remus_propeller():
     """remus100.m 98, 110, 148-161, 252 (rho = 1026); geometry of line 156."""
     pd, aeao, z = (float(t) for t in re.search(
-        r"wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)", _line(REMUS, 156)).groups())
+        r"wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)", _line(REMUS, 157)).groups())
     return {
-        "propeller_diameter": _value(REMUS, 148), "max_shaft_speed": _value(REMUS, 110),
-        "thrust_deduction": _value(REMUS, 149),
-        "wake_fraction": 1.0 - _number_in(REMUS, 150, r"= ([0-9.]+) \* U_r"),
+        "propeller_diameter": _value(REMUS, 149), "max_shaft_speed": _value(REMUS, 111),
+        "thrust_deduction": _value(REMUS, 150),
+        "wake_fraction": 1.0 - _number_in(REMUS, 151, r"= ([0-9.]+) \* U_r"),
         "pitch_diameter_ratio": pd, "blade_area_ratio": aeao, "blade_count": int(z),
-        "max_advance_number": _value(REMUS, 153),
-        "roll_moment_scale": 1.0 / _number_in(REMUS, 252, r"K_prop / ([0-9.]+);"),
-        "water_density": _value(REMUS, 98),
+        "max_advance_number": _value(REMUS, 154),
+        "roll_moment_scale": 1.0 / _number_in(REMUS, 253, r"K_prop / ([0-9.]+);"),
+        "water_density": _value(MSSC, 12),
         "position": [0.0, 0.0, 0.0], "orientation": [0.0, 0.0, 0.0],
         "open_water_model": "linearized",
-        "thrust_torque_coefficients": [_value(REMUS, n) for n in (157, 158, 160, 161)],
+        "thrust_torque_coefficients": [_value(REMUS, n) for n in (158, 159, 161, 162)],
     }
 
 
@@ -786,16 +793,16 @@ CONVENTIONS = ("starboard_down_positive", "starboard_up_positive", "port_down_po
 
 def _remus_fins():
     """remus100.m 98, 109, 134, 179-189."""
-    a = _value(REMUS, 134, {"L_auv": _value(REMUS, 131)})
-    s_fin = _value(REMUS, 179)
-    return {"rudder_area": _value(REMUS, 183, {"S_fin": s_fin}),
-            "stern_plane_area": _value(REMUS, 188, {"S_fin": s_fin}),
-            "rudder_lift_coefficient": _value(REMUS, 182),
-            "stern_plane_lift_coefficient": _value(REMUS, 187),
-            "rudder_position": _value(REMUS, 184, {"a": a}),
-            "stern_plane_position": _value(REMUS, 189, {"a": a}),
-            "max_deflection": _value(REMUS, 109),
-            "water_density": _value(REMUS, 98)}
+    a = _value(REMUS, 135, {"L_auv": _value(REMUS, 132)})
+    s_fin = _value(REMUS, 180)
+    return {"rudder_area": _value(REMUS, 184, {"S_fin": s_fin}),
+            "stern_plane_area": _value(REMUS, 189, {"S_fin": s_fin}),
+            "rudder_lift_coefficient": _value(REMUS, 183),
+            "stern_plane_lift_coefficient": _value(REMUS, 188),
+            "rudder_position": _value(REMUS, 185, {"a": a}),
+            "stern_plane_position": _value(REMUS, 190, {"a": a}),
+            "max_deflection": _value(REMUS, 110),
+            "water_density": _value(MSSC, 12)}
 
 
 def _mss_fins(p, delta, nu_r):
@@ -1053,8 +1060,8 @@ def _actuators_csv():
 
 def _matlab_propeller_part(ref):
     """remus100.m 249 (propeller term) and 250, from the MATLAB columns."""
-    t_prop = _value(REMUS, 149)
-    scale = _number_in(REMUS, 252, r"K_prop / ([0-9.]+);")
+    t_prop = _value(REMUS, 150)
+    scale = _number_in(REMUS, 253, r"K_prop / ([0-9.]+);")
     part = np.zeros((len(ref["X_prop"]), 6))
     part[:, 0] = (1.0 - t_prop) * ref["X_prop"]
     part[:, 3] = ref["K_prop"] / scale
@@ -1086,8 +1093,8 @@ def test_remus100_actuator_reference_is_consistent():
     tau is the sum of its own propeller and fin terms (lines 249-254)."""
     ref = _actuators_csv()
     assert ref["tau"].shape == (1036, 6)
-    assert np.any(np.abs(ref["ui"][:, 2]) > _value(REMUS, 110))
-    assert np.any(np.abs(ref["ui"][:, :2]) > _value(REMUS, 109))
+    assert np.any(np.abs(ref["ui"][:, 2]) > _value(REMUS, 111))
+    assert np.any(np.abs(ref["ui"][:, :2]) > _value(REMUS, 110))
     total = _matlab_propeller_part(ref) + _matlab_fins_part(ref)
     assert _max_diff(total, ref["tau"]) <= G1_TOLERANCE
 

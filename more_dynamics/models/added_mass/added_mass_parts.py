@@ -7,7 +7,8 @@ References
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eq. 6.53, p. 121 (``added_mass_matrix``, cited
     in ``more_dynamics.models.added_mass.added_mass``).
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/modeling/imlay61.m 31-59
+[MSS] Fossen, T. I. MSS, MIT, @ cc07579 (and @ 99fdf4d for the loaded-mass
+    surge term: CRAFT/USV/models/otter.m 162): LIBRARY/modeling/imlay61.m 31-59
     (Lamb's spheroid derivatives, through the rigid-body block's ``spheroid``
     form); CRAFT/USV/models/otter.m 152-159 (scaled derivatives).
 
@@ -19,7 +20,7 @@ import casadi as ca
 
 from more_transformations.more_casadi_transformations import Parameter
 
-from more_dynamics.models.added_mass.added_mass import added_mass_matrix, scaled_added_mass_derivatives
+from more_dynamics.models.added_mass.added_mass import added_mass_matrix, scaled_added_mass_derivatives, surge_added_mass
 from more_dynamics.models.rigid_body.kinetics import rigid_body_casadi
 from more_dynamics.models.rigid_body.mass_properties import rigid_body_parameters
 
@@ -94,4 +95,27 @@ def scaled_derivatives():
     return function_from("scaled_derivatives",
                          {"hull_mass": hull_mass, "length": length, "water_density": water_density,
                           "inertia": inertia, "added_mass_coefficients": coefficients},
+                         {"M_A": m_a})
+
+
+def scaled_derivatives_loaded_surge():
+    """As ``scaled_derivatives`` with the surge term ``A11`` computed from the
+    loaded mass ``m + m_payload`` (``MRB(1,1)`` of the rigid-body block), the
+    displaced mass of the floating craft, instead of the hull mass
+    (``otter.m`` 162 at ``99fdf4d``: ``Xudot = -addedMassSurge(m+mP,L,rho)``);
+    sway, heave and the three moments stay on the hull mass and inertia
+    (``otter.m`` 163-167)."""
+    hull_mass = ca.SX.sym("hull_mass")
+    rigid_body_mass_matrix = ca.SX.sym("rigid_body_mass_matrix", 6, 6)
+    length = ca.SX.sym("length")
+    water_density = ca.SX.sym("water_density")
+    inertia = ca.SX.sym("inertia", 3, 3)
+    coefficients = ca.SX.sym("added_mass_coefficients", 6)
+    base = ca.vertcat(surge_added_mass(rigid_body_mass_matrix[0, 0], length, water_density),  # (otter.m 162)
+                      hull_mass, hull_mass, inertia[0, 0], inertia[1, 1], inertia[2, 2])  # (otter.m 163-167)
+    m_a = added_mass_matrix(coefficients * base)
+    return function_from("scaled_derivatives_loaded_surge",
+                         {"hull_mass": hull_mass, "rigid_body_mass_matrix": rigid_body_mass_matrix,
+                          "length": length, "water_density": water_density, "inertia": inertia,
+                          "added_mass_coefficients": coefficients},
                          {"M_A": m_a})

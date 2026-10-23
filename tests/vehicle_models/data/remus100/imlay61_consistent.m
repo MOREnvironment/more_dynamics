@@ -60,7 +60,8 @@ function [MA,CA] = imlay61_consistent(a,b,nu,r44,rho)  %<added>
 % Revisions:  
      
 % prolate spheroid formulas
-%<removed> rho = 1026;
+%<removed> constant = mssConstants();
+%<removed> rho = constant.rho_water;
 m = 4/3 * pi * rho * a * b^2;
 Ix = (2/5) * m * b^2;
 Iy = (1/5) * m * (a^2 + b^2);      

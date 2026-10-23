@@ -22,7 +22,8 @@
 %  Inputs: inputs.csv beside this file (50 frozen states and wrenches).
 %  Outputs, under <OUT_DIR>:
 %    full/spheroid_auv_dynamics_full_debug_mss.csv                (every column)
-%    hydrodynamics/spheroid_matlab_reference_mss_ac77394.csv      (its columns)
+%    hydrodynamics/spheroid_matlab_reference_mss_99fdf4d.csv      (its columns;
+%        the columns of the frozen ac77394 file, made at the later revision)
 %    hydrostatics/spheroid_matlab_reference_mss_current.csv       (its columns)
 %    rigid_body/spheroid_matlab_reference_mss_current.csv         (its columns)
 %  (hydrodynamics/spheroid_matlab_reference_mss_current.csv is the pre-ac77394
@@ -119,11 +120,13 @@ fprintf('gravity used by remus100: %.10f m/s2, rho in remus100: %g\n', ws.g_mu, 
 outFile = fullfile(outDir, 'full', 'spheroid_auv_dynamics_full_debug_mss.csv');
 writetable(allRecords, outFile);
 fprintf('Saved %d rows x %d columns to %s\n', height(allRecords), width(allRecords), outFile);
-dataDir = fileparts(scriptDir);
-for target = {'hydrodynamics/spheroid_matlab_reference_mss_ac77394.csv', ...
-              'hydrostatics/spheroid_matlab_reference_mss_current.csv', ...
-              'rigid_body/spheroid_matlab_reference_mss_current.csv'}
-    extract_like(outFile, fullfile(dataDir, target{1}), fullfile(outDir, target{1}));
+testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
+% {frozen file under tests/, output name under OUT_DIR}
+for target = {{'hydrodynamic_loads/data/spheroid_matlab_reference_mss_ac77394.csv', 'hydrodynamics/spheroid_matlab_reference_mss_99fdf4d.csv'}, ...
+              {'restoring/data/spheroid_matlab_reference_mss_current.csv', 'hydrostatics/spheroid_matlab_reference_mss_current.csv'}, ...
+              {'rigid_body/data/spheroid_matlab_reference_mss_current.csv', 'rigid_body/spheroid_matlab_reference_mss_current.csv'}}
+    t = target{1};
+    extract_like(outFile, fullfile(testsDir, t{1}), fullfile(outDir, t{2}));
 end
 
 %% ================================================================

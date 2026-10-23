@@ -22,7 +22,11 @@ calibrated damping, which already contains a surge term; whether the two are
 used together is the composition's choice, not a default (``"none"``).
 
 Fidelity: the time-constant calibration is an MSS calibration (raise:
-identification from logs); ``linear_coupled`` is a given or identified 2x2
+identification from logs); ``time_constants_surge_blend`` is its later form
+(MSS ``otter.m`` 206-217, 244-251 at ``99fdf4d``: the surge force a linear
+term of time constant ``surge_time_constant`` faded by ``exp(-surge_blend_decay
+|u_r|)`` plus a quadratic term from the top speed and thrust; the other five
+terms unchanged); ``linear_coupled`` is a given or identified 2x2
 sway/yaw law, ``Y_r = N_v = 0`` until identified (raise: circle-test
 identification); the Hoerner section is a published table (raise: a
 tank-measured section drag); the ITTC line is a physics form with a printed
@@ -35,7 +39,9 @@ References
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 6.82-6.85, p. 125; eqs. 6.91-6.92, p. 127.
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/USV/models/otter.m 99-101,
-    195-240; LIBRARY/modeling/crossFlowDrag.m 54-69; Hoerner.m 47-51.
+    195-240; LIBRARY/modeling/crossFlowDrag.m 54-69; Hoerner.m 47-51; @ 99fdf4d:
+    CRAFT/USV/models/otter.m 105-107, 206-217, 244-251; LIBRARY/modeling/crossFlowDrag.m
+    55-70; HYDRO/Hoerner.m 49-59.
 [RA14] Radojcic, D., Zgradic, A., Kalajdzic, M., Simic, A. (2014). Resistance
     prediction for hard chine hulls in the pre-planing regime. Polish
     Maritime Research 21(2):9-26. Appendix 1, p. 24 (through
@@ -55,11 +61,12 @@ from more_dynamics.models.damping.hydrodynamic_load_parts import (
     coupled_manoeuvring_damping_surface, coupled_manoeuvring_damping_surface_parameters,
     surge_resistance_ittc, surge_resistance_ittc_parameters, surge_resistance_ittc_residual,
     surge_resistance_ittc_residual_parameters, time_constant_damping_surface,
+    time_constant_damping_surface_blend, time_constant_damping_surface_blend_parameters,
     time_constant_damping_surface_parameters)
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name, refuses_unset
 
 SURGE_RESISTANCES = ("none", "ittc", "ittc_residual")
-MANOEUVRING_DAMPINGS = ("time_constants", "linear_coupled", "linear_coupled_modulus")
+MANOEUVRING_DAMPINGS = ("time_constants", "time_constants_surge_blend", "linear_coupled", "linear_coupled_modulus")
 CROSS_FLOW_FORMS = ("hoerner_strips", "none")
 
 _SURGE_RESISTANCE_FUNCTIONS = {"ittc": surge_resistance_ittc, "ittc_residual": surge_resistance_ittc_residual}
@@ -74,6 +81,8 @@ class SurfaceHullLoads(HydrodynamicsModel):
         ParameterDescription("time_constants", unset()),  # otter.m 99-101, 202-240
         ParameterDescription("damping_ratios", unset()),  # otter.m 99-101, 202-240
         ParameterDescription("yaw_damping_nonlinearity", unset()),  # otter.m 99-101, 202-240
+        ParameterDescription("surge_time_constant", unset()),  # otter.m 105, 211 (read with "time_constants_surge_blend")
+        ParameterDescription("surge_blend_decay", unset()),  # otter.m 245 exp(-3 |u_r|) (read with "time_constants_surge_blend")
         ParameterDescription("manoeuvring_damping", "time_constants"),
         ParameterDescription("sway_yaw_derivatives", unset()),  # read with "linear_coupled"/"_modulus"
         ParameterDescription("modulus_coefficients", unset()),  # read with "linear_coupled_modulus"; zero (module docstring)
@@ -103,6 +112,9 @@ class SurfaceHullLoads(HydrodynamicsModel):
         if manoeuvring == "time_constants":
             self._damping = frozen_block(context, time_constant_damping_surface(),
                                          time_constant_damping_surface_parameters())
+        elif manoeuvring == "time_constants_surge_blend":
+            self._damping = frozen_block(context, time_constant_damping_surface_blend(),
+                                         time_constant_damping_surface_blend_parameters())
         else:
             modulus = manoeuvring == "linear_coupled_modulus"
             self._damping = frozen_block(context, coupled_manoeuvring_damping_surface(modulus=modulus),

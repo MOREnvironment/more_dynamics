@@ -14,7 +14,7 @@ instrumented workspace, not retyped from the thesis (rule 4).
 
 | Selector | Value | Why |
 |---|---|---|
-| `site_form` | `latitude` | the part's own `Site` subcomponent (`site` slot): WGS-84 normal gravity at the MSS site; its density 1026 and viscosity 1e-06 are held there too |
+| `site_form` | `latitude` | the part's own `Site` subcomponent (`site` slot): WGS-84 normal gravity at the MSS site; its density 1025 (mssConstants.m 12) and viscosity 1e-06 are held there too |
 | `added_mass_form` | `lamb_spheroid` | ideal-fluid prolate spheroid |
 | `coriolis_form` | `munk_couplings_removed` | `remus100.m` 207-210: MSS omits the Munk-moment couplings of the added-mass Coriolis (its reduced model keeps no measured manoeuvring derivatives to balance them); with every term kept (`kirchhoff_full`) this part spins open-loop at zero rudder (design note on the REMUS added-mass options, 2026-10-12) |
 | `current_form` | `none` | this part is gated in still water |

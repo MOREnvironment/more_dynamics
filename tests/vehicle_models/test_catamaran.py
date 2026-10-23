@@ -47,7 +47,8 @@ def test_catamaran_is_one_plugin_and_uses_the_cross_flow_strip_of_the_torpedo_wi
     assert cross_flow_strip_circular_cylinder_reynolds().name_in() != cross_flow_strip_rectangular_section_hoerner().name_in()
     declared = {d.name for d in vc.plugins().Catamaran.PARAMETERS}
     assert set(vc.OTTER) - {"longitudinal_inertia_factor", "longitudinal_center_of_flotation", "max_forward_thrust",
-                            "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity"} - set(vc.SITE_NAMES) <= declared
+                            "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity",
+                            "surge_time_constant", "surge_blend_decay"} - set(vc.SITE_NAMES) <= declared
 
 
 def test_every_value_of_the_otter_parts_equals_the_frozen_otter_value_and_the_plugins_hold_none():
@@ -75,8 +76,8 @@ def test_G1_catamaran_matches_existing_otter_block_references():
     assert vc.input_names(current_vehicle) == list(vc.CURRENT_NAMES)
     current = np.array(_reference_current())
     rigid_in = np.loadtxt(TESTS / "rigid_body" / "data" / "inputs.csv", delimiter=",", skiprows=1)
-    rigid_ref = _table(TESTS / "rigid_body" / "data" / "matlab_reference_mss_current.csv")
-    hydro_ref = _table(TESTS / "hydrodynamic_loads" / "data" / "catamaran_matlab_reference_mss_cc07579.csv")
+    rigid_ref = _table(TESTS / "rigid_body" / "data" / "matlab_reference_mss_99fdf4d.csv")
+    hydro_ref = _table(TESTS / "hydrodynamic_loads" / "data" / "catamaran_matlab_reference_mss_99fdf4d.csv")
     worst = {}
 
     for k, state in enumerate(rigid_in[:, :12]):

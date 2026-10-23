@@ -8,7 +8,7 @@
 %    remus100_hull.m       actuator inputs and forces replaced by an external
 %                          generalized force tau_ext (6x1, N and N m, BODY, CO)
 %    remus100_munk.m       the zeroed added-mass Coriolis couplings of
-%                          remus100.m 207-210 kept (C_A = m2c(M_A, nu_r) in full)
+%                          remus100.m 208-211 kept (C_A = m2c(M_A, nu_r) in full)
 %    remus100_hull_munk.m  both changes
 %  Before anything runs, each copy is rebuilt into the original (drop the
 %  '%<added>' lines, un-comment the '%<removed> ' lines) and compared with
@@ -83,54 +83,54 @@ if ~(wsI.rho == wsLD.rho && wsLD.rho == wsR.rho)
 end
 % Numbers that remus100.m writes inside an expression, read from its text
 txt = strsplit(original, newline, 'CollapseDelimiters', false);
-wake = regexp(txt{150}, '^Va = ([0-9.]+) \* U_r;', 'tokens', 'once');
-roll = regexp(txt{252}, '^tau\(4\) = K_prop / ([0-9.]+);', 'tokens', 'once');
-wag  = regexp(txt{156}, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)', 'tokens', 'once');
+wake = regexp(txt{151}, '^Va = ([0-9.]+) \* U_r;', 'tokens', 'once');
+roll = regexp(txt{253}, '^tau\(4\) = K_prop / ([0-9.]+);', 'tokens', 'once');
+wag  = regexp(txt{157}, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)', 'tokens', 'once');
 if isempty(wake) || isempty(roll) || isempty(wag)
-    error('remus100.m lines 150, 156 or 252 moved: re-read the line numbers');
+    error('remus100.m lines 151, 157 or 253 moved: re-read the line numbers');
 end
 oneMinusW = str2double(wake{1});
 rollScale = 1 / str2double(roll{1});
 
 P = {};   % name, value, unit, block, declared, MSS place, stage
-P(end+1, :) = {'semi_major_axis', wsR.a, 'm', 'rigid_body', 'new', 'remus100.m:134 a = 1.0096 * L_auv/2', 'hull'};
-P(end+1, :) = {'semi_minor_axis', wsR.b, 'm', 'rigid_body', 'new', 'remus100.m:135 b = 1.0096 * D_auv/2', 'hull'};
-P(end+1, :) = {'body_density', wsS.rho, 'kg/m^3', 'rigid_body', 'new', 'spheroid.m:35 rho = 1025 (called at remus100.m:199)', 'hull'};
-P(end+1, :) = {'water_density', wsI.rho, 'kg/m^3', 'rigid_body, lift_drag, propeller, fins', 'new, old, old, old', 'imlay61.m:31 rho = 1026 (remus100.m:200); equal to forceLiftDrag.m:26 and remus100.m:98', 'hull'};
-P(end+1, :) = {'roll_added_inertia_ratio', wsR.r44, '1', 'rigid_body', 'new', 'remus100.m:136 r44', 'hull'};
-P(end+1, :) = {'body_center_of_gravity', wsR.r_bG, 'm', 'rigid_body', 'new', 'remus100.m:137 r_bG', 'hull'};
-P(end+1, :) = {'center_of_buoyancy', wsR.r_bB, 'm', 'submerged_hydrostatics, submerged_linear_damping', 'old, old', 'remus100.m:138 r_bB', 'hull'};
-P(end+1, :) = {'weight', wsR.W, 'N', 'submerged_hydrostatics, submerged_linear_damping', 'old, old', 'remus100.m:214 W = m * g_mu (m = MRB(1,1); g_mu = gravity(mu), remus100.m:96-97)', 'hull'};
-P(end+1, :) = {'buoyancy', wsR.B, 'N', 'submerged_hydrostatics', 'old', 'remus100.m:214 B = W', 'hull'};
-P(end+1, :) = {'time_constants', [wsR.T1; wsR.T2; wsR.T6], 's', 'submerged_linear_damping', 'old', 'remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)', 'hull'};
-P(end+1, :) = {'damping_ratios', [wsR.zeta4; wsR.zeta5], '1', 'submerged_linear_damping', 'old', 'remus100.m:194, 195 [zeta4 zeta5]', 'hull'};
-P(end+1, :) = {'span', wsR.D_auv, 'm', 'lift_drag', 'old', 'remus100.m:132 D_auv, passed as b at :220', 'hull'};
-P(end+1, :) = {'planform_area', wsR.S, 'm^2', 'lift_drag', 'old', 'remus100.m:133 S = 0.7 * L_auv * D_auv', 'hull'};
-P(end+1, :) = {'parasitic_drag_coefficient', wsR.CD_0, '1', 'lift_drag', 'old', 'remus100.m:143-144 CD_0 = Cd * pi * b^2 / S', 'hull'};
+P(end+1, :) = {'semi_major_axis', wsR.a, 'm', 'rigid_body', 'new', 'remus100.m:135 a = 1.0096 * L_auv/2', 'hull'};
+P(end+1, :) = {'semi_minor_axis', wsR.b, 'm', 'rigid_body', 'new', 'remus100.m:136 b = 1.0096 * D_auv/2', 'hull'};
+P(end+1, :) = {'body_density', wsS.rho, 'kg/m^3', 'rigid_body', 'new', 'spheroid.m:35-36 rho = constant.rho_water, mssConstants.m:12 = 1025 (called at remus100.m:200)', 'hull'};
+P(end+1, :) = {'water_density', wsI.rho, 'kg/m^3', 'rigid_body, lift_drag, propeller, fins', 'new, old, old, old', 'imlay61.m:31-32 rho = constant.rho_water, mssConstants.m:12 = 1025 (remus100.m:201); equal to forceLiftDrag.m:26-27 and remus100.m:98-99', 'hull'};
+P(end+1, :) = {'roll_added_inertia_ratio', wsR.r44, '1', 'rigid_body', 'new', 'remus100.m:137 r44', 'hull'};
+P(end+1, :) = {'body_center_of_gravity', wsR.r_bG, 'm', 'rigid_body', 'new', 'remus100.m:138 r_bG', 'hull'};
+P(end+1, :) = {'center_of_buoyancy', wsR.r_bB, 'm', 'submerged_hydrostatics, submerged_linear_damping', 'old, old', 'remus100.m:139 r_bB', 'hull'};
+P(end+1, :) = {'weight', wsR.W, 'N', 'submerged_hydrostatics, submerged_linear_damping', 'old, old', 'remus100.m:215 W = m * g_mu (m = MRB(1,1); g_mu = gravity(mu), remus100.m:96-97)', 'hull'};
+P(end+1, :) = {'buoyancy', wsR.B, 'N', 'submerged_hydrostatics', 'old', 'remus100.m:215 B = W', 'hull'};
+P(end+1, :) = {'time_constants', [wsR.T1; wsR.T2; wsR.T6], 's', 'submerged_linear_damping', 'old', 'remus100.m:193, 194, 197 [T1 T2 T6] (Dmtrx.m call at :218)', 'hull'};
+P(end+1, :) = {'damping_ratios', [wsR.zeta4; wsR.zeta5], '1', 'submerged_linear_damping', 'old', 'remus100.m:195, 196 [zeta4 zeta5]', 'hull'};
+P(end+1, :) = {'span', wsR.D_auv, 'm', 'lift_drag', 'old', 'remus100.m:133 D_auv, passed as b at :221', 'hull'};
+P(end+1, :) = {'planform_area', wsR.S, 'm^2', 'lift_drag', 'old', 'remus100.m:134 S = 0.7 * L_auv * D_auv', 'hull'};
+P(end+1, :) = {'parasitic_drag_coefficient', wsR.CD_0, '1', 'lift_drag', 'old', 'remus100.m:144-145 CD_0 = Cd * pi * b^2 / S', 'hull'};
 P(end+1, :) = {'oswald_efficiency', wsCL.e, '1', 'lift_drag', 'old', 'coeffLiftDrag.m:54 e = 0.3', 'hull'};
-P(end+1, :) = {'length', wsR.L_auv, 'm', 'cross_flow', 'old', 'remus100.m:131 L_auv, passed as L at :221', 'hull'};
-P(end+1, :) = {'beam', wsR.D_auv, 'm', 'cross_flow', 'old', 'remus100.m:132 D_auv, passed as B at :221', 'hull'};
-P(end+1, :) = {'draft', wsR.D_auv, 'm', 'cross_flow', 'old', 'remus100.m:132 D_auv, passed as T at :221', 'hull'};
-P(end+1, :) = {'cross_flow_water_density', wsCF.rho, 'kg/m^3', 'cross_flow (its water_density)', 'old', 'crossFlowDrag.m:36 rho = 1025 (remus100.m:221)', 'hull'};
-P(end+1, :) = {'diameter', wsR.D_prop, 'm', 'propeller', 'old', 'remus100.m:148 D_prop', 'actuators'};
-P(end+1, :) = {'max_speed', wsR.n_max, 'rpm', 'propeller', 'old', 'remus100.m:110 n_max', 'actuators'};
-P(end+1, :) = {'thrust_deduction', wsR.t_prop, '1', 'propeller', 'old', 'remus100.m:149 t_prop', 'actuators'};
-P(end+1, :) = {'wake_fraction', 1 - oneMinusW, '1', 'propeller', 'old', sprintf('remus100.m:150 Va = %s * U_r, w = 1 - %s', wake{1}, wake{1}), 'actuators'};
-P(end+1, :) = {'pitch_diameter_ratio', str2double(wag{1}), '1', 'propeller', 'old', 'remus100.m:156 wageningen(0,1,0.718,3), second argument', 'actuators'};
-P(end+1, :) = {'blade_area_ratio', str2double(wag{2}), '1', 'propeller', 'old', 'remus100.m:155-156 blade-area ratio 0.718', 'actuators'};
-P(end+1, :) = {'blade_count', str2double(wag{3}), '1', 'propeller', 'old', 'remus100.m:155-156 3 blades', 'actuators'};
-P(end+1, :) = {'max_advance_number', wsR.Ja_max, '1', 'propeller', 'old', 'remus100.m:153 Ja_max', 'actuators'};
-P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', 'old', sprintf('remus100.m:252 tau(4) = K_prop / %s', roll{1}), 'actuators'};
-P(end+1, :) = {'position', zeros(3, 1), 'm', 'propeller', 'old', 'remus100.m:249-252 thrust on x_b through the CO (no moment arm)', 'actuators'};
-P(end+1, :) = {'orientation', zeros(3, 1), 'rad', 'propeller', 'old', 'remus100.m:249, 252 shaft along x_b (thrust in tau(1), torque in tau(4))', 'actuators'};
-P(end+1, :) = {'thrust_torque_coefficients', [wsR.KT_0; wsR.KQ_0; wsR.KT_max; wsR.KQ_max], '1', 'propeller', 'old', 'remus100.m:157, 158, 160, 161 [KT_0 KQ_0 KT_max KQ_max]', 'actuators'};
-P(end+1, :) = {'rudder_area', wsR.A_r, 'm^2', 'fins', 'old', 'remus100.m:183 A_r = 2 * S_fin (S_fin :179)', 'actuators'};
-P(end+1, :) = {'stern_plane_area', wsR.A_s, 'm^2', 'fins', 'old', 'remus100.m:188 A_s = 2 * S_fin (S_fin :179)', 'actuators'};
-P(end+1, :) = {'rudder_lift_coefficient', wsR.CL_delta_r, '1/rad', 'fins', 'old', 'remus100.m:182 CL_delta_r', 'actuators'};
-P(end+1, :) = {'stern_plane_lift_coefficient', wsR.CL_delta_s, '1/rad', 'fins', 'old', 'remus100.m:187 CL_delta_s', 'actuators'};
-P(end+1, :) = {'rudder_position', wsR.x_r, 'm', 'fins', 'old', 'remus100.m:184 x_r = -a', 'actuators'};
-P(end+1, :) = {'stern_plane_position', wsR.x_s, 'm', 'fins', 'old', 'remus100.m:189 x_s = -a', 'actuators'};
-P(end+1, :) = {'max_deflection', wsR.delta_max, 'rad', 'fins', 'old', 'remus100.m:109 delta_max = deg2rad(20)', 'actuators'};
+P(end+1, :) = {'length', wsR.L_auv, 'm', 'cross_flow', 'old', 'remus100.m:132 L_auv, passed as L at :222', 'hull'};
+P(end+1, :) = {'beam', wsR.D_auv, 'm', 'cross_flow', 'old', 'remus100.m:133 D_auv, passed as B at :222', 'hull'};
+P(end+1, :) = {'draft', wsR.D_auv, 'm', 'cross_flow', 'old', 'remus100.m:133 D_auv, passed as T at :222', 'hull'};
+P(end+1, :) = {'cross_flow_water_density', wsCF.rho, 'kg/m^3', 'cross_flow (its water_density)', 'old', 'crossFlowDrag.m:36-37 rho = constant.rho_water, mssConstants.m:12 = 1025 (remus100.m:222)', 'hull'};
+P(end+1, :) = {'diameter', wsR.D_prop, 'm', 'propeller', 'old', 'remus100.m:149 D_prop', 'actuators'};
+P(end+1, :) = {'max_speed', wsR.n_max, 'rpm', 'propeller', 'old', 'remus100.m:111 n_max', 'actuators'};
+P(end+1, :) = {'thrust_deduction', wsR.t_prop, '1', 'propeller', 'old', 'remus100.m:150 t_prop', 'actuators'};
+P(end+1, :) = {'wake_fraction', 1 - oneMinusW, '1', 'propeller', 'old', sprintf('remus100.m:151 Va = %s * U_r, w = 1 - %s', wake{1}, wake{1}), 'actuators'};
+P(end+1, :) = {'pitch_diameter_ratio', str2double(wag{1}), '1', 'propeller', 'old', 'remus100.m:157 wageningen(0,1,0.718,3), second argument', 'actuators'};
+P(end+1, :) = {'blade_area_ratio', str2double(wag{2}), '1', 'propeller', 'old', 'remus100.m:156-157 blade-area ratio 0.718', 'actuators'};
+P(end+1, :) = {'blade_count', str2double(wag{3}), '1', 'propeller', 'old', 'remus100.m:156-157 3 blades', 'actuators'};
+P(end+1, :) = {'max_advance_number', wsR.Ja_max, '1', 'propeller', 'old', 'remus100.m:154 Ja_max', 'actuators'};
+P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', 'old', sprintf('remus100.m:253 tau(4) = K_prop / %s', roll{1}), 'actuators'};
+P(end+1, :) = {'position', zeros(3, 1), 'm', 'propeller', 'old', 'remus100.m:250-253 thrust on x_b through the CO (no moment arm)', 'actuators'};
+P(end+1, :) = {'orientation', zeros(3, 1), 'rad', 'propeller', 'old', 'remus100.m:250, 253 shaft along x_b (thrust in tau(1), torque in tau(4))', 'actuators'};
+P(end+1, :) = {'thrust_torque_coefficients', [wsR.KT_0; wsR.KQ_0; wsR.KT_max; wsR.KQ_max], '1', 'propeller', 'old', 'remus100.m:158, 159, 161, 162 [KT_0 KQ_0 KT_max KQ_max]', 'actuators'};
+P(end+1, :) = {'rudder_area', wsR.A_r, 'm^2', 'fins', 'old', 'remus100.m:184 A_r = 2 * S_fin (S_fin :180)', 'actuators'};
+P(end+1, :) = {'stern_plane_area', wsR.A_s, 'm^2', 'fins', 'old', 'remus100.m:189 A_s = 2 * S_fin (S_fin :180)', 'actuators'};
+P(end+1, :) = {'rudder_lift_coefficient', wsR.CL_delta_r, '1/rad', 'fins', 'old', 'remus100.m:183 CL_delta_r', 'actuators'};
+P(end+1, :) = {'stern_plane_lift_coefficient', wsR.CL_delta_s, '1/rad', 'fins', 'old', 'remus100.m:188 CL_delta_s', 'actuators'};
+P(end+1, :) = {'rudder_position', wsR.x_r, 'm', 'fins', 'old', 'remus100.m:185 x_r = -a', 'actuators'};
+P(end+1, :) = {'stern_plane_position', wsR.x_s, 'm', 'fins', 'old', 'remus100.m:190 x_s = -a', 'actuators'};
+P(end+1, :) = {'max_deflection', wsR.delta_max, 'rad', 'fins', 'old', 'remus100.m:110 delta_max = deg2rad(20)', 'actuators'};
 write_parameters_json(fullfile(outDir, 'remus100_parameters.json'), P, rev, wsR);
 
 % ------------------------------------------------

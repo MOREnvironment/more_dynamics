@@ -52,7 +52,8 @@ Every option carries its fidelity, source, assumptions and the measurement that 
 |---|---|---|---|
 | `coriolis_form` | `kirchhoff_full` (physics, default); `munk_couplings_removed` (MSS shortcut, `remus100.m` 207-210, a comparison form) | physics form above the shortcut | a frequency-dependent added-mass matrix |
 | `current_form` | `none`; `yaw_rate_terms` (MSS `remus100.m` 118-122); `full_rotation_rate` (MSS `otter.m` 113-118) | none < MSS forms | a measured current profile; the form with the full attitude waits on its port |
-| `added_mass_form` | `lamb_spheroid` (`SpheroidAuv`); `scaled_derivatives` (`Catamaran`, `Monohull`) | ideal fluid / printed coefficients | a Capytaine or identified matrix |
+| `added_mass_form` | `lamb_spheroid` (`SpheroidAuv`); `scaled_derivatives` (`Catamaran`, `Monohull`); `scaled_derivatives_loaded_surge` (`Catamaran`: the surge term from the loaded mass, hull plus payload) | ideal fluid / printed coefficients | a Capytaine or identified matrix |
+| `manoeuvring_damping` (`SurfaceHullLoads`) | `time_constants` (surge from the thrust and the top speed); `time_constants_surge_blend` (surge from a time constant, blended with a quadratic term, MSS `otter.m` 206-217, 244-251 at `99fdf4d`); `linear_coupled`; `linear_coupled_modulus` | MSS calibrations < a coupled law identified from logs | circle and zigzag identification |
 | `buoyancy_method` (`SubmergedRestoring`) | `neutral` (`B = W`); `from_volume` (`B = rho g nabla`); `given` (`B` as a value) | neutral < volume < measured reserve buoyancy | weigh the vehicle in water at the quay, then a floating trim test |
 | `hull_count` (`SurfaceRestoring`) | `1`, `2` | metacentric restoring at the equilibrium draft | a measured draft and the waterplane from the hull lines |
 | `surge_resistance` (`SurfaceHullLoads`) | `none`; `ittc` (needs a `wetted_surface` the vehicle gives) | physics form with a printed form factor | a measured resistance curve |

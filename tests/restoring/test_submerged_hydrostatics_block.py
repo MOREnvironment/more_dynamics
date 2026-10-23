@@ -93,17 +93,19 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
 REMUS = "CRAFT/AUV/models/remus100.m"
 CITED_LINES = {
     (REMUS, 96): "mu = deg2rad(63.446827);",
-    (REMUS, 131): "L_auv = 1.6;",
-    (REMUS, 132): "D_auv = 0.19;",
-    (REMUS, 134): "a = 1.0096 * L_auv/2;",
-    (REMUS, 135): "b = 1.0096 * D_auv/2;",
-    (REMUS, 137): "r_bG = [ 0 0 0.02 ]';",
-    (REMUS, 138): "r_bB = [ 0 0 0 ]';",
-    (REMUS, 214): "m = MRB(1,1); W = m * g_mu; B = W;",
-    (REMUS, 231): "g = gRvect(W,B,R,r_bG,r_bB);",
-    (REMUS, 258): "(tau + tau_liftdrag + tau_crossflow - C * nu_r - D * nu_r  - g)",
-    ("LIBRARY/modeling/spheroid.m", 35): "rho = 1025;",
-    ("LIBRARY/modeling/spheroid.m", 36): "m = 4/3 * pi * rho * a * b^2;",
+    (REMUS, 132): "L_auv = 1.6;",
+    (REMUS, 133): "D_auv = 0.19;",
+    (REMUS, 135): "a = 1.0096 * L_auv/2;",
+    (REMUS, 136): "b = 1.0096 * D_auv/2;",
+    (REMUS, 138): "r_bG = [ 0 0 0.02 ]';",
+    (REMUS, 139): "r_bB = [ 0 0 0 ]';",
+    (REMUS, 215): "m = MRB(1,1); W = m * g_mu; B = W;",
+    (REMUS, 232): "g = gRvect(W,B,R,r_bG,r_bB);",
+    (REMUS, 259): "(tau + tau_liftdrag + tau_crossflow - C * nu_r - D * nu_r  - g)",
+    ("LIBRARY/mssConstants.m", 12): "constant.rho_water = 1025;",
+    ("LIBRARY/modeling/spheroid.m", 35): "constant = mssConstants();",
+    ("LIBRARY/modeling/spheroid.m", 36): "rho = constant.rho_water;",
+    ("LIBRARY/modeling/spheroid.m", 37): "m = 4/3 * pi * rho * a * b^2;",
     ("LIBRARY/modeling/gRvect.m", 27): "-(W-B) * R(3,1)",
     ("LIBRARY/modeling/gRvect.m", 28): "-(W-B) * R(3,2)",
     ("LIBRARY/modeling/gRvect.m", 29): "-(W-B) * R(3,3)",
@@ -222,18 +224,18 @@ def _max_diff(a, b):
 # reads them back when MSS_DIR is set.
 REMUS_CONSTANTS = {
     "mu_deg": 63.446827,          # remus100.m line 96
-    "L_auv": 1.6,                 # remus100.m line 131
-    "D_auv": 0.19,                # remus100.m line 132
-    "r_bG": [0.0, 0.0, 0.02],     # remus100.m line 137
-    "r_bB": [0.0, 0.0, 0.0],      # remus100.m line 138
-    "rho": 1025.0,                # spheroid.m line 35
+    "L_auv": 1.6,                 # remus100.m line 132
+    "D_auv": 0.19,                # remus100.m line 133
+    "r_bG": [0.0, 0.0, 0.02],     # remus100.m line 138
+    "r_bB": [0.0, 0.0, 0.0],      # remus100.m line 139
+    "rho": 1025.0,                # mssConstants.m line 12 (spheroid.m line 36)
 }
 def _remus_like_parameters():
     """MSS remus100.m: m from spheroid.m 35-36 with a, b from lines 132-136;
     W = B = m g(mu) (line 212, mu line 97); centres lines 138-139."""
     c = REMUS_CONSTANTS
-    a = 1.0096 * c["L_auv"] / 2   # remus100.m line 134
-    b = 1.0096 * c["D_auv"] / 2   # remus100.m line 135
+    a = 1.0096 * c["L_auv"] / 2   # remus100.m line 135
+    b = 1.0096 * c["D_auv"] / 2   # remus100.m line 136
     m = 4 / 3 * np.pi * c["rho"] * a * b ** 2   # spheroid.m line 36
     weight = m * ECEFNEDtransform.gravity(c["mu_deg"])
     return {
@@ -321,11 +323,11 @@ def test_typed_constants_equal_the_cited_mss_lines():
     """REMUS_CONSTANTS are typed with their lines (no number from memory, nothing
     relative to one machine); with MSS_DIR set they are read back from MSS."""
     c = REMUS_CONSTANTS
-    assert _mss_value(REMUS, 131) == c["L_auv"] and _mss_value(REMUS, 132) == c["D_auv"]
-    assert _mss_value("LIBRARY/modeling/spheroid.m", 35) == c["rho"]
+    assert _mss_value(REMUS, 132) == c["L_auv"] and _mss_value(REMUS, 133) == c["D_auv"]
+    assert _mss_value("LIBRARY/mssConstants.m", 12) == c["rho"]   # spheroid.m 36 reads it
     assert abs(_mss_value(REMUS, 96) - np.deg2rad(c["mu_deg"])) == 0.0
-    assert list(_mss_value(REMUS, 137)) == c["r_bG"] and list(_mss_value(REMUS, 138)) == c["r_bB"]
-    for prefix, key in (("a = 1.0096", 134), ("b = 1.0096", 135)):
+    assert list(_mss_value(REMUS, 138)) == c["r_bG"] and list(_mss_value(REMUS, 139)) == c["r_bB"]
+    for prefix, key in (("a = 1.0096", 135), ("b = 1.0096", 136)):
         assert _mss_line(REMUS, key).startswith(prefix)
 
 

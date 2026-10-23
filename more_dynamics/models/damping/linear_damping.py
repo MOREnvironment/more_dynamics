@@ -1,14 +1,17 @@
 """Linear damping: ``D`` and ``tau = -D nu_r`` (CasADi).
 
-Three forms of one block, chosen by the selector ``form`` (keys in
+Four forms of one block, chosen by the selector ``form`` (keys in
 References):
 
 * ``"submerged"``: MSS ``Dmtrx.m``'s submerged branch with the surge fade of
   ``remus100.m``;
 * ``"floating"``: ``Dmtrx.m``'s surface-craft branch, all six terms from time
   constants and damping ratios;
-* ``"surface"``: the form of MSS ``otter.m``, surge from a thrust and a top
-  speed, yaw with a quadratic term.
+* ``"surface"``: the form of MSS ``otter.m`` at ``cc07579``, surge from a
+  thrust and a top speed, yaw with a quadratic term;
+* ``"surface_blend"``: the form of MSS ``otter.m`` at ``99fdf4d``, surge from a
+  time constant blended with a quadratic term from the thrust and the top
+  speed, the other five as ``"surface"``.
 
 ``linear_damping_parameters(form, smooth_speed=...)`` declares the numbers of
 a form (name, shape, SI unit, meaning, admissible range);
@@ -41,9 +44,15 @@ Equations:
   + w_r^2)`` (MSS ``remus100.m`` 127, 218).
 * Surface: ``Xu = -thrust_max / U_max``, ``Yv = -M22 / T_sway``,
   ``Zw = -2 zeta3 w3 M33``, ``Kp = -2 zeta4 w4 M44``, ``Mq = -2 zeta5 w5 M55``,
-  ``Nr = -M66 / T_yaw`` (MSS ``otter.m`` 202-207);
+  ``Nr = -M66 / T_yaw`` (MSS ``otter.m`` 202-207 at ``cc07579``);
   ``tau = [Xu u_r, Yv v_r, Zw w_r, Kp p_r, Mq q_r, Nr (1 + k |r_r|) r_r]``
-  (MSS ``otter.m`` 235-240).
+  (MSS ``otter.m`` 235-240 at ``cc07579``).
+* Surface, blended surge: ``Xu = -M11 / T_surge``, ``Xuu = -thrust_max /
+  U_max^2`` (the thrust at the top speed, quadratic), the rest as above;
+  ``X = Xu exp(-c |u_r|) u_r + Xuu |u_r| u_r`` with ``c`` the declared decay
+  ``surge_blend_decay`` (MSS ``otter.m`` 211-212, 245-246 at ``99fdf4d``;
+  ``Xu`` is the linear derivative of ``damping_derivatives`` and of ``D``, as
+  ``Nr`` is for the yaw term).
 
 Two sign conventions meet here. ``Dmtrx.m`` gives a positive ``D`` that is
 subtracted. ``otter.m`` gives negative derivatives ``[Xu Yv Zw Kp Mq Nr]``
@@ -85,7 +94,8 @@ References
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
     licence, revision ``cc07579``: ``LIBRARY/modeling/Dmtrx.m`` 30-63;
     ``CRAFT/AUV/models/remus100.m`` 127, 217-218;
-    ``CRAFT/USV/models/otter.m`` 197-207, 235-240.
+    ``CRAFT/USV/models/otter.m`` 197-207, 235-240; revision ``99fdf4d``:
+    ``CRAFT/USV/models/otter.m`` 206-217, 244-251.
 
 Author:    Enio Krizman
 Date:      2026-10-05
@@ -94,13 +104,14 @@ Date:      2026-10-05
 import casadi as ca
 from more_transformations.more_casadi_transformations import Parameter, check_values, symbols
 
-LINEAR_DAMPING_FORMS = ("submerged", "floating", "surface")
+LINEAR_DAMPING_FORMS = ("submerged", "floating", "surface", "surface_blend")
 
 # Named outputs per form, in order.
 LINEAR_DAMPING_OUTPUTS = {
     "submerged": ("D", "tau", "damping_coefficients"),
     "floating": ("D", "tau", "damping_coefficients"),
     "surface": ("D", "tau", "damping_derivatives"),
+    "surface_blend": ("D", "tau", "damping_derivatives"),
 }
 
 
@@ -118,6 +129,7 @@ _COUPLINGS = {
     "submerged": (_RIGID_BODY_MASS, _ADDED_MASS),
     "floating": (_RIGID_BODY_MASS, _ADDED_MASS, _RESTORING),
     "surface": (_MASS, _RESTORING),
+    "surface_blend": (_MASS, _RESTORING),
 }
 
 _SMOOTH_SPEED_EPSILON = Parameter(
@@ -144,6 +156,16 @@ _DECLARATIONS = {
     "surface": (
         Parameter("max_forward_thrust", (1, 1), "N", "thrust at the top speed (Xu = -thrust / speed)", 0.0),
         Parameter("max_speed", (1, 1), "m/s", "top forward speed U_max", 0.0, minimum_exclusive=True),
+        Parameter("time_constants", (2, 1), "s", "[T_sway, T_yaw]", 0.0, minimum_exclusive=True),
+        Parameter("damping_ratios", (3, 1), "1", "[zeta3, zeta4, zeta5] of heave, roll, pitch", 0.0),
+        Parameter("yaw_damping_nonlinearity", (1, 1), "s/rad", "k of Nr (1 + k |r|) r", 0.0),
+    ),
+    "surface_blend": (
+        Parameter("max_forward_thrust", (1, 1), "N", "thrust at the top speed (Xuu = -thrust / speed^2)", 0.0),
+        Parameter("max_speed", (1, 1), "m/s", "top forward speed U_max", 0.0, minimum_exclusive=True),
+        Parameter("surge_time_constant", (1, 1), "s", "T_surge of the linear surge term (Xu = -M11 / T_surge)",
+                  0.0, minimum_exclusive=True),
+        Parameter("surge_blend_decay", (1, 1), "s/m", "c of the fade exp(-c |u_r|) of the linear surge term", 0.0),
         Parameter("time_constants", (2, 1), "s", "[T_sway, T_yaw]", 0.0, minimum_exclusive=True),
         Parameter("damping_ratios", (3, 1), "1", "[zeta3, zeta4, zeta5] of heave, roll, pitch", 0.0),
         Parameter("yaw_damping_nonlinearity", (1, 1), "s/rad", "k of Nr (1 + k |r|) r", 0.0),
@@ -266,6 +288,36 @@ def _surface(nu_r, c, p):
     return {"D": damping, "tau": ca.vertcat(*forces), "damping_derivatives": derivatives}
 
 
+def _surface_blend(nu_r, c, p):
+    """MSS ``otter.m`` 206-217 and 244-251 at ``99fdf4d``: as ``_surface`` with
+    the surge force ``Xu exp(-c |u_r|) u_r + Xuu |u_r| u_r``, ``Xu = -M11 /
+    T_surge``, ``Xuu = -thrust_max / U_max^2``."""
+    mass, restoring = c["mass_matrix"], c["restoring_matrix"]
+    t_sway, t_yaw = p["time_constants"][0], p["time_constants"][1]
+    zeta3, zeta4, zeta5 = p["damping_ratios"][0], p["damping_ratios"][1], p["damping_ratios"][2]
+    w3 = ca.sqrt(restoring[2, 2] / mass[2, 2])  # (Fossen 2011, eqs. 4.51-4.53, p. 68; otter.m 206)
+    w4 = ca.sqrt(restoring[3, 3] / mass[3, 3])  # (otter.m 207)
+    w5 = ca.sqrt(restoring[4, 4] / mass[4, 4])  # (otter.m 208)
+    x_u = -mass[0, 0] / p["surge_time_constant"]  # (otter.m 211)
+    x_uu = -p["max_forward_thrust"] / p["max_speed"] ** 2  # (otter.m 212: 24.4 g is the thrust at the top speed)
+    derivatives = ca.vertcat(
+        x_u,
+        -mass[1, 1] / t_sway,  # Yv (Fossen 2011, eq. 6.77, p. 125; otter.m 213)
+        -2 * zeta3 * w3 * mass[2, 2],  # Zw (Fossen 2011, eq. 6.78, p. 125; otter.m 214)
+        -2 * zeta4 * w4 * mass[3, 3],  # Kp (Fossen 2011, eq. 6.79, p. 125; otter.m 215)
+        -2 * zeta5 * w5 * mass[4, 4],  # Mq (Fossen 2011, eq. 6.80, p. 125; otter.m 216)
+        -mass[5, 5] / t_yaw,  # Nr (Fossen 2011, eq. 6.81, p. 125; otter.m 217)
+    )
+    u_r = nu_r[0]
+    forces = [x_u * ca.exp(-p["surge_blend_decay"] * ca.fabs(u_r)) * u_r + x_uu * ca.fabs(u_r) * u_r]  # (otter.m 245-246)
+    forces += [derivatives[i] * nu_r[i] for i in range(1, 5)]  # (otter.m 247-250)
+    forces.append(  # (otter.m 251)
+        derivatives[5] * (1 + p["yaw_damping_nonlinearity"] * ca.fabs(nu_r[5])) * nu_r[5]
+    )
+    damping = ca.diag(-derivatives)  # D = -diag(derivatives) (Fossen 2011, eq. 6.62, p. 123)
+    return {"D": damping, "tau": ca.vertcat(*forces), "damping_derivatives": derivatives}
+
+
 def _check_selectors(form, sway_damping_fade, smooth_speed):
     _check_form(form)
     if not isinstance(sway_damping_fade, bool):
@@ -304,8 +356,10 @@ def linear_damping_casadi(*, form, sway_damping_fade=False, smooth_speed=False):
         outputs = _submerged(nu_r, c, p, sway_damping_fade, p.get("smooth_speed_epsilon"))
     elif form == "floating":
         outputs = _floating(nu_r, c, p)
-    else:
+    elif form == "surface":
         outputs = _surface(nu_r, c, p)
+    else:
+        outputs = _surface_blend(nu_r, c, p)
     names = [d.name for d in couplings] + [d.name for d in declared]
     symbols_in = {**c, **p}
     return ca.Function(
@@ -333,7 +387,7 @@ def check_linear_damping_values(values, *, form, smooth_speed=False):
     """
     declared = linear_damping_parameters(form, smooth_speed=smooth_speed)
     numbers = check_values(_COUPLINGS[form] + declared, values)
-    if form == "surface":
+    if form in ("surface", "surface_blend"):
         mass, label = numbers["mass_matrix"], "mass_matrix"
     else:
         mass = numbers["rigid_body_mass_matrix"] + numbers["added_mass_matrix"]  # M = MRB + MA (Dmtrx.m 30)

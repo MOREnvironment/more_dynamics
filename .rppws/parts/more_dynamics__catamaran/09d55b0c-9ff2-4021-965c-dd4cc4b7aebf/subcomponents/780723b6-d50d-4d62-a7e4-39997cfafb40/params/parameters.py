@@ -4,10 +4,12 @@ from __future__ import annotations
 class ComponentParameters:
     max_forward_thrust = 239.364
     max_speed = 3.0864
-    time_constants = [1.0, 1.0]
+    time_constants = [0.5, 1.0]
+    surge_time_constant = 5.0
+    surge_blend_decay = 3.0
     damping_ratios = [0.3, 0.2, 0.4]
     yaw_damping_nonlinearity = 10.0
-    manoeuvring_damping = 'time_constants'
+    manoeuvring_damping = 'time_constants_surge_blend'
     sway_yaw_derivatives = [0.0, 0.0, 0.0, 0.0]
     modulus_coefficients = [0.0, 0.0]
     cross_flow = 'hoerner_strips'

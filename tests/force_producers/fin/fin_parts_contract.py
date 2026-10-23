@@ -276,7 +276,7 @@ def random_nu_r(generator, n, speed=3.0, rate=1.0):
 # --------------------------------------------------------------------------
 # Reference data
 # --------------------------------------------------------------------------
-MSS_FINS_CSV = "remus100_fins_mss_cc07579.csv"
+MSS_FINS_CSV = "remus100_fins_mss_99fdf4d.csv"
 PRESTERO_JSON = "prestero_2001_remus_fins.json"
 
 

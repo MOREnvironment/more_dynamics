@@ -238,11 +238,12 @@ def test_history_unmodified_mss_differs_by_one_density_and_one_geometry():
     reference, and by how much (measured by the generator, ``SOURCE.md``):
 
     * density alone (MSS geometry, one density; column ``xdot_one_density``):
-      ~0.19 % of the accelerations (``max |d nudot| / max |nudot|`` over the
-      640 cases), and -0.18 deg of heading after the 60 s turn at 15 deg
-      rudder and 925 rpm (two water densities in one MSS model);
+      nothing, since MSS reads one water density from ``mssConstants.m``
+      (it was ~0.19 % of the accelerations and -0.18 deg of heading at an
+      earlier MSS revision with two densities in one model);
     * geometry and the given mass (one density -> one value per quantity):
-      ~6 % of the accelerations and +2.9 deg of heading in the same turn.
+      ~6 % of the accelerations and +2.8 deg of heading after the 60 s turn
+      at 15 deg rudder and 925 rpm.
 
     Bounds are the measured numbers rounded outward to their order."""
     mss, one = _read_csv(MSS_DERIVATIVE_FILE), _read_csv(DERIVATIVE_FILE)
@@ -257,7 +258,7 @@ def test_history_unmodified_mss_differs_by_one_density_and_one_geometry():
     reference = _columns(mss, "xdot", 12)
     one_density = _columns(one, "xdot_one_density", 12)
     consistent = _columns(one, "xdot", 12)
-    assert 1e-3 < relative(reference, one_density) < 3e-3
+    assert relative(reference, one_density) < 1e-12
     assert 3e-2 < relative(one_density, consistent) < 1e-1
     assert np.abs(consistent - reference).max() > 1e3 * G1_TOLERANCE
 
@@ -265,7 +266,7 @@ def test_history_unmodified_mss_differs_by_one_density_and_one_geometry():
                for model in ("mss", "one_density", "consistent")}
     density_change = (heading["one_density"] - heading["mss"]) / DEG
     geometry_change = (heading["consistent"] - heading["one_density"]) / DEG
-    assert -0.3 < density_change < -0.1, f"density: {density_change:.4f} deg"
+    assert abs(density_change) < 1e-9, f"density: {density_change:.4f} deg"
     assert 2.0 < geometry_change < 4.0, f"geometry: {geometry_change:.4f} deg"
 
 

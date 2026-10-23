@@ -30,7 +30,9 @@ Options, each with its fidelity and what raises it:
 
 * ``added_mass_form``: ``"scaled_derivatives"`` (``M_A = -diag(c [A11, m, m,
   I11, I22, I33])``, MSS ``otter.m`` 152-159; raise: a Capytaine or
-  identified matrix).
+  identified matrix) or ``"scaled_derivatives_loaded_surge"`` (the same with
+  ``A11`` from the loaded mass ``m + m_payload``, MSS ``otter.m`` 162 at
+  ``99fdf4d``).
 * ``coriolis_form``: ``"kirchhoff_full"`` (every term of ``C_A``, default) or
   ``"munk_couplings_removed"`` (MSS shortcut, comparison form).
 * ``current_form``: ``"full_attitude"`` (default: the current constant in NED
@@ -69,7 +71,8 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_transformations.more_casadi_transformations import unset
 
-from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
+from more_dynamics.models.added_mass.added_mass_parts import (
+    SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives, scaled_derivatives_loaded_surge)
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import TWIN_PONTOONS_PARAMETERS, twin_pontoons
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
@@ -78,7 +81,9 @@ from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
 
-ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
+ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS),
+                    "scaled_derivatives_loaded_surge": (scaled_derivatives_loaded_surge,
+                                                        lambda: SCALED_DERIVATIVES_PARAMETERS)}
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
 HULL_ALIASES = {"hull_beam": "pontoon_beam", "hull_block_coefficient": "pontoon_block_coefficient",
                 "hull_waterplane_coefficient": "pontoon_waterplane_coefficient",

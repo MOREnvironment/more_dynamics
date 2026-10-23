@@ -10,7 +10,8 @@ References
     which cites it line by line (sec. 6.4, eqs. 6.82-6.85, p. 125).
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/modeling/Dmtrx.m;
     CRAFT/AUV/models/remus100.m 218 (submerged time constants);
-    CRAFT/USV/models/otter.m 195-240 (surface calibration);
+    CRAFT/USV/models/otter.m 195-240 (surface calibration); @ 99fdf4d:
+    CRAFT/USV/models/otter.m 206-217, 244-251 (surface calibration, blended surge);
     LIBRARY/modeling/forceLiftDrag.m.
 
 Author:    Enio Krizman
@@ -36,6 +37,8 @@ from more_dynamics.models.surge_resistance.surge_damping import surge_damping_ca
 # is never frozen here: the vehicle connects it by name.
 _SUBMERGED_OWN = ("time_constants", "damping_ratios")
 _SURFACE_OWN = ("max_forward_thrust", "max_speed", "time_constants", "damping_ratios", "yaw_damping_nonlinearity")
+_SURFACE_BLEND_OWN = ("max_forward_thrust", "max_speed", "surge_time_constant", "surge_blend_decay",
+                      "time_constants", "damping_ratios", "yaw_damping_nonlinearity")
 _LIFT_DRAG_OWN = ("planform_area", "parasitic_drag_coefficient", "oswald_efficiency")
 _ITTC_OWN = ("time_constant", "form_factor", "crossover_speed", "surge_added_mass_factor")
 _SMOOTH_SPEED_EPSILON = "smooth_speed_epsilon"  # numerical regularisation of the two guards (one value for both)
@@ -68,6 +71,18 @@ def time_constant_damping_surface():
 
 def time_constant_damping_surface_parameters():
     return _subset(linear_damping_parameters("surface"), _SURFACE_OWN)
+
+
+def time_constant_damping_surface_blend():
+    """Time-constant damping, surface form with the surge force blended from a
+    linear term of time constant ``surge_time_constant`` and a quadratic term
+    from the top speed and thrust (otter.m 206-217, 244-251 at ``99fdf4d``);
+    couplings ``mass_matrix``, ``restoring_matrix``."""
+    return linear_damping_casadi(form="surface_blend")
+
+
+def time_constant_damping_surface_blend_parameters():
+    return _subset(linear_damping_parameters("surface_blend"), _SURFACE_BLEND_OWN)
 
 
 def hull_lift_drag(*, smooth_speed=False):
@@ -110,7 +125,8 @@ def surge_resistance_ittc_residual_parameters():
     return _subset(declared, _ITTC_OWN + ("ittc_reynolds_floor",))
 
 
-MANOEUVRING_DAMPING_FORMS = ("time_constants", "linear_coupled", "linear_coupled_modulus")
+MANOEUVRING_DAMPING_FORMS = ("time_constants", "time_constants_surge_blend", "linear_coupled",
+                             "linear_coupled_modulus")
 
 SWAY_YAW_DERIVATIVES_PARAMETER = Parameter(
     "sway_yaw_derivatives", (4, 1), "N*s/m, N*s, N*m*s/m, N*m*s",

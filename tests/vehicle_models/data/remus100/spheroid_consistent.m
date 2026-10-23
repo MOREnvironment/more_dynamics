@@ -64,7 +64,8 @@ function [MRB,CRB] = spheroid_consistent(a,b,nu2,r_bG,m)  %<added>
 O3 = zeros(3,3);
 
 % Mass of spheroid 
-%<removed> rho = 1025;
+%<removed> constant = mssConstants();
+%<removed> rho = constant.rho_water;
 %<removed> m = 4/3 * pi * rho * a * b^2;   
 
 % Moment of inertia
@@ -89,4 +90,3 @@ CRB = H' * CRB_CG * H;
 
 
       
-

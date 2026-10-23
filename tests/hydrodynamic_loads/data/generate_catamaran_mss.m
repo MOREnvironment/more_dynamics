@@ -22,8 +22,10 @@
 %  Outputs, under <OUT_DIR>:
 %    full/catamaran_dynamics_full_debug_mss.csv            (every column)
 %    hydrodynamics/catamaran_matlab_reference_mss_<tag>.csv (its columns;
-%        tag = current for the L*B_pont KB, cc07579 for the Aw_pont KB)
-%    rigid_body/matlab_reference_mss_current.csv           (its columns)
+%        tag = current for the L*B_pont KB, cc07579 for the Aw_pont KB with
+%        the linear surge damping, 99fdf4d for the blended surge damping)
+%    rigid_body/matlab_reference_mss_<tag>.csv             (its columns; tag =
+%        current, or 99fdf4d with Xudot on m+mP)
 %  Run (nothing relative to a machine): MSS_DIR (required) = the MSS checkout,
 %  MATLAB_BIN = the MATLAB executable, OUT_DIR (optional) = output folder,
 %  default <tempdir>/more_mss_references; never this folder, so a run cannot
@@ -126,14 +128,19 @@ if contains(otterText, '0.5*nabla/(L*B_pont)')
     catTag = 'current';      % KB with L*B_pont (MSS up to 72656d1)
 elseif contains(otterText, '0.5*nabla/Aw_pont')
     catTag = 'cc07579';      % KB with the pontoon waterplane area (cf349d4)
+    if contains(otterText, 'T_surge')
+        catTag = '99fdf4d';  % surge damping blended from Xu and Xuu, Xudot on m+mP (be1f126, dd6b85f)
+    end
 else
     error('otter.m: KB line not recognised; revisit the output names');
 end
-dataDir = fileparts(scriptDir);
-extract_like(outFile, fullfile(dataDir, 'hydrodynamics', 'catamaran_matlab_reference_mss_current.csv'), ...
+testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
+extract_like(outFile, fullfile(testsDir, 'hydrodynamic_loads', 'data', 'catamaran_matlab_reference_mss_current.csv'), ...
     fullfile(outDir, 'hydrodynamics', ['catamaran_matlab_reference_mss_' catTag '.csv']));
-extract_like(outFile, fullfile(dataDir, 'rigid_body', 'matlab_reference_mss_current.csv'), ...
-    fullfile(outDir, 'rigid_body', 'matlab_reference_mss_current.csv'));
+rigidTag = 'current';
+if strcmp(catTag, '99fdf4d'), rigidTag = '99fdf4d'; end
+extract_like(outFile, fullfile(testsDir, 'rigid_body', 'data', 'matlab_reference_mss_current.csv'), ...
+    fullfile(outDir, 'rigid_body', ['matlab_reference_mss_' rigidTag '.csv']));
 
 %% ================================================================
 % Helpers
