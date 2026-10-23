@@ -83,7 +83,7 @@ for k = 1:N
               -0.15 + 0.3*rand       % phi (rad)
               -0.15 + 0.3*rand       % theta (rad)
               -pi + 2*pi*rand ];     % psi
-        ui = [ -511.5 + 1023*rand; -0.7 + 1.4*rand ];           % thrust (N), angle (rad)
+        ui = [ -511.5 + 1023*rand; -0.6 + 1.2*rand ];           % thrust (N), angle (rad)
     end
     [xd, ~, ~, ~, tau_out]   = grethe(x,ui,0,zeros(3,1),0,0,opt_gate);
     [xd_leg, ~, ~, ~, tau_leg] = grethe(x,ui,0,zeros(3,1),0,0,opt_leg);
@@ -114,7 +114,7 @@ for k = 1:Np
     if k == 1, x = zeros(12,1); ui = [0;0]; else
         x = [ -1 + 4*rand; -0.5 + rand; -0.3 + 0.6*rand; -0.3 + 0.6*rand; -0.3 + 0.6*rand; -0.3 + 0.6*rand; ...
               -10 + 20*rand; -10 + 20*rand; -0.2 + 0.4*rand; -0.15 + 0.3*rand; -0.15 + 0.3*rand; -pi + 2*pi*rand ];
-        ui = [ -511.5 + 1023*rand; -0.7 + 1.4*rand ];
+        ui = [ -511.5 + 1023*rand; -0.6 + 1.2*rand ];
     end
     xd = grethe(x,ui,mP,r_bP,0,0,opt_gate);
     prow(k,:) = [k mP r_bP' x' ui' xd'];
