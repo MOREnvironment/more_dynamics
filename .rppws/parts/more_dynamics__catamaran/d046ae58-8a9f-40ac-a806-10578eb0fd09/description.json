@@ -1,0 +1,58 @@
+{
+    "Id": "d046ae58-8a9f-40ac-a806-10578eb0fd09",
+    "Name": "Otter (MSS, ocean current)",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::Catamaran",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "2c092c8a-d9d7-4c62-81ec-192fdd22f32e",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SurfaceRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "2063d94e-7f48-4e0e-bcf3-02b2ab76b27c",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::SurfaceHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "site": {
+            "Id": "cf86c99e-4455-4943-b1e5-102a4f1717c1",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::Site",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "actuators": [
+            {
+                "Id": "7cc92477-59df-4715-880a-c3b95b355f28",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "1c451d1e-a21e-45c4-8b59-6d2df89f60c4",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            }
+        ]
+    },
+    "ParentComponentInfo": null
+}

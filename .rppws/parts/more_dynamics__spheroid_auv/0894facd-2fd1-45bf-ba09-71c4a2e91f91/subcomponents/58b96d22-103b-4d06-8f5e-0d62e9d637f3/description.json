@@ -1,0 +1,14 @@
+{
+    "Id": "58b96d22-103b-4d06-8f5e-0d62e9d637f3",
+    "Name": "Stern plane fin 1",
+    "LinkedComponentId": "acc473e1-e6d3-4c5f-b492-b4db41187c85",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

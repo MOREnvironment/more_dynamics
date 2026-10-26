@@ -1,0 +1,17 @@
+{
+    "Id": "2063d94e-7f48-4e0e-bcf3-02b2ab76b27c",
+    "Name": "Otter (ocean current) hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::SurfaceHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

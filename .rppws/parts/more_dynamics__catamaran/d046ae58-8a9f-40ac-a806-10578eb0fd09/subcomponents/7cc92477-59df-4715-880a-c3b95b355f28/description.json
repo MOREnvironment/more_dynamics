@@ -1,0 +1,14 @@
+{
+    "Id": "7cc92477-59df-4715-880a-c3b95b355f28",
+    "Name": "Port thruster",
+    "LinkedComponentId": "4e1a6c7a-6d8e-4a3b-9c52-0b7f6c1d2e02",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

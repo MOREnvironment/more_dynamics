@@ -1,0 +1,17 @@
+{
+    "Id": "cf86c99e-4455-4943-b1e5-102a4f1717c1",
+    "Name": "Otter (MSS, ocean current) site",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::Site",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "0705552d-7974-4939-b2d0-e9c666424aae",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Catamaran",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}
