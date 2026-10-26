@@ -12,7 +12,9 @@ payloads (``plugins/shared/vehicle_graph.py``).
     eta_dot = J(eta) nu
 
 State ``[eta; nu]`` after the actuators' states: NED position, ZYX Euler
-angles, BODY FRD velocity, SI units. Inputs: the current (``current_speed``,
+angles, BODY FRD velocity, SI units; with ``kinematics_form = "unit_quaternion"``
+the 13 values ``[p; q; nu]`` (the unit quaternion in place of the Euler angles;
+the output stays position, Euler angles, velocity). Inputs: the current (``current_speed``,
 ``current_direction``, ``current_vertical_speed``) when ``current_form`` is
 not ``"none"``, then the commands of the actuators in list order.
 
@@ -38,6 +40,10 @@ Options, each with its fidelity and what raises it:
   ``"full_rotation_rate"`` (MSS ``otter.m`` 113-118); the last two are MSS
   shortcuts. Raise: a measured current profile. Every form but ``"none"``
   adds the three current inputs first.
+* ``kinematics_form``: ``"euler"`` (default, 12 states) or ``"unit_quaternion"``
+  (13 states, no singularity at a pitch of 90 deg; Fossen 2011, eq. 2.69, p. 30;
+  ``remus100.m`` 225-227). Raise: none needed; the form changes the attitude
+  state, not the physics.
 * ``body_density_method``: ``"computed"`` (default; the density that gives
   ``body_mass`` on the spheroid's own volume, ``spheroid.m`` 36) or
   ``"given"`` (``body_density``). Raise: the mass from a weighing, the volume
@@ -59,7 +65,8 @@ References
 [MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 3, 96-98,
     118-125, 131-138, 207-210, 257-259; LIBRARY/modeling/spheroid.m 35-42;
     imlay61.m 31-59; INS/functions/gravity.m 11-12; and, @ 49e03e3 (release
-    2.0.5), LIBRARY/mssConstants.m 12-14 (given density and gravity).
+    2.0.5), LIBRARY/mssConstants.m 12-14 (given density and gravity); CRAFT/AUV/models/remus100.m 225-227 @ ed2ce7b
+    (the unit-quaternion form).
 [HullVessel] Mandic, L. more_dynamics ``HullVessel`` (hull_vessel.py): the
     form of the vehicle plugin (parameters, slots, ``graph()``) this follows.
 
@@ -85,7 +92,7 @@ from more_dynamics.models.rigid_body.rigid_body_parts import (
 from more_dynamics.plugins.shared.payload_io import refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
-from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
+from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, kinematics_form
 
 ADDED_MASS_FORMS = {"lamb_spheroid": (lamb_spheroid, lamb_spheroid_parameters)}
 BODY_DENSITY_METHODS = ("computed", "given")
@@ -112,6 +119,7 @@ class SpheroidAuv(VehicleModel3D):
         ParameterDescription("roll_added_inertia_ratio", unset()),  # remus100.m:136 r44
         ParameterDescription("added_mass_form", "lamb_spheroid"),  # imlay61.m 31-59
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
+        ParameterDescription("kinematics_form", "euler"),  # Fossen 2011, eq. 2.40, p. 26 (Euler) or eq. 2.69, p. 30 (unit quaternion)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
 
@@ -145,7 +153,8 @@ class SpheroidAuv(VehicleModel3D):
                          coriolis_matrix=known["rigid_body_coriolis_matrix"] + known["added_mass_coriolis_matrix"],
                          current_velocity=current_velocity, current_acceleration=current_acceleration, known=known)
 
-        self._assembly = VehicleAssembly(context, "SpheroidAuv", compute, own_inputs)
+        self._assembly = VehicleAssembly(context, "SpheroidAuv", compute, own_inputs,
+                                         kinematics_form(context, "SpheroidAuv", CompositionError))
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):

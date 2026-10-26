@@ -134,6 +134,11 @@
     "kind": "convention",
     "source": "still water"
    },
+   "kinematics_form": {
+    "value": "euler",
+    "kind": "convention",
+    "source": "Euler angles in the state (the default form)"
+   },
    "integration_max_step": {
     "value": 0.05,
     "kind": "convention",

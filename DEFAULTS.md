@@ -33,6 +33,8 @@ tables and the comment beside each value (source and kind); a part's `SOURCE.md`
 | `current_form` | "none" | - | still water | selector |
 | `body_mass` | 31.9 | kg | remus100.m:3 | document |
 
+The parts "REMUS 100 (MSS, ocean current)" and "REMUS 100 (MSS, quaternion)" hold these values, every one equal, except `current_form` = "yaw_rate_terms" (remus100.m 118-123) in both and, in the second, `kinematics_form` = "unit_quaternion" (Fossen 2011, eq. 2.69, p. 30; selector). "Otter (MSS, ocean current)" holds the values of Otter (MSS) except `current_form` = "full_rotation_rate" (otter.m 120-125).
+
 ## REMUS 100 hydrostatics (`more_dynamics::SubmergedRestoring`)
 
 | Parameter | Value | Unit | Source | Kind |
@@ -414,6 +416,9 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 | REMUS 100 (MSS) rudder fin, REMUS 100 (MSS) stern plane fin | `.rppws/parts/more_dynamics__fin/` (each linked twice into REMUS 100 (MSS)) | yes, each |
 | REMUS 100 fin pairs, REMUS 100 propeller | `.rppws/parts/more_dynamics__fin_pairs_deflection_only/`, `...__propeller/` (the earlier REMUS 100 composition, kept as parts of their own for the plugins' tests and as a cross-check of the committed vehicle) | no |
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
+| REMUS 100 (MSS, ocean current) | `.rppws/parts/more_dynamics__spheroid_auv/0894facd-2fd1-45bf-ba09-71c4a2e91f91/` (a copy of REMUS 100 (MSS) with `current_form = "yaw_rate_terms"`, `remus100.m` 118-123; same linked actuators; a test asserts that nothing else differs) | yes |
+| REMUS 100 (MSS, quaternion) | `.rppws/parts/more_dynamics__spheroid_auv/92e634eb-ef30-44d1-8fed-8cd28a876dc2/` (a copy of REMUS 100 (MSS, ocean current) with `kinematics_form = "unit_quaternion"`: 13 states; a test asserts that nothing else differs) | yes |
+| Otter (MSS, ocean current) | `.rppws/parts/more_dynamics__catamaran/d046ae58-8a9f-40ac-a806-10578eb0fd09/` (a copy of Otter (MSS) with `current_form = "full_rotation_rate"`, `otter.m` 120-125; same linked actuators; a test asserts that nothing else differs) | yes |
 | Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | the part's own (the values of the model file grethe.m) |
 | Grethe (yaw-unstable stress test) | `.rppws/parts/more_dynamics__monohull/b378c519-2d5f-4161-a8d0-a11a4f44a072/` (configuration `grethe_stress_test`) | no (a copy of Grethe with one change, see its section) |
 | Grethe outboard | `.rppws/parts/more_dynamics__propulsor/` (linked into both Grethe parts) | yes |

@@ -19,6 +19,11 @@ for. A slot's output named ``kinematic_attitude_offset`` (6 values) is taken off
 at (``eta_dot = J(eta - offset) nu``); no other quantity of the equation of motion reads it. No ``sensors`` slot: the output is the 12 vessel states; sensors attach
 outside the vehicle.
 
+With ``kinematics_form = "unit_quaternion"`` the vessel states are the 13 values ``[p; q; nu]`` (position, unit
+quaternion, velocity) and the output stays the 12 values position, Euler angles, velocity: the pose the children read
+(``pose``) is the position and the Euler angles of ``q`` (Fossen 2011, eqs. 2.78-2.80, p. 33), so no child changes; the
+attitude offset form (``kinematic_attitude_offset``) is not offered with it.
+
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
@@ -47,7 +52,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_common.casadi_graph import RppCasadiGraph, graph_to_bytes
 from more_transformations.more_casadi_transformations import EulerQuaternionTransforms
-from more_dynamics.models.equation_of_motion import marine_craft_6dof_casadi
+from more_dynamics.models.equation_of_motion import marine_craft_6dof_casadi, marine_craft_6dof_quaternion_casadi
 from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name
 
 INTEGRATION_STEP = ParameterDescription("integration_max_step", 0.05)  # s, SIMremus100.m 60 (h = 0.05)
@@ -150,8 +155,12 @@ class VehicleAssembly:
     """The assembled vehicle: its payload pieces, a numeric RK4 step and ``signals`` for reading any named
     quantity back (tests, diagnostics); built once in ``initialize``."""
 
-    def __init__(self, context: ComponentContext, plugin: str, compute, current_inputs=()):
+    def __init__(self, context: ComponentContext, plugin: str, compute, current_inputs=(),
+                 kinematics_form="euler"):
         self.plugin = plugin
+        self.kinematics_form = kinematics_form
+        quaternion = kinematics_form == "unit_quaternion"
+        n_vessel = 13 if quaternion else 12
         site = context.get_component("site")
         hydrostatics = context.get_component("hydrostatics")
         hydrodynamics = context.get_component("hydrodynamics")
@@ -180,9 +189,13 @@ class VehicleAssembly:
             children.append(("actuators", f"actuators.{k}", type(child).__name__, graph))
         self.child_states = state_index
 
-        states = ca.SX.sym("state", self.child_states + 12)
-        vessel = states[-12:]
-        pose, velocity = vessel[0:6], vessel[6:12]
+        states = ca.SX.sym("state", self.child_states + n_vessel)
+        vessel = states[-n_vessel:]
+        if quaternion:  # [p; q; nu]: the children read the position and the Euler angles of q
+            euler = ca.vertcat(*EulerQuaternionTransforms.quaternion_to_euler(vessel[3:7]))  # (Fossen 2011, eqs. 2.78-2.80, p. 33)
+            pose, velocity = ca.vertcat(vessel[0:3], euler), vessel[7:13]
+        else:
+            pose, velocity = vessel[0:6], vessel[6:12]
         inputs, input_descriptions = [], []
         current = {}
         for name, size, description in current_inputs:
@@ -239,18 +252,24 @@ class VehicleAssembly:
         # a slot may ask for the kinematics at another attitude than the state's (the payload trim form of MSS's
         # otter.m 266, 269): ``kinematic_attitude_offset``, taken off the pose; only eta_dot reads the pose there
         offset = known.get("kinematic_attitude_offset")
+        if quaternion and offset is not None:
+            raise CompositionError(f"{plugin}: kinematics_form 'unit_quaternion' cannot take the kinematic attitude "
+                                   "offset a slot gives (an Euler-angle offset); use 'euler'")
         kinematic_state = vessel if offset is None else ca.vertcat(vessel[0:6] - ca.vec(offset), vessel[6:12])
-        vessel_dot = marine_craft_6dof_casadi()(kinematic_state, craft.current_velocity, craft.current_acceleration,
-                                                ca.reshape(craft.mass_matrix, 6, 6),
-                                                ca.reshape(craft.coriolis_matrix, 6, 6), force)
+        equation_of_motion = marine_craft_6dof_quaternion_casadi() if quaternion else marine_craft_6dof_casadi()
+        vessel_dot = equation_of_motion(kinematic_state, craft.current_velocity, craft.current_acceleration,
+                                        ca.reshape(craft.mass_matrix, 6, 6),
+                                        ca.reshape(craft.coriolis_matrix, 6, 6), force)
         u = ca.vertcat(*inputs) if inputs else ca.SX(0, 1)
         self.dynamics = ca.Function("dynamics", [states, u], [ca.vertcat(*state_dots, vessel_dot)],
                                     ["state", "input"], ["state_dot"])
-        self.output = ca.Function("output", [states, u], [vessel], ["state", "input"], ["output"])
+        output = ca.vertcat(pose, velocity) if quaternion else vessel
+        self.output = ca.Function("output", [states, u], [output], ["state", "input"], ["output"])
         self.input_descriptions = input_descriptions
         self.output_descriptions = [IODescription(12, name="output")]
+        initial = [0.0] * 3 + [1.0, 0.0, 0.0, 0.0] + [0.0] * 6 if quaternion else [0.0] * 12
         self.state_descriptions = [d for _, _, _, g in children for d in g.payload.stateDescription] + \
-            [StateDescription(12, ic=[0.0] * 12, name="state")]
+            [StateDescription(n_vessel, ic=initial, name="state")]
 
         everything = {**{n: ca.vec(v) for n, v in known.items()}, **{n: ca.vec(v) for n, v in visible.items()}}
         self.signal_names = list(everything)
@@ -263,11 +282,15 @@ class VehicleAssembly:
         k2 = self.dynamics(states + h / 2 * k1, u)
         k3 = self.dynamics(states + h / 2 * k2, u)
         k4 = self.dynamics(states + h * k3, u)
-        self._rk4 = ca.Function("rk4", [states, u, h], [states + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)])  # (rk4.m 26-38)
+        advanced = states + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)  # (rk4.m 26-38)
+        if quaternion:  # the unit length of q kept after every step (Fossen 2011, Algorithm 2.1, step 3, p. 31)
+            at = self.child_states + 3
+            advanced[at:at + 4] = advanced[at:at + 4] / ca.norm_2(advanced[at:at + 4])
+        self._rk4 = ca.Function("rk4", [states, u, h], [advanced])
 
     def signals(self, x, u=()):
         """``{name: values}`` of every quantity of the vehicle and of its children's outputs (``<slot>.<name>``) at
-        state ``x`` (children's states first, then the 12 vessel states) and input ``u``."""
+        state ``x`` (children's states first, then the 12 or 13 vessel states) and input ``u``."""
         vector = np.asarray(self._signals(np.asarray(x, float).ravel(), np.asarray(u, float).ravel())).ravel()
         out, k = {}, 0
         for name, size in zip(self.signal_names, self.signal_sizes):
@@ -300,16 +323,22 @@ class VehicleAssembly:
             raise NotImplementedError("step() with actuator states waits on an owner decision "
                                       "(where those states live between calls is not decided)")
         q = state.pose.orientation
-        euler = [float(a) for a in EulerQuaternionTransforms.quaternion_to_euler([q.w, q.x, q.y, q.z])]
         p, v, w = state.pose.position, state.twist.linear, state.twist.angular
-        x = [p.x, p.y, p.z, *euler, v.x, v.y, v.z, w.x, w.y, w.z]
+        if self.kinematics_form == "unit_quaternion":
+            x = [p.x, p.y, p.z, q.w, q.x, q.y, q.z, v.x, v.y, v.z, w.x, w.y, w.z]
+        else:
+            euler = [float(a) for a in EulerQuaternionTransforms.quaternion_to_euler([q.w, q.x, q.y, q.z])]
+            x = [p.x, p.y, p.z, *euler, v.x, v.y, v.z, w.x, w.y, w.z]
         u = [value for c in command for value in c.data]
         x = self.step_vector(x, u, dt)
         out = VehicleModel3D.Odometry3D()
         out.pose.position.x, out.pose.position.y, out.pose.position.z = (float(a) for a in x[0:3])
-        quaternion = np.asarray(EulerQuaternionTransforms.euler_to_quaternion(*x[3:6])).ravel()
+        if self.kinematics_form == "unit_quaternion":
+            quaternion, velocity = x[3:7], x[7:13]
+        else:
+            quaternion, velocity = np.asarray(EulerQuaternionTransforms.euler_to_quaternion(*x[3:6])).ravel(), x[6:12]
         out.pose.orientation.w, out.pose.orientation.x, out.pose.orientation.y, out.pose.orientation.z = \
             (float(a) for a in quaternion)
-        out.twist.linear.x, out.twist.linear.y, out.twist.linear.z = (float(a) for a in x[6:9])
-        out.twist.angular.x, out.twist.angular.y, out.twist.angular.z = (float(a) for a in x[9:12])
+        out.twist.linear.x, out.twist.linear.y, out.twist.linear.z = (float(a) for a in velocity[0:3])
+        out.twist.angular.x, out.twist.angular.y, out.twist.angular.z = (float(a) for a in velocity[3:6])
         return out

@@ -519,6 +519,7 @@ def build(scale=1.0):
                                               "antenna")),
             "coriolis_form": entry("kirchhoff_full", "convention", "every added-mass Coriolis term"),
             "current_form": entry("none", "convention", "still water"),
+            "kinematics_form": entry("euler", "convention", "Euler angles in the state (the default form)"),
             "integration_max_step": entry(0.05, "convention", "numerical step of the vehicle's own integrator"),
         },
         "hydrostatics": {

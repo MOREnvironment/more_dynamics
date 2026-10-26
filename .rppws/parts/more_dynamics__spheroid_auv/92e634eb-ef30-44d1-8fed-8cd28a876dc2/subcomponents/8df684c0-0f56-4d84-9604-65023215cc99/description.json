@@ -1,0 +1,17 @@
+{
+    "Id": "8df684c0-0f56-4d84-9604-65023215cc99",
+    "Name": "REMUS 100 (MSS, quaternion) site",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::Site",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

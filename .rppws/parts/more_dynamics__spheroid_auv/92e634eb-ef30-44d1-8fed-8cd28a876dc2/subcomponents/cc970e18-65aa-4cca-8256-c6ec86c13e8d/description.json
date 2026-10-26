@@ -1,0 +1,17 @@
+{
+    "Id": "cc970e18-65aa-4cca-8256-c6ec86c13e8d",
+    "Name": "REMUS 100 (quaternion) hydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SubmergedRestoring",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

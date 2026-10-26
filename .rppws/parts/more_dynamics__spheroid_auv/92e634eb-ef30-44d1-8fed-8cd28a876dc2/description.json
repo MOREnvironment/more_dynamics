@@ -1,0 +1,82 @@
+{
+    "Id": "92e634eb-ef30-44d1-8fed-8cd28a876dc2",
+    "Name": "REMUS 100 (MSS, quaternion)",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::SpheroidAuv",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "cc970e18-65aa-4cca-8256-c6ec86c13e8d",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SubmergedRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "b6dc1405-3468-489a-87a4-b9063f7425d8",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::AuvHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "actuators": [
+            {
+                "Id": "d1d511e8-ab00-44b0-b086-7d43ee3ccca4",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "29acbea3-1270-45ff-a590-b76db65e9fe1",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "ec534ddc-05de-4427-b637-4b43f09e8b81",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "f688feee-d104-4bd2-8e11-7cdf57c41921",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "8f5f72a5-7867-4bd7-9f94-076726ac0a8e",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            }
+        ],
+        "site": {
+            "Id": "8df684c0-0f56-4d84-9604-65023215cc99",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::Site",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        }
+    },
+    "ParentComponentInfo": null
+}
