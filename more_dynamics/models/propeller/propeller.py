@@ -6,38 +6,38 @@ builds ``(n, nu_r, <parameters by name>) -> (tau, shaft_axis,
 coefficients_in_use)``.
 
 Equations (keys in References), ``n`` in rpm saturated at ``n_max``,
-``n_p = n / 60`` (MSS ``remus100.m`` 115):
+``n_p = n / 60`` (MSS ``remus100.m`` 116):
 
-* ``Va = (1 - w) U_r`` (``remus100.m`` 150, there ``Va = 0.944 U_r``);
+* ``Va = (1 - w) U_r`` (``remus100.m`` 151, there ``Va = 0.944 U_r``);
 * ``"bollard"``: ``X = rho D^4 K_T0 n_p |n_p|``, ``K = rho D^5 K_Q0 n_p |n_p|``
-  (``remus100.m`` 175-176; Fossen 2011, eq. 12.265, p. 411);
+  (``remus100.m`` 176-177; Fossen 2011, eq. 12.265, p. 411);
 * ``"linearized"``: for ``n_p > 0``, ``X = rho D^4 (K_T0 n_p |n_p| +
   (K_Tmax - K_T0) / Ja_max (Va / D) |n_p|)`` and the same for ``K`` with
-  ``D^5`` and ``K_Q`` (``remus100.m`` 167-172); for ``n_p <= 0`` the bollard
-  form (``remus100.m`` 173-176);
+  ``D^5`` and ``K_Q`` (``remus100.m`` 168-173); for ``n_p <= 0`` the bollard
+  form (``remus100.m`` 174-177);
 * ``"full"``: ``J = Va / (|n_p| D)``, ``X = rho D^4 K_T(J) n_p |n_p|``,
   ``K = rho D^5 K_Q(J) n_p |n_p|`` with the Wageningen polynomial
   (``wageningen_kt_kq.py``); ``J`` clipped to ``[0, 2 Ja_max]`` and the
   denominator bounded below at 1e-6 (guards of this module); ``K_T0``,
   ``K_Q0`` for ``n_p <= 0``;
 * body wrench: thrust ``(1 - t) X`` along the shaft axis at ``position``
-  (``remus100.m`` 249; moment ``r x f``, Fossen 2011, eq. 12.226, p. 400),
-  plus a torque ``scale K`` about the shaft axis (``remus100.m`` 252, where
+  (``remus100.m`` 250; moment ``r x f``, Fossen 2011, eq. 12.226, p. 400),
+  plus a torque ``scale K`` about the shaft axis (``remus100.m`` 253, where
   the scale is ``1/10``; a pure couple, no ``r x f`` part).
 
-The ``"linearized"`` model equals MSS ``remus100.m`` 148-176, 249 and 252.
+The ``"linearized"`` model equals MSS ``remus100.m`` 149-177, 250 and 253.
 ``open_water_coefficients`` (a selector): ``"polynomial"`` (default) takes
 ``K_T0, K_Q0, K_Tmax, K_Qmax`` from the Wageningen polynomial at ``J = 0`` and
 ``J = Ja_max``; ``"given"`` declares them as the parameter
-``thrust_torque_coefficients`` (``remus100.m`` 157-161 prints them, rounded
+``thrust_torque_coefficients`` (``remus100.m`` 158-162 prints them, rounded
 to four digits). Deviations from MSS: the shaft axis and position are
 parameters (``remus100.m`` puts the thrust on the x axis at the CO).
 
 Domain of the advance number. ``J = Va / (n_p D)`` is ``>= 0`` on the
 forward branch, where both models use it: ``Va = (1 - w) U_r >= 0``
-(``remus100.m`` 150) and ``n_p > 0`` (``remus100.m`` 167). ``Ja_max`` is the
+(``remus100.m`` 151) and ``n_p > 0`` (``remus100.m`` 168). ``Ja_max`` is the
 ``J`` at the top speed and the top shaft speed, ``Ja_max = (1 - w) U_max /
-(D n_max / 60)`` (``remus100.m`` 152-153); it is declared ``> 0`` (the
+(D n_max / 60)`` (``remus100.m`` 153-154); it is declared ``> 0`` (the
 linearised slope divides by it). The upper end of the range on which the
 Wageningen regression was fitted is not stated in MSS (``wageningen.m``
 1-31) and its primary source (Bernitsas, Ray and Kinley 1981) is not read
@@ -51,7 +51,7 @@ motor's ``thrust_deduction`` and ``propwash_factor``; the equations need no
 exclusive endpoint).
 
 ``roll_moment_scale`` is an identified coefficient or a comparison form, not a
-physics value: ``remus100.m`` 252 divides the shaft torque by 10 "to match
+physics value: ``remus100.m`` 253 divides the shaft torque by 10 "to match
 exp. results"; the physical shaft reaction torque is the scale 1.
 
 Frames: the shaft axis is ``R_zyx(orientation)[:, 0]`` in BODY
@@ -68,8 +68,8 @@ References
     eq. 2.18, p. 22; Ch. 12, eq. 12.226, p. 400; eq. 12.265, p. 411.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 110, 115,
-    127, 148-176, 249, 252.
+    licence, revision ``ed2ce7b``: ``CRAFT/AUV/models/remus100.m`` 111, 116,
+    128, 149-177, 250, 253.
 
 Author:    Enio Krizman
 Date:      2026-10-05
@@ -137,19 +137,19 @@ def open_water_loads(p, coefficients, model, clip_advance_ratio, n_rps, advance_
     rho, d = p["water_density"], p["propeller_diameter"]
     quadratic = ca.fabs(n_rps) * n_rps  # n_p |n_p| (Fossen 2011, eq. 12.265, p. 411)
 
-    if model == "bollard":  # (remus100.m 175-176)
+    if model == "bollard":  # (remus100.m 176-177)
         return rho * d**4 * kt0 * quadratic, rho * d**5 * kq0 * quadratic
 
-    if model == "linearized":  # (remus100.m 167-176)
-        kt_slope = (kt_max - kt0) / p["max_advance_number"]  # (K_Tmax - K_T0) / Ja_max (remus100.m 170)
-        kq_slope = (kq_max - kq0) / p["max_advance_number"]  # (remus100.m 172)
-        inflow = (advance_speed / d) * ca.fabs(n_rps)  # (Va / D) |n_p| (remus100.m 170, 172)
-        thrust = ca.if_else(  # (remus100.m 169-170, 175)
+    if model == "linearized":  # (remus100.m 168-177)
+        kt_slope = (kt_max - kt0) / p["max_advance_number"]  # (K_Tmax - K_T0) / Ja_max (remus100.m 171)
+        kq_slope = (kq_max - kq0) / p["max_advance_number"]  # (remus100.m 173)
+        inflow = (advance_speed / d) * ca.fabs(n_rps)  # (Va / D) |n_p| (remus100.m 171, 173)
+        thrust = ca.if_else(  # (remus100.m 170-171, 176)
             n_rps > 0.0,
             rho * d**4 * (kt0 * quadratic + kt_slope * inflow),
             rho * d**4 * kt0 * quadratic,
         )
-        torque = ca.if_else(  # (remus100.m 171-172, 176)
+        torque = ca.if_else(  # (remus100.m 172-173, 177)
             n_rps > 0.0,
             rho * d**5 * (kq0 * quadratic + kq_slope * inflow),
             rho * d**5 * kq0 * quadratic,
@@ -159,12 +159,12 @@ def open_water_loads(p, coefficients, model, clip_advance_ratio, n_rps, advance_
     # "full": J = Va / (|n_p| D) clipped to [0, 2 Ja_max] (guards of this module),
     # then the polynomial's own clip only with ``clip_advance_ratio``;
     # K_T(0), K_Q(0) when n <= 0; zero force at n = 0 through |n| n.
-    advance_number = advance_speed / ca.fmax(ca.fabs(n_rps) * d, MIN_ADVANCE_DENOMINATOR)  # J = Va / (n D) (wageningen.m 6; remus100.m 147); denominator bounded below (guard)
+    advance_number = advance_speed / ca.fmax(ca.fabs(n_rps) * d, MIN_ADVANCE_DENOMINATOR)  # J = Va / (n D) (wageningen.m 6; remus100.m 148); denominator bounded below (guard)
     advance_number = saturate(advance_number, 0.0, 2.0 * p["max_advance_number"])  # guard of this module
     kt_j, kq_j = wageningen_expression(advance_number, p["pitch_diameter_ratio"], p["blade_area_ratio"],
                                        p["blade_count"], clip_advance_ratio)
-    kt = ca.if_else(n_rps <= 0.0, kt0, kt_j)  # K_T0 astern (remus100.m 175, bollard form)
-    kq = ca.if_else(n_rps <= 0.0, kq0, kq_j)  # K_Q0 astern (remus100.m 176)
+    kt = ca.if_else(n_rps <= 0.0, kt0, kt_j)  # K_T0 astern (remus100.m 176, bollard form)
+    kq = ca.if_else(n_rps <= 0.0, kq0, kq_j)  # K_Q0 astern (remus100.m 177)
     return rho * d**4 * kt * quadratic, rho * d**5 * kq * quadratic  # (Fossen 2011, eq. 12.265, p. 411)
 
 
@@ -193,18 +193,18 @@ def propeller_casadi(*, open_water_model, open_water_coefficients="polynomial", 
     if open_water_coefficients == "given":
         coefficients = p["thrust_torque_coefficients"]
     else:
-        kt0, kq0 = wageningen_expression(0.0, *geometry, clip_advance_ratio)  # K_T, K_Q at J = 0 (remus100.m 156)
-        kt_max, kq_max = wageningen_expression(p["max_advance_number"], *geometry, clip_advance_ratio)  # at J = Ja_max (remus100.m 159)
+        kt0, kq0 = wageningen_expression(0.0, *geometry, clip_advance_ratio)  # K_T, K_Q at J = 0 (remus100.m 157)
+        kt_max, kq_max = wageningen_expression(p["max_advance_number"], *geometry, clip_advance_ratio)  # at J = Ja_max (remus100.m 160)
         coefficients = ca.vertcat(kt0, kq0, kt_max, kq_max)
 
-    n_rps = saturate(n, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0  # n_p = sat(n, n_max) / 60 (remus100.m 115)
-    advance_speed = (1.0 - p["wake_fraction"]) * safe_norm(nu_r[0:3])  # Va = (1 - w) U_r (remus100.m 127, 150)
+    n_rps = saturate(n, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0  # n_p = sat(n, n_max) / 60 (remus100.m 116)
+    advance_speed = (1.0 - p["wake_fraction"]) * safe_norm(nu_r[0:3])  # Va = (1 - w) U_r (remus100.m 128, 151)
     thrust, torque = open_water_loads(p, coefficients, open_water_model, clip_advance_ratio, n_rps, advance_speed)
 
     axis = MatrixTransforms.Rzyx_explicit(p["orientation"])[:, 0]  # shaft axis R_zyx[:, 0] (Fossen 2011, eq. 2.18, p. 22)
-    force = axis * ((1.0 - p["thrust_deduction"]) * thrust)  # (1 - t) X along the shaft (remus100.m 249)
-    shaft_torque = axis * (p["roll_moment_scale"] * torque)  # scale K about the shaft axis (remus100.m 252)
-    # [f; r x f] of the thrust (Fossen 2011, eq. 12.226, p. 400) plus the shaft torque as a couple (remus100.m 252)
+    force = axis * ((1.0 - p["thrust_deduction"]) * thrust)  # (1 - t) X along the shaft (remus100.m 250)
+    shaft_torque = axis * (p["roll_moment_scale"] * torque)  # scale K about the shaft axis (remus100.m 253)
+    # [f; r x f] of the thrust (Fossen 2011, eq. 12.226, p. 400) plus the shaft torque as a couple (remus100.m 253)
     tau = wrench(force, p["position"]) + ca.vertcat(ca.DM.zeros(3), shaft_torque)
 
     names = [d.name for d in declared]

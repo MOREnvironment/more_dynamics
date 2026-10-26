@@ -22,15 +22,15 @@ and the rate limit of the real servo from a logged step in the fin command).
 Forms, each with its fidelity (the next level needs the measurement named):
 
 * ``inflow``: ``"translational"`` (the fin sees the vehicle's translation,
-  ``remus100.m`` 234-235) or ``"rigid_point"`` (the velocity at a point fixed
+  ``remus100.m`` 235-236) or ``"rigid_point"`` (the velocity at a point fixed
   to the body, Prestero 2001, eq. 4.40, p. 32). Raise: the flow measured at
   the fin.
-* ``flow_angle``: ``"none"`` (``remus100.m`` 234-245) or ``"small_angle"``
+* ``flow_angle``: ``"none"`` (``remus100.m`` 235-246) or ``"small_angle"``
   (``u_n / u_c``, Prestero 2001, eqs. 4.42-4.43, pp. 32-33).
 * ``interference``: ``"none"`` (both factors one, Prestero 2001, eq. 4.41,
   p. 32); ``"slender_body"`` (Pitts 1957) waits on its source and refuses.
 * ``section``: ``"quadratic_drag"`` (lift slope, drag proportional to the
-  squared angle, ``remus100.m`` 238-245) or ``"linear_section"`` (lift slope,
+  squared angle, ``remus100.m`` 239-246) or ``"linear_section"`` (lift slope,
   constant zero-lift drag, Prestero 2001, eq. 4.37, p. 31); ``"lifting_line"``
   waits on its source and refuses.
 
@@ -57,8 +57,8 @@ References
 [Sarhadi 2026] Sarhadi, P. (2026). Simple yet effective anti-windup
     techniques for amplitude and rate saturation: an AUV case study.
     arXiv:2601.01302v2, Fig. 4, p. 4.
-[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 109, 113-114,
-    234-254 @ cc07579.
+[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 110, 114-115,
+    235-255 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -114,7 +114,7 @@ class Fin(ForceProducer):
         ParameterDescription("inflow", "rigid_point"),  # Prestero 2001, eq. 4.40, p. 32
         ParameterDescription("flow_angle", "small_angle"),  # Prestero 2001, eqs. 4.42-4.43, pp. 32-33
         ParameterDescription("interference", "none"),  # Prestero 2001, eq. 4.41, p. 32 (both factors one)
-        ParameterDescription("section", "quadratic_drag"),  # remus100.m 238-245
+        ParameterDescription("section", "quadratic_drag"),  # remus100.m 239-246
         ParameterDescription("lift_slope", unset()),  # 1/rad, Prestero 2001, Table A.5, p. 103 (c_L_alpha)
         ParameterDescription("zero_lift_drag", unset()),  # Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by "linear_section")
     ]

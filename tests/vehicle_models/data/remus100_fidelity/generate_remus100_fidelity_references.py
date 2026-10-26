@@ -16,7 +16,7 @@ References
 ----------
 Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion
     Control. Wiley. Ch. 12, eqs. 12.17-12.24, p. 351.
-Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/SIMremus100.m 60;
+Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/SIMremus100.m 60;
     LIBRARY/numericalMethods/rk4.m 26-38.
 Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.

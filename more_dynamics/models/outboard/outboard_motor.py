@@ -11,7 +11,7 @@ Equations (keys in References):
   (MSS ``wageningen.m`` 6), ``K_T(J)``, ``K_Q(J)`` from the Wageningen
   polynomial; ``T = rho D^4 K_T n_p |n_p|``, ``Q = rho D^5 K_Q n_p |n_p|``
   (Fossen 2011, eq. 12.265, p. 411); ``T = (1 - t) T`` (the thrust
-  deduction of MSS ``remus100.m`` 249); shaft power ``P = |2 pi n_p Q|``
+  deduction of MSS ``remus100.m`` 250); shaft power ``P = |2 pi n_p Q|``
   capped at ``eta P_max`` by scaling ``T``; ``T`` saturated at ``+-T_max``;
 * throttle model: ``T`` saturated at ``min(T_max, P_prop / max(U_h, 0.1))``
   (the propulsive power ``P = T U`` at the horizontal speed ``U_h``, bounded
@@ -58,8 +58,8 @@ References
     Table 12.3, p. 398; eq. 12.226, p. 400; eq. 12.265, p. 411.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``LIBRARY/modeling/wageningen.m`` 6;
-    ``CRAFT/AUV/models/remus100.m`` 249.
+    licence, revision ``ed2ce7b``: ``LIBRARY/modeling/wageningen.m`` 6;
+    ``CRAFT/AUV/models/remus100.m`` 250.
 [Krizman] Krizman, E. (2026). Model file ``grethe.m``, MSS fork branch ``grethe-vehicle``, revision
     ``01cd570``: ``CRAFT/USV/models/grethe.m`` 265-268, 394-404 (the leg normal force, ``outboard_leg_normal_force``;
     the file may still be revised). Whicker, L. F. and Fehlner, L. F. (1958), the rudder lift slope the file adapts
@@ -205,7 +205,7 @@ def outboard_motor_rpm_casadi(*, power_limit=True, clip_advance_ratio=False):
     thrust, torque = signed_advance_open_water(
         rho, d, p["pitch_diameter_ratio"], p["blade_area_ratio"], p["blade_count"], p["reverse_thrust_factor"],
         p["reverse_torque_factor"], n_rps, advance_speed, clip_advance_ratio)
-    thrust = (1.0 - p["thrust_deduction"]) * thrust  # (1 - t) T (remus100.m 249)
+    thrust = (1.0 - p["thrust_deduction"]) * thrust  # (1 - t) T (remus100.m 250)
 
     if power_limit:
         shaft_power = ca.fabs(2.0 * math.pi * n_rps * torque)  # P = 2 pi n Q (definition of shaft power)

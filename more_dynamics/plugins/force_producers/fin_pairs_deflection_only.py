@@ -1,21 +1,21 @@
 """Two deflection-only fin pairs (rudder and stern plane), the form of
-remus100.m 228-245: each pair's lift ``0.5 rho U^2 A C_L delta`` at its
+remus100.m 229-246: each pair's lift ``0.5 rho U^2 A C_L delta`` at its
 position, the deflections saturated at ``max_deflection`` (remus100.m
-113-114). Luka's ``ForceProducer``: the first output is the wrench on the
+114-115). Luka's ``ForceProducer``: the first output is the wrench on the
 vehicle; relative velocity and water density come from the vehicle by name,
 the two deflections (rudder, stern plane) are the command.
 
 ``fin_positions_method`` sets how the two fin positions are known:
 ``"computed"`` (default) puts both pairs at the tail of the body, ``x = -a``
 with ``a`` the body's half length (``semi_major_axis``, read from the vehicle
-by name; ``remus100.m`` 184, 189), so a change of the hull moves them;
+by name; ``remus100.m`` 185, 190), so a change of the hull moves them;
 ``"given"`` takes ``rudder_position`` and ``stern_plane_position`` as values.
 Raise: the measured positions of the fin axes.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m
-    113-114, 179-189, 228-245 (fin pairs); the equations and their lines
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+    114-115, 180-190, 229-246 (fin pairs); the equations and their lines
     are cited in ``more_dynamics.models.fin.fins``.
 
 Author:    Enio Krizman
@@ -37,14 +37,14 @@ FIN_POSITIONS_METHODS = ("computed", "given")
 
 class FinPairsDeflectionOnly(ForceProducer):
     PARAMETERS = [
-        ParameterDescription("rudder_area", unset()),  # remus100.m:183 A_r = 2 * S_fin (S_fin :179)
-        ParameterDescription("stern_plane_area", unset()),  # remus100.m:188 A_s = 2 * S_fin (S_fin :179)
-        ParameterDescription("rudder_lift_coefficient", unset()),  # remus100.m:182 CL_delta_r
-        ParameterDescription("stern_plane_lift_coefficient", unset()),  # remus100.m:187 CL_delta_s
-        ParameterDescription("fin_positions_method", "computed"),  # x_r = x_s = -a (remus100.m:184, 189)
-        ParameterDescription("rudder_position", unset()),  # given value, read with "given": remus100.m:184 x_r = -a, a = L_auv / 2 (one geometry)
-        ParameterDescription("stern_plane_position", unset()),  # given value, read with "given": remus100.m:189 x_s = -a, a = L_auv / 2 (one geometry)
-        ParameterDescription("max_deflection", unset()),  # remus100.m:109 delta_max = deg2rad(20)
+        ParameterDescription("rudder_area", unset()),  # remus100.m:184 A_r = 2 * S_fin (S_fin :179)
+        ParameterDescription("stern_plane_area", unset()),  # remus100.m:189 A_s = 2 * S_fin (S_fin :179)
+        ParameterDescription("rudder_lift_coefficient", unset()),  # remus100.m:183 CL_delta_r
+        ParameterDescription("stern_plane_lift_coefficient", unset()),  # remus100.m:188 CL_delta_s
+        ParameterDescription("fin_positions_method", "computed"),  # x_r = x_s = -a (remus100.m:185, 190)
+        ParameterDescription("rudder_position", unset()),  # given value, read with "given": remus100.m:185 x_r = -a, a = L_auv / 2 (one geometry)
+        ParameterDescription("stern_plane_position", unset()),  # given value, read with "given": remus100.m:190 x_s = -a, a = L_auv / 2 (one geometry)
+        ParameterDescription("max_deflection", unset()),  # remus100.m:110 delta_max = deg2rad(20)
     ]
 
     def __init__(self) -> None:

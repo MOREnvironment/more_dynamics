@@ -11,7 +11,7 @@ References
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion Control.
     Wiley. Ch. 12, eq. 12.265, p. 411.
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, LIBRARY/modeling/wageningen.m 6, 35-38
-    @ 99fdf4d.
+    @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-23

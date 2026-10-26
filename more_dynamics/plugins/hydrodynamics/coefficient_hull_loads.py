@@ -22,8 +22,8 @@ is zero).
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/npsauv.m 118-121, 217-235,
-    241-274 @ cc07579.
+[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/npsauv.m 119-122, 218-236,
+    242-275 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -43,13 +43,13 @@ from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
 
 class CoefficientHullLoads(HydrodynamicsModel):
     PARAMETERS = [
-        # 52 hull-only derivatives (npsauv.m 126-156): no generic physics default exists for an empirical
+        # 52 hull-only derivatives (npsauv.m 127-157): no generic physics default exists for an empirical
         # coefficient table, a composition gives every one of them, each with its kind (measured, predicted,
         # assumed, zero with its reason); declared here once, by the part that reads them.
         *[ParameterDescription(d.name, unset()) for d in coefficient_hull_loads_parameters()],
-        ParameterDescription("cross_flow_drag_coefficients", unset()),  # npsauv.m:220 [Cdy, Cdz]
-        ParameterDescription("cross_flow_section_dimensions", unset()),  # npsauv.m:220-221 [Hx, Bx]
-        ParameterDescription("cross_flow_sections", unset()),  # npsauv.m:218, number of strips (vehicle data)
+        ParameterDescription("cross_flow_drag_coefficients", unset()),  # npsauv.m:221 [Cdy, Cdz]
+        ParameterDescription("cross_flow_section_dimensions", unset()),  # npsauv.m:221-222 [Hx, Bx]
+        ParameterDescription("cross_flow_sections", unset()),  # npsauv.m:219, number of strips (vehicle data)
     ]
 
     def __init__(self) -> None:

@@ -9,7 +9,7 @@ centre at 0.60, 0.65 and 0.70 of the length from the nose, Prestero 2001,
 p. 31):
 
 * ``mss_forms`` -- every MSS form, the fin pairs deflection-only with MSS's
-  calibrated lift coefficients (remus100.m 179-189, 230-245);
+  calibrated lift coefficients (remus100.m 180-190, 231-246);
 * ``munk_kept_alone`` -- the same with every added-mass Coriolis term kept;
 * ``geometric_fin_slope_effective_angle`` -- MSS forms, four effective-angle
   fins with the lift slope from the fin geometry;
@@ -23,8 +23,8 @@ References
 Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.
     Table 2.2, p. 17; eqs. 4.35, 4.38-4.39, p. 31.
-Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 109,
-    179-189, 207-210, 230-245.
+Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 110,
+    180-190, 208-211, 231-246.
 
 Author:    Enio Krizman
 Date:      2026-10-13
@@ -77,7 +77,7 @@ def _mss_forms(v):
 
 
 def mss_fin_pairs(v, inflow="translational", flow_angle="none"):
-    """MSS's two fin pairs as two fins of the pair area (remus100.m 179-189, 230-245)."""
+    """MSS's two fin pairs as two fins of the pair area (remus100.m 180-190, 231-246)."""
     common = {"chord_axis": [1, 0, 0], "max_deflection": v["max_deflection"], "inflow": inflow, "flow_angle": flow_angle}
     return [
         {**common, "fin_position": [v["rudder_position"], 0, 0], "lift_axis": [0, -1, 0],
@@ -98,7 +98,7 @@ def part_fins(v, lift_slopes=None):
     for entry in record["fins"]:
         rudder = entry["role"] == "rudder"
         fins.append({
-            "fin_position": [-v["length"] / 2.0, 0, 0],                  # remus100.m 184, 189
+            "fin_position": [-v["length"] / 2.0, 0, 0],                  # remus100.m 185, 190
             "lift_axis": entry["lift_axis"], "chord_axis": fin["chord_axis"]["value"],
             "fin_area": fin["fin_area"]["value"], "max_deflection": v[fin["max_deflection"]["base"]],
             "inflow": fin["inflow"]["value"], "flow_angle": fin["flow_angle"]["value"],

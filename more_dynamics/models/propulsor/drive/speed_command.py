@@ -10,7 +10,7 @@ laws accept.
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 116
-    and CRAFT/USV/models/otter.m 220 @ 99fdf4d.
+    and CRAFT/USV/models/otter.m 230 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-23
@@ -43,7 +43,7 @@ def speed_command_casadi(*, command_unit):
     declared = speed_command_parameters(command_unit=command_unit)
     p = symbols(declared)
     command, state, load = ca.SX.sym("command", 1), ca.SX.sym("drive_state", 0), ca.SX.sym("shaft_torque")
-    speed = saturate(command, p["min_command"], p["max_command"]) / COMMAND_UNITS[command_unit]  # (remus100.m 116; otter.m 220)
+    speed = saturate(command, p["min_command"], p["max_command"]) / COMMAND_UNITS[command_unit]  # (remus100.m 116; otter.m 230)
     return part_function("speed_command", {"command": command, "drive_state": state, "shaft_torque": load},
                          {"drive_output": speed, "drive_state_dot": ca.SX.zeros(0, 1), "thrust_scale": ca.SX(1.0),
                           "thrust_limit": ca.SX(ca.inf)}, p, declared)

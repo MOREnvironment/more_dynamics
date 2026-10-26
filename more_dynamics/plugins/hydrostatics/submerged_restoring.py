@@ -9,7 +9,7 @@ of buoyancy follow for the models that consume them.
 measurement that raises it to the next level:
 
 * ``"neutral"``: ``B = W`` (Fossen 2011, eq. 4.7, p. 61; MSS ``remus100.m``
-  214), a neutrally buoyant body. Raise: weigh the vehicle in water at the
+  215), a neutrally buoyant body. Raise: weigh the vehicle in water at the
   quay (reserve buoyancy).
 * ``"from_volume"``: ``B = rho g nabla`` with ``displaced_volume`` given
   (Fossen 2011, eq. 4.1, p. 59). Raise: take the volume from the measured
@@ -29,8 +29,8 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 4.1, 4.5, 4.7, pp. 59-61.
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 3, 96-97,
-    131-132, 138, 214.
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 3, 96-97,
+    132-133, 139, 215.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -47,9 +47,9 @@ from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block
 
 class SubmergedRestoring(HydrostaticsModel):
     PARAMETERS = [
-        ParameterDescription("buoyancy_method", "neutral"),  # remus100.m:214 B = W
-        ParameterDescription("center_of_buoyancy", unset()),  # remus100.m:138 r_bB
-        ParameterDescription("displaced_volume", unset()),  # m^3, 4/3 pi (L/2)(D/2)^2, remus100.m:131-132
+        ParameterDescription("buoyancy_method", "neutral"),  # remus100.m:215 B = W
+        ParameterDescription("center_of_buoyancy", unset()),  # remus100.m:139 r_bB
+        ParameterDescription("displaced_volume", unset()),  # m^3, 4/3 pi (L/2)(D/2)^2, remus100.m:132-133
         ParameterDescription("buoyancy", unset()),  # N, m g with m = 31.9 kg (remus100.m:3), g at remus100.m:96-97
     ]
 

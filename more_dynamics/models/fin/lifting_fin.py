@@ -7,7 +7,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion Control, 1st ed., Wiley, eq. 12.226, p. 400.
 [Prestero 2001] Prestero, T. (2001). Verification of a six-degree of freedom simulation model for the REMUS autonomous underwater vehicle. MIT/WHOI MSc thesis, eqs. 4.37, 4.41-4.43, pp. 31-33.
-[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 238-254 @ cc07579.
+[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 239-255 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -100,7 +100,7 @@ def lifting_fin_casadi(parts):
     alpha = factors["deflection_factor"] * servo["deflection"] - factors["flow_angle_factor"] * angle["flow_angle"]  # (Prestero 2001, eq. 4.41, p. 32; interference factors equal one in cited form)
     couplings["angle_of_attack"] = alpha
     section = invoke("section")
-    force = 0.5 * density * p["fin_area"] * angle["speed_squared"] * (section["lift_coefficient"] * p["lift_axis"] - section["drag_coefficient"] * p["chord_axis"])  # (Prestero 2001, eqs. 4.37, 4.43, pp. 31-33; MSS remus100.m 238-245)
+    force = 0.5 * density * p["fin_area"] * angle["speed_squared"] * (section["lift_coefficient"] * p["lift_axis"] - section["drag_coefficient"] * p["chord_axis"])  # (Prestero 2001, eqs. 4.37, 4.43, pp. 31-33; MSS remus100.m 239-246)
     tau = wrench(force, p["fin_position"])  # (Fossen 2011, eq. 12.226, p. 400)
     geometry = [d.name for d in lifting_fin_parameters()]
     return ca.Function("lifting_fin", [command, state, nu_r, density, *[p[n] for n in geometry], *open_symbols],

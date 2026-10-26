@@ -11,8 +11,8 @@ section are separate files because they are different lift/drag laws; a fin
 servo with its lag turned off is the same law with a state removed.
 
 * ``dynamics="none"``: the output is the (optionally limited) command
-  directly, no state. This is MSS's own fin servo (``remus100.m`` 109,
-  113-114): instantaneous saturation, no dynamics at all.
+  directly, no state. This is MSS's own fin servo (``remus100.m`` 110,
+  114-115): instantaneous saturation, no dynamics at all.
 * ``dynamics="first_order_lag"``, ``angle_limit="on_command"``: the servo's
   target is bounded before the lag (Murray-Smith 2016, Fig. 1 and text,
   p. 246: "If the required rudder deflection delta_c is the variable
@@ -36,7 +36,7 @@ combinations are refused, naming the selector.
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT licence,
-    CRAFT/AUV/models/remus100.m 109, 113-114 @ cc07579.
+    CRAFT/AUV/models/remus100.m 110, 114-115 @ ed2ce7b.
 [Murray-Smith 2016] Murray-Smith, D. J. (2016). Inverse simulation methods
     applied to investigations of actuator nonlinearities in ship steering.
     Simulation Notes Europe 26(4), 245-254. Fig. 1 and text, p. 246.
@@ -72,7 +72,7 @@ def _check_selectors(dynamics, rate_limit, angle_limit):
 def _angle_limit_meaning(angle_limit):
     if angle_limit == "on_command":
         return ("maximum commanded angle, limiting the target before the lag "
-                "(MSS remus100.m 113-114 with no lag; Murray-Smith 2016 Fig. 1 p. 246 with the lag)")
+                "(MSS remus100.m 114-115 with no lag; Murray-Smith 2016 Fig. 1 p. 246 with the lag)")
     return "maximum output angle, limiting the integrator's own state after the lag (Sarhadi 2026 Fig. 4 p. 4)"
 
 
@@ -103,7 +103,7 @@ def servo_casadi(*, dynamics, rate_limit, angle_limit):
     if dynamics == "none":
         state = ca.SX.sym("servo_state", 0)
         if angle_limit == "on_command":
-            delta = saturate(command, -p["max_deflection"], p["max_deflection"])  # (MSS remus100.m 113-114)
+            delta = saturate(command, -p["max_deflection"], p["max_deflection"])  # (MSS remus100.m 114-115)
         else:
             delta = command
         return ca.Function("servo", [command, state, *[p[n] for n in names]], [delta, ca.SX.zeros(0, 1)],

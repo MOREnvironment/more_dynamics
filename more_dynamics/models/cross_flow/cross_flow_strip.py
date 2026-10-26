@@ -8,8 +8,8 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 6.91-6.92, p. 127 (strip integral).
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/modeling/crossFlowDrag.m
-    54-69 (strip integral).
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/crossFlowDrag.m
+    55-70 (strip integral).
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -28,13 +28,13 @@ from more_dynamics.models.shared.wiring import function_from
 
 
 def _strip_positions(length):
-    dx = length / cross_flow_module.NUMBER_OF_STRIPS  # (crossFlowDrag.m 38)
+    dx = length / cross_flow_module.NUMBER_OF_STRIPS  # (crossFlowDrag.m 39)
     n = cross_flow_module.NUMBER_OF_STRIPS
-    return [-length / 2 + (i - 0.5) * dx for i in range(1, n + 1)], dx  # (crossFlowDrag.m 56)
+    return [-length / 2 + (i - 0.5) * dx for i in range(1, n + 1)], dx  # (crossFlowDrag.m 57)
 
 
 def cross_flow_strip_with_section(section):
-    """The strip integral (crossFlowDrag.m 54-69), ``section`` resolved as
+    """The strip integral (crossFlowDrag.m 55-70), ``section`` resolved as
     a named sub-slot: every one of its inputs not already in the strip's
     own pool becomes an input of the composed part."""
     nu_r = ca.SX.sym("nu_r", 6)
@@ -48,17 +48,17 @@ def cross_flow_strip_with_section(section):
             extra[name] = pool[name] = ca.SX.sym(name, section.size_in(name))
     section_drag_coefficient = section(**{n: pool[n] for n in section.name_in()})["section_drag_coefficient"]
     positions, dx = _strip_positions(length)
-    factor = -0.5 * water_density * draft * section_drag_coefficient * dx  # (crossFlowDrag.m 63-66)
+    factor = -0.5 * water_density * draft * section_drag_coefficient * dx  # (crossFlowDrag.m 64-67)
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
     y_sum = z_sum = m_sum = n_sum = ca.SX(0.0)
     for x in positions:
-        horizontal = v_r + x * r  # (crossFlowDrag.m 61)
-        vertical = w_r + x * q  # (crossFlowDrag.m 62)
-        y_sum += ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 63)
-        z_sum += ca.fabs(vertical) * vertical  # (crossFlowDrag.m 64)
-        m_sum += x * ca.fabs(vertical) * vertical  # (crossFlowDrag.m 65)
-        n_sum += x * ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 66)
-    tau = ca.vertcat(0, factor * y_sum, factor * z_sum, 0, factor * m_sum, factor * n_sum)  # (crossFlowDrag.m 69)
+        horizontal = v_r + x * r  # (crossFlowDrag.m 62)
+        vertical = w_r + x * q  # (crossFlowDrag.m 63)
+        y_sum += ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 64)
+        z_sum += ca.fabs(vertical) * vertical  # (crossFlowDrag.m 65)
+        m_sum += x * ca.fabs(vertical) * vertical  # (crossFlowDrag.m 66)
+        n_sum += x * ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 67)
+    tau = ca.vertcat(0, factor * y_sum, factor * z_sum, 0, factor * m_sum, factor * n_sum)  # (crossFlowDrag.m 70)
     return function_from(f"cross_flow_strip_{section.name()}",
                          {"nu_r": nu_r, "length": length, "draft": draft, "water_density": water_density, **extra},
                          {"tau": tau})
@@ -81,10 +81,10 @@ CROSS_FLOW_STRIP_PARAMETERS = ()
 
 
 COMBINED_DRAG_CROSS_FLOW_PARAMETERS = (
-    Parameter("cross_flow_drag_coefficients", (2, 1), "1", "[Cdy, Cdz] of the two cross-flow planes (npsauv.m 220)"),
+    Parameter("cross_flow_drag_coefficients", (2, 1), "1", "[Cdy, Cdz] of the two cross-flow planes (npsauv.m 221)"),
     Parameter("cross_flow_section_dimensions", (2, 1), "m",
-             "[Hx, Bx] average submerged height and width (npsauv.m 220-221)"),
-    Parameter("cross_flow_sections", (1, 1), "1", "number of strips of the integral (npsauv.m 218)",
+             "[Hx, Bx] average submerged height and width (npsauv.m 221-222)"),
+    Parameter("cross_flow_sections", (1, 1), "1", "number of strips of the integral (npsauv.m 219)",
              1.0, minimum_exclusive=True),
 )
 
@@ -92,7 +92,7 @@ COMBINED_DRAG_CROSS_FLOW_PARAMETERS = (
 def cross_flow_strip_combined_drag(*, sections):
     """The strip integral of a body whose two cross-flow planes (horizontal,
     vertical) share one combined, speed-normalised drag term per strip
-    (``npsauv.m`` 217-235), rather than ``cross_flow_strip_with_section``'s
+    (``npsauv.m`` 218-236), rather than ``cross_flow_strip_with_section``'s
     separate per-plane section-drag sub-slot:
 
         Ucf = sqrt((v_r + x r)^2 + (w_r - x q)^2) + eps
@@ -109,7 +109,7 @@ def cross_flow_strip_combined_drag(*, sections):
     **Reproduced as written, not fixed (rule 15):** ``Cm``'s strip term uses
     ``(w_r + x q)``, the same sign as the vertical speed term rather than
     ``(w_r - x q)`` that ``Cz`` and the cross-flow kinematics use everywhere
-    else in this file (``npsauv.m`` 231); a candidate MSS asymmetry, flagged
+    else in this file (``npsauv.m`` 232); a candidate MSS asymmetry, flagged
     for A-65's register, not corrected here."""
     nu_r = ca.SX.sym("nu_r", 6)
     length = ca.SX.sym("length")
@@ -119,18 +119,18 @@ def cross_flow_strip_combined_drag(*, sections):
     cdy, cdz = cdy_cdz[0], cdy_cdz[1]
     hx, bx = hx_bx[0], hx_bx[1]
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
-    dx = length / sections  # (npsauv.m 218)
-    eps = 1e-6  # (npsauv.m 219, avoid dividing by zero)
+    dx = length / sections  # (npsauv.m 219)
+    eps = 1e-6  # (npsauv.m 220, avoid dividing by zero)
     y_sum = z_sum = m_sum = n_sum = ca.SX(0.0)
-    for i in range(sections + 1):  # (npsauv.m 224: for xL = -L/2 : dxL : L/2, sections + 1 points)
+    for i in range(sections + 1):  # (npsauv.m 225: for xL = -L/2 : dxL : L/2, sections + 1 points)
         x = -length / 2 + i * dx
-        ucf = ca.sqrt((v_r + x * r) ** 2 + (w_r - x * q) ** 2) + eps  # (npsauv.m 226)
-        drag = cdy * hx * (v_r + x * r) ** 2 + cdz * bx * (w_r - x * q) ** 2  # (npsauv.m 227)
-        y_sum += dx * drag * (v_r + x * r) / ucf  # (npsauv.m 229)
-        z_sum += dx * drag * (w_r - x * q) / ucf  # (npsauv.m 230)
-        m_sum += dx * drag * (w_r + x * q) / ucf * x  # (npsauv.m 231, the flagged sign, module docstring)
-        n_sum += dx * drag * (v_r + x * r) / ucf * x  # (npsauv.m 232)
-    tau = (water_density / 2.0) * ca.vertcat(0, -y_sum, -z_sum, 0, -m_sum, -n_sum)  # (npsauv.m 235)
+        ucf = ca.sqrt((v_r + x * r) ** 2 + (w_r - x * q) ** 2) + eps  # (npsauv.m 227)
+        drag = cdy * hx * (v_r + x * r) ** 2 + cdz * bx * (w_r - x * q) ** 2  # (npsauv.m 228)
+        y_sum += dx * drag * (v_r + x * r) / ucf  # (npsauv.m 230)
+        z_sum += dx * drag * (w_r - x * q) / ucf  # (npsauv.m 231)
+        m_sum += dx * drag * (w_r + x * q) / ucf * x  # (npsauv.m 232, the flagged sign, module docstring)
+        n_sum += dx * drag * (v_r + x * r) / ucf * x  # (npsauv.m 233)
+    tau = (water_density / 2.0) * ca.vertcat(0, -y_sum, -z_sum, 0, -m_sum, -n_sum)  # (npsauv.m 236)
     return function_from(
         "cross_flow_strip_combined_drag",
         {"nu_r": nu_r, "length": length, "water_density": water_density,

@@ -2,7 +2,7 @@
 
 References
 ----------
-[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 238-245 @ cc07579.
+[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 239-246 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -18,7 +18,7 @@ def quadratic_drag_parameters():
 def quadratic_drag_casadi():
     p = symbols(quadratic_drag_parameters())
     alpha = ca.SX.sym("angle_of_attack")
-    lift = p["lift_slope"] * alpha  # (MSS remus100.m 242, 245)
-    drag = p["lift_slope"] * alpha**2  # (MSS remus100.m 238-239; comparison shortcut)
+    lift = p["lift_slope"] * alpha  # (MSS remus100.m 243, 246)
+    drag = p["lift_slope"] * alpha**2  # (MSS remus100.m 239-240; comparison shortcut)
     return ca.Function("quadratic_drag", [alpha, p["lift_slope"]], [lift, drag],
                        ["angle_of_attack", "lift_slope"], ["lift_coefficient", "drag_coefficient"])

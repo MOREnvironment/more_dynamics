@@ -4,8 +4,8 @@ vehicle rather than its own copies.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m
-    148-176 (propeller).
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+    149-177 (propeller).
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -17,7 +17,7 @@ from more_dynamics.models.shared.as_producer import as_producer
 
 def propeller_linearized_open_water():
     """Linearised open-water propeller, given coefficients (remus100.m
-    148-176)."""
+    149-177)."""
     return as_producer(
         propeller_casadi(open_water_model="linearized", open_water_coefficients="given"),
         "n", "propeller_linearized_open_water")

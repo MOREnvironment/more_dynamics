@@ -8,8 +8,8 @@ References
     and Motion Control. Wiley. Eqs. 6.43, 6.52, p. 120-121, through
     ``more_dynamics.models.rigid_body.kinetics.added_mass_coriolis_casadi``,
     which cites them line by line.
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/modeling/m2c.m 33-48;
-    CRAFT/AUV/models/remus100.m 207-210 (Munk moment removed).
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/m2c.m 33-48;
+    CRAFT/AUV/models/remus100.m 208-211 (Munk moment removed).
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -41,5 +41,5 @@ def kirchhoff_full():
 
 def munk_couplings_removed():
     """MSS shortcut: the Munk moment of a slender body removed
-    (remus100.m 207-210)."""
+    (remus100.m 208-211)."""
     return _part("munk_couplings_removed", True)

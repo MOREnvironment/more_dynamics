@@ -58,8 +58,8 @@ Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.
     Tables 2.1-2.2, pp. 15-17; eqs. 4.5-4.6, 4.10, 4.30-4.39, pp. 25-31;
     Fig. 7-7, p. 57; Table 8.1, p. 60; Table A.1, p. 102; Table D.1, p. 112.
-Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 207-210,
-    242, 245, 254; CRAFT/AUV/SIMremus100.m 60.
+Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 208-211,
+    243, 246, 255; CRAFT/AUV/SIMremus100.m 60.
 
 Author:    Enio Krizman
 Date:      2026-10-13
@@ -122,7 +122,7 @@ def _require(cls, names, why):
 
 
 def _fin(fin, selectors=None):
-    """A ``Fin`` child from a reference fin set (servo none, angle limit on the command: remus100.m 113-114)."""
+    """A ``Fin`` child from a reference fin set (servo none, angle limit on the command: remus100.m 114-115)."""
     p = vc.plugins()
     params = {"fin_position": list(fin["fin_position"]), "chord_axis": list(fin["chord_axis"]),
               "lift_axis": list(fin["lift_axis"]), "fin_area": fin["fin_area"], "max_deflection": fin["max_deflection"],
@@ -340,7 +340,7 @@ def test_turn_tolerance_is_met_where_the_forms_exist(case):
 
 
 # ---------------------------------------------------------------------------------------------
-# 1. "REMUS 100 (MSS)": MSS forms, Munk couplings removed (remus100.m 207-210)
+# 1. "REMUS 100 (MSS)": MSS forms, Munk couplings removed (remus100.m 208-211)
 # ---------------------------------------------------------------------------------------------
 def test_mss_part_removes_the_munk_couplings():
     root, _ = _part_tree(MSS_PART)
@@ -481,7 +481,7 @@ def test_paired_set_is_straight_line_stable_and_turns_as_the_reference(fraction)
 
 def test_paired_set_with_the_calibrated_fin_coefficients_is_found_unstable():
     """The stability gate must be able to fail: the same pairing with MSS's calibrated fin
-    coefficients (remus100.m 182, 187) has a sway-yaw root in the right half-plane."""
+    coefficients (remus100.m 183, 188) has a sway-yaw root in the right half-plane."""
     part = fp.paired_mss_fin_slope(0.65)
     roots, _ = _assert_matches(_paired_vehicle(part), part, "paired_mss_fin_slope", 0.65)
     assert roots[0].real > 0

@@ -7,7 +7,7 @@ block this form comes from; ``1 - t`` is the thrust deduction of MSS.
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 250
-    @ 99fdf4d (thrust ``(1 - t) X``).
+    @ ed2ce7b (thrust ``(1 - t) X``).
 
 Author:    Enio Krizman
 Date:      2026-10-23

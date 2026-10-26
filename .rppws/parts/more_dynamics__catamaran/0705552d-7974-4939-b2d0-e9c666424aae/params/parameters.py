@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Otter USV, catamaran (MSS otter.m @ 99fdf4d): the two pontoons, mass, added-mass derivatives and the site.
+# Otter USV, catamaran (MSS otter.m @ ed2ce7b): the two pontoons, mass, added-mass derivatives and the site.
 # Source of every value: the comment beside it (the plugin's own default).
 # rpp rewrites this file without comments when parameters are saved from the editor.
 

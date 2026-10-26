@@ -9,7 +9,7 @@ Equations (keys in References):
   [f; S(r) f]`` (Fossen 2011, eq. 12.226, p. 400; ``S(r) a = r x a``,
   Fossen 2011, eqs. 2.9-2.10, p. 20; MSS ``Smtrx.m`` 11-13).
 * Saturation ``min(max(x, lower), upper)`` (MSS ``sat.m`` / ``satlim.m``
-  behaviour, e.g. ``remus100.m`` 113-115, ``otter.m`` 220).
+  behaviour, e.g. ``remus100.m`` 114-116, ``otter.m`` 230).
 
 References
 ----------
@@ -18,9 +18,9 @@ References
     eqs. 2.9-2.10, p. 20; Ch. 12, §12.3.1, eq. 12.226, p. 400.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``LIBRARY/kinematics/Smtrx.m`` 11-13;
-    ``CRAFT/AUV/models/remus100.m`` 113-115; ``CRAFT/USV/models/otter.m``
-    220.
+    licence, revision ``ed2ce7b``: ``LIBRARY/kinematics/Smtrx.m`` 11-13;
+    ``CRAFT/AUV/models/remus100.m`` 114-116; ``CRAFT/USV/models/otter.m``
+    230.
 
 Author:    Enio Krizman
 Date:      2026-10-05
@@ -32,8 +32,8 @@ from more_transformations.more_casadi_transformations import MatrixTransforms
 
 def saturate(value, lower, upper):
     """Elementwise ``min(max(x, lower), upper)`` (the order of ``np.clip``;
-    MSS ``satlim.m`` behaviour, ``otter.m`` 220)."""
-    return ca.fmin(ca.fmax(value, lower), upper)  # (otter.m 220; remus100.m 113-115)
+    MSS ``satlim.m`` behaviour, ``otter.m`` 230)."""
+    return ca.fmin(ca.fmax(value, lower), upper)  # (otter.m 230; remus100.m 114-116)
 
 
 def safe_norm(vector):

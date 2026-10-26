@@ -1,6 +1,6 @@
 # Otter port thruster
 
-A named part of `more_dynamics::Propulsor`: the port thruster of the Otter, numbers of `otter.m` @ 99fdf4d. The two thrusters are two entries of a vehicle's actuator list; their summed wrench equals `differential_thruster_casadi` to 1e-10 (`test_propulsor_device_compositions.py`). The shaft-speed limits are derived from the thrust limits as in `otter.m` 145-146, with the gravity constant of the MSS release (9.81); the frozen MATLAB sweep the gate reads was made with the latitude gravity of an earlier template, so the two agree except on saturated rows. Not wired into the Otter part (the vehicle stays as it is).
+A named part of `more_dynamics::Propulsor`: the port thruster of the Otter, numbers of `otter.m` @ ed2ce7b. The two thrusters are two entries of a vehicle's actuator list; their summed wrench equals `differential_thruster_casadi` to 1e-10 (`test_propulsor_device_compositions.py`). The shaft-speed limits are derived from the thrust limits as in `otter.m` 145-146, with the gravity constant of the MSS release (9.81); the frozen MATLAB sweep the gate reads was made with the latitude gravity of an earlier template, so the two agree except on saturated rows. Not wired into the Otter part (the vehicle stays as it is).
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|

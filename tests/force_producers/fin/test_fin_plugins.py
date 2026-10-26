@@ -33,7 +33,7 @@ References
 [Sarhadi 2026] Sarhadi, P. (2026). Simple yet effective anti-windup techniques
     for amplitude and rate saturation: an AUV case study. arXiv:2601.01302v2,
     Fig. 4, p. 4.
-[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 228-254 @ cc07579.
+[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 229-255 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -260,7 +260,7 @@ def _rows():
 
 def _two_ideal_fins(values):
     """The rudder and the stern plane of REMUS 100 as two ``Fin`` plugins (ideal servo, translational inflow, no
-    flow angle, no interference, quadratic-drag section): the deflection-only fin pairs of ``remus100.m`` 228-245."""
+    flow angle, no interference, quadratic-drag section): the deflection-only fin pairs of ``remus100.m`` 229-246."""
     def fin(prefix, lift_axis):
         return {"fin_position": [values[f"{prefix}_position"], 0.0, 0.0], "chord_axis": [1.0, 0.0, 0.0],
                 "lift_axis": lift_axis, "fin_area": values[f"{prefix}_area"], "servo_dynamics": "none",

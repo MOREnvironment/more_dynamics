@@ -1,8 +1,8 @@
 """The hydrodynamic loads on the hull of a slender submerged vehicle, as
 Luka's ``HydrodynamicsModel``: time-constant linear damping (``Dmtrx.m``;
-``remus100.m`` 217-218), slender-body lift and induced drag
+``remus100.m`` 218-219), slender-body lift and induced drag
 (``forceLiftDrag.m``) and the cross-flow strip integral with the
-circular-cylinder section (``crossFlowDrag.m`` 54-69, ``cylinderDrag.m``
+circular-cylinder section (``crossFlowDrag.m`` 55-70, ``cylinderDrag.m``
 78-110). The first output is the sum, the signed generalized force the
 vehicle adds (``vehicle_model.capnp`` 18-21); the three loads follow as
 ``damping_force``, ``lift_drag_force`` and ``cross_flow_force``, and the
@@ -20,12 +20,12 @@ default, or given as a value):
 
 * ``planform_area_method``: ``"computed"`` is ``S = f L D`` with the
   ``planform_fraction`` ``f`` of the rectangle length x diameter
-  (``remus100.m`` 133; ``length`` and ``span`` are the vehicle's, so a
+  (``remus100.m`` 134; ``length`` and ``span`` are the vehicle's, so a
   change of the hull moves ``S``), ``"given"`` is ``planform_area``. Raise:
   the planform from the hull lines.
 * ``parasitic_drag_coefficient_method``: ``"computed"`` is ``C_D0 = Cd pi
   (D/2)^2 / S`` with the frontal drag coefficient ``Cd`` (``remus100.m``
-  142-144; Allen et al. 2000, as MSS cites it, not read), ``"given"`` is
+  143-145; Allen et al. 2000, as MSS cites it, not read), ``"given"`` is
   ``parasitic_drag_coefficient``. Raise: a measured drag of the hull in a tow.
 
 ``smooth_speed`` is a numerical guard, not a property of the vehicle: with
@@ -45,10 +45,10 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 6.91-6.92, p. 127 (strip integral).
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/modeling/Dmtrx.m;
-    CRAFT/AUV/models/remus100.m 133, 143-144, 192-196, 217-221;
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/Dmtrx.m;
+    CRAFT/AUV/models/remus100.m 134, 144-145, 193-197, 218-222;
     LIBRARY/modeling/forceLiftDrag.m; coeffLiftDrag.m 54;
-    LIBRARY/modeling/crossFlowDrag.m 54-69; cylinderDrag.m 78-110.
+    LIBRARY/modeling/crossFlowDrag.m 55-70; cylinderDrag.m 78-110.
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -73,15 +73,15 @@ DERIVED_METHODS = ("computed", "given")
 
 class AuvHullLoads(HydrodynamicsModel):
     PARAMETERS = [
-        ParameterDescription("time_constants", unset()),  # remus100.m:192, 193, 196 [T1 T2 T6] (Dmtrx.m call at :217)
-        ParameterDescription("damping_ratios", unset()),  # remus100.m:194, 195 [zeta4 zeta5]
+        ParameterDescription("time_constants", unset()),  # remus100.m:193, 194, 197 [T1 T2 T6] (Dmtrx.m call at :217)
+        ParameterDescription("damping_ratios", unset()),  # remus100.m:195, 196 [zeta4 zeta5]
         ParameterDescription("oswald_efficiency", unset()),  # coeffLiftDrag.m:54 e = 0.3
-        ParameterDescription("planform_area_method", "computed"),  # S = f L D (remus100.m:133)
-        ParameterDescription("planform_fraction", unset()),  # remus100.m:133 S = 70 % of the rectangle L_auv * D_auv
-        ParameterDescription("planform_area", unset()),  # given value, read with "given": remus100.m:133 S = 0.7 * L_auv * D_auv
-        ParameterDescription("parasitic_drag_coefficient_method", "computed"),  # CD_0 = Cd pi (D/2)^2 / S (remus100.m:142-144)
-        ParameterDescription("hull_frontal_drag_coefficient", unset()),  # remus100.m:142 Cd = 0.42, Allen et al. (2000) as MSS cites it
-        ParameterDescription("parasitic_drag_coefficient", unset()),  # given value, read with "given": remus100.m:143-144 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)
+        ParameterDescription("planform_area_method", "computed"),  # S = f L D (remus100.m:134)
+        ParameterDescription("planform_fraction", unset()),  # remus100.m:134 S = 70 % of the rectangle L_auv * D_auv
+        ParameterDescription("planform_area", unset()),  # given value, read with "given": remus100.m:134 S = 0.7 * L_auv * D_auv
+        ParameterDescription("parasitic_drag_coefficient_method", "computed"),  # CD_0 = Cd pi (D/2)^2 / S (remus100.m:143-145)
+        ParameterDescription("hull_frontal_drag_coefficient", unset()),  # remus100.m:143 Cd = 0.42, Allen et al. (2000) as MSS cites it
+        ParameterDescription("parasitic_drag_coefficient", unset()),  # given value, read with "given": remus100.m:144-145 CD_0 = Cd * pi * b^2 / S, b = D_auv / 2 (one geometry)
         ParameterDescription("smooth_speed", True),  # numerical guard, finite Jacobian at rest (models/lift_drag, models/damping)
         ParameterDescription("smooth_speed_epsilon", 1e-09),  # m/s, numerical regularisation of the guard, not a vehicle quantity
     ]

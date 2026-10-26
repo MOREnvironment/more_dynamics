@@ -3,8 +3,8 @@
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m
-    228-245 (fin pairs).
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+    229-246 (fin pairs).
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -18,7 +18,7 @@ from more_dynamics.models.shared.wiring import function_from
 
 
 def fin_pairs_deflection_only():
-    """Deflection-only fin pairs (remus100.m 228-245)."""
+    """Deflection-only fin pairs (remus100.m 229-246)."""
     return as_producer(fins_casadi(convention="starboard_down_positive"), "delta", "fin_pairs_deflection_only")
 
 
@@ -35,8 +35,8 @@ def fin_pairs_deflection_only_parameters(*, positions_given=True):
 
 def fin_pair_positions():
     """``(semi_major_axis) -> (rudder_position, stern_plane_position)``: both fin pairs at the tail of the body,
-    ``x = -a`` with ``a`` the body's half length (``remus100.m`` 184, 189)."""
+    ``x = -a`` with ``a`` the body's half length (``remus100.m`` 185, 190)."""
     semi_major_axis = ca.SX.sym("semi_major_axis")
     return function_from("fin_pair_positions", {"semi_major_axis": semi_major_axis},
-                         {"rudder_position": -semi_major_axis,  # x_r = -a (remus100.m 184)
-                          "stern_plane_position": -semi_major_axis})  # x_s = -a (remus100.m 189)
+                         {"rudder_position": -semi_major_axis,  # x_r = -a (remus100.m 185)
+                          "stern_plane_position": -semi_major_axis})  # x_s = -a (remus100.m 190)

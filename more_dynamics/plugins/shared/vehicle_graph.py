@@ -22,7 +22,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eq. 6.48, p. 120 (M = M_RB + M_A).
-[MSS] Fossen, T. I. MSS, MIT, @ cc07579: LIBRARY/numericalMethods/rk4.m
+[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/numericalMethods/rk4.m
     26-38 (the step's sub-stepping); CRAFT/AUV/models/SIMremus100.m 60
     (integration step h = 0.05 s).
 [HullVessel] Mandic, L. more_dynamics ``HullVessel`` (hull_vessel.py 132-182):

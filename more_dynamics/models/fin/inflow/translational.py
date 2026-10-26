@@ -2,7 +2,7 @@
 
 References
 ----------
-[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 234-235 @ cc07579.
+[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 235-236 @ ed2ce7b.
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -16,6 +16,6 @@ def translational_parameters():
 
 def translational_casadi():
     nu_r, r = ca.SX.sym("nu_r", 6), ca.SX.sym("fin_position", 3)
-    velocity = nu_r[:3]  # (MSS remus100.m 234-235)
+    velocity = nu_r[:3]  # (MSS remus100.m 235-236)
     return ca.Function("translational", [nu_r, r], [velocity],
                        ["nu_r", "fin_position"], ["fin_velocity"])
