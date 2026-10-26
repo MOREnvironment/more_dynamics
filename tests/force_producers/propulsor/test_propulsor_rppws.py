@@ -20,7 +20,6 @@ import importlib
 import json
 import shutil
 import sys
-import uuid
 from pathlib import Path
 
 import numpy as np
@@ -34,7 +33,6 @@ from propulsor_contract import rng, two_thruster_values  # noqa: E402
 LIBRARY = Path(__file__).resolve().parents[3]
 RPPWS = LIBRARY / ".rppws"
 PARTS = ("REMUS 100 propulsor", "Otter port thruster", "Otter starboard thruster")
-OTTER_PART = "Otter (MSS)"
 LIBRARY_NAME = "more_dynamics"
 
 
@@ -68,32 +66,6 @@ def _build(workspace, description_path, configuration):
     return context.get_component("vessels")[0]
 
 
-def _workspace(tmp_path, parts):
-    """A ``.rppws`` with the library's script and the part folders ``parts`` (folder names under ``parts/``), each
-    copied whole."""
-    root = tmp_path / LIBRARY_NAME  # the script runner finds a script description of a workspace named as the library
-    (root / "scripts" / "vehicles").mkdir(parents=True)
-    shutil.copy(LIBRARY / "scripts" / "vehicles" / "vehicle_simulation.py",
-                root / "scripts" / "vehicles" / "vehicle_simulation.py")
-    for folder in parts:
-        target = root / ".rppws" / "parts" / folder.parent.name / folder.name
-        shutil.copytree(folder, target)
-    return root
-
-
-def _description(tmp_path, configuration, vehicle_id, plugin_name, commands=None):
-    configuration_entry = {"Description": "test", "Components": {"vessels": [{"Id": vehicle_id, "PluginName": plugin_name}]}}
-    if commands:
-        configuration_entry["Commands"] = commands
-    description = {"ScriptPath": "scripts/vehicles/vehicle_simulation.py", "Language": "python",
-                   "Configurations": {configuration: configuration_entry}, "ActiveConfiguration": configuration,
-                   "Spec": {"vessels": "List[more_dynamics::VehicleModel3D]"}}
-    path = tmp_path / ".rppws" / "script_descriptions" / "vehicle_simulation.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(description, indent=4))
-    return path
-
-
 # --------------------------------------------------------------------------
 # The named parts
 # --------------------------------------------------------------------------
@@ -120,39 +92,12 @@ def test_a_named_part_describes_a_propulsor_force_producer_with_no_vehicle(name)
 # --------------------------------------------------------------------------
 # The Otter with two named thrusters linked into its actuator list
 # --------------------------------------------------------------------------
-def _otter_with_thrusters(tmp_path):
-    vehicle_dir = _part_dir(OTTER_PART)
-    thrusters = [_part_dir("Otter port thruster"), _part_dir("Otter starboard thruster")]
-    workspace = _workspace(tmp_path, [vehicle_dir, *thrusters])
-    copied = workspace / ".rppws" / "parts" / vehicle_dir.parent.name / vehicle_dir.name
-    parent = json.loads((copied / "description.json").read_text())
-    entries = []
-    for thruster in thrusters:
-        thruster_id = json.loads((thruster / "description.json").read_text())["Id"]
-        link_id = str(uuid.uuid4())
-        folder = copied / "subcomponents" / link_id
-        folder.mkdir(parents=True)
-        (folder / "description.json").write_text(json.dumps({
-            "Id": link_id, "Name": json.loads((thruster / "description.json").read_text())["Name"],
-            "LinkedComponentId": thruster_id, "LinkedComponentWorkspace": LIBRARY_NAME,
-            "ParentComponentInfo": {"Id": parent["Id"], "PluginType": "more_dynamics::VehicleModel3D",
-                                    "PluginName": "more_dynamics::Catamaran", "SlotName": "actuators",
-                                    "Library": LIBRARY_NAME, "IsLinked": False}}, indent=4))
-        entries.append({"Id": link_id, "PluginType": "more_dynamics::ForceProducer", "PluginName": "more_dynamics::Propulsor",
-                        "SlotName": "actuators", "Library": LIBRARY_NAME, "IsLinked": True})
-    parent["Subcomponents"]["actuators"] = entries
-    (copied / "description.json").write_text(json.dumps(parent, indent=4))
-    return workspace, parent["Id"]
-
-
-def test_the_otter_with_two_linked_named_thrusters_equals_the_otter_driven_by_the_thruster_blocks_wrench(tmp_path):
+def test_the_otter_with_two_linked_named_thrusters_equals_the_otter_driven_by_the_thruster_blocks_wrench():
     from more_dynamics.models.thruster.differential_thruster import (check_differential_thruster_values,
                                                                       differential_thruster_casadi,
                                                                       differential_thruster_parameters)
     from more_transformations.more_casadi_transformations import freeze
-    workspace, vehicle_id = _otter_with_thrusters(tmp_path)
-    description = _description(workspace, "otter_thrusters", vehicle_id, "more_dynamics::Catamaran")
-    built = _build(workspace, description, "otter_thrusters")
+    built = _build(LIBRARY, RPPWS / "script_descriptions" / "vehicle_simulation.json", "otter")
     assert type(built).__name__ == "Catamaran"
     names = vc.input_names(built)
     assert names == ["drive_command", "drive_command"]            # one name for both: the standard names an input by its plugin
@@ -169,7 +114,9 @@ def test_the_otter_with_two_linked_named_thrusters_equals_the_otter_driven_by_th
                                           starboard["negative_thrust_coefficient"] * starboard["min_command"] ** 2]
     declared = differential_thruster_parameters()
     thrusters = freeze(differential_thruster_casadi(), declared, check_differential_thruster_values(block_values))
-    reference = vc.otter(actuators=[vc.plugins().PrescribedWrench])
+    p = vc.plugins()
+    reference = vc.otter(actuators=[p.PrescribedWrench], hydrostatics=(p.SurfaceRestoring, {
+        **vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2, "payload_trim_form": "lever_arm_and_heave_shift"}))
     a, b = vc.graph_of(built), vc.graph_of(reference)
     g = rng()
     worst = 0.0

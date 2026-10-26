@@ -145,6 +145,9 @@ command), translational inflow, no flow angle, no interference, quadratic-drag s
 | `coriolis_form` | "kirchhoff_full" | - | m2c.m 33-48 (every term kept) | selector |
 | `current_form` | "none" | - | still water | selector |
 
+Actuators (linked named parts, in this order): `Otter port thruster`, `Otter starboard thruster` (two inputs named
+`drive_command`, rad/s; `n(1)`, `n(2)` of otter.m 24-27).
+
 ## Otter hull loads (`more_dynamics::SurfaceHullLoads`)
 
 | Parameter | Value | Unit | Source | Kind |
@@ -182,6 +185,7 @@ command), translational inflow, no flow angle, no interference, quadratic-drag s
 | `longitudinal_inertia_factor` | 0.8 | 1 | otter.m 188 (I_L = 0.8 ...) | document |
 | `longitudinal_center_of_flotation` | -0.2 | m | otter.m 186, 201 | document |
 | `reference_point` | [0.0, 0.0, 0.0] | m | the body-frame origin (CO) | convention |
+| `payload_trim_form` | "lever_arm_and_heave_shift" | - | otter.m:259-269 as MSS has it (the payload weight in heave a second time, F-MSS-31, and the kinematics at the shifted attitude, F-MSS-24); the plugin's default is the corrected `"lever_arm_moment"` | selector |
 
 ## Grethe (`more_dynamics::Monohull`)
 
@@ -341,7 +345,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `min_command` | -101.73666550381692 | rad/s | otter.m:146 with g = 9.81 (mssConstants.m:14): -sqrt(0.5 * 13.6 g / k_neg) | derived |
 | `max_command` | 103.93086427398005 | rad/s | otter.m:145 with g = 9.81: sqrt(0.5 * 24.4 g / k_pos) | derived |
 | `position` | [0.0, -0.395, 0.0] | m | otter.m:112, 139-140 (y_pont = 0.395) | document |
-| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:243 | document |
+| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:242 | document |
 | `positive_thrust_coefficient` | 0.01108 | N s^2/rad^2 | otter.m:143 | document |
 | `negative_thrust_coefficient` | 0.006445 | N s^2/rad^2 | otter.m:144 | document |
 | `shaft_torque_scale` | 0.0 | 1 | otter.m has no thruster torque | convention |
@@ -359,7 +363,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `min_command` | -101.73666550381692 | rad/s | otter.m:146 with g = 9.81 (mssConstants.m:14): -sqrt(0.5 * 13.6 g / k_neg) | derived |
 | `max_command` | 103.93086427398005 | rad/s | otter.m:145 with g = 9.81: sqrt(0.5 * 24.4 g / k_pos) | derived |
 | `position` | [0.0, 0.395, 0.0] | m | otter.m:112, 139-140 (y_pont = 0.395) | document |
-| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:243 | document |
+| `direction` | [1.0, 0.0, 0.0] | 1 | otter.m:242 | document |
 | `positive_thrust_coefficient` | 0.01108 | N s^2/rad^2 | otter.m:143 | document |
 | `negative_thrust_coefficient` | 0.006445 | N s^2/rad^2 | otter.m:144 | document |
 | `shaft_torque_scale` | 0.0 | 1 | otter.m has no thruster torque | convention |

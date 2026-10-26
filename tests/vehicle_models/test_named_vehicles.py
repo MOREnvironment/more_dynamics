@@ -122,13 +122,20 @@ def test_remus_100_with_four_fins_and_the_propulsor_equals_the_fin_pairs_and_the
 
 
 def test_otter_from_the_workspace_equals_the_frozen_otter_set():
+    """The Otter part built by rpp's builder equals the plugins built from the frozen Otter set with the two thrusters
+    of the named parts and the MSS payload trim form the part selects."""
+    p = vc.plugins()
     built = _build("otter")
-    reference = vc.otter()
+    thrusters = [_part_child(p.Propulsor, "Otter port thruster"), _part_child(p.Propulsor, "Otter starboard thruster")]
+    reference = vc.otter(actuators=thrusters, hydrostatics=(p.SurfaceRestoring, {
+        **vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2, "payload_trim_form": "lever_arm_and_heave_shift"}))
     assert type(built).__name__ == "Catamaran"
-    assert vc.input_names(built) == []
+    assert vc.input_names(built) == vc.input_names(reference) == ["drive_command", "drive_command"]
     a, b = vc.graph_of(built).step, vc.graph_of(reference).step
+    rng = np.random.default_rng(8)
     for x in _states(30, 4):
-        assert np.array_equal(np.asarray(a(x, [])), np.asarray(b(x, [])))
+        n = rng.uniform(-100.0, 100.0, 2)
+        assert np.array_equal(np.asarray(a(x, n)), np.asarray(b(x, n)))
 
 
 def _own_parameters(part_id):

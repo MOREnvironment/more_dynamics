@@ -15,7 +15,8 @@ that its own blocks read the same values), or to an output of an earlier
 child (hydrostatics before hydrodynamics before the actuators); a missing or
 mis-sized one is refused, naming the slot and the child's plugin. An actuator input that is no vehicle quantity is a command:
 the vehicle's inputs, in list order, after the current inputs the type asks
-for. No ``sensors`` slot: the output is the 12 vessel states; sensors attach
+for. A slot's output named ``kinematic_attitude_offset`` (6 values) is taken off the pose the kinematics are evaluated
+at (``eta_dot = J(eta - offset) nu``); no other quantity of the equation of motion reads it. No ``sensors`` slot: the output is the 12 vessel states; sensors attach
 outside the vehicle.
 
 References
@@ -235,7 +236,11 @@ class VehicleAssembly:
                     known[name] = value
                     origin[name] = f"slot {label} ({child_plugin})"
 
-        vessel_dot = marine_craft_6dof_casadi()(vessel, craft.current_velocity, craft.current_acceleration,
+        # a slot may ask for the kinematics at another attitude than the state's (the payload trim form of MSS's
+        # otter.m 266, 269): ``kinematic_attitude_offset``, taken off the pose; only eta_dot reads the pose there
+        offset = known.get("kinematic_attitude_offset")
+        kinematic_state = vessel if offset is None else ca.vertcat(vessel[0:6] - ca.vec(offset), vessel[6:12])
+        vessel_dot = marine_craft_6dof_casadi()(kinematic_state, craft.current_velocity, craft.current_acceleration,
                                                 ca.reshape(craft.mass_matrix, 6, 6),
                                                 ca.reshape(craft.coriolis_matrix, 6, 6), force)
         u = ca.vertcat(*inputs) if inputs else ca.SX(0, 1)

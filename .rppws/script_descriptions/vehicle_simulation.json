@@ -404,6 +404,168 @@
                         "PluginName": "more_dynamics::Catamaran"
                     }
                 ]
+            },
+            "Commands": {
+                "astern_from_speed": {
+                    "Description": "frozen run otter_trajectory_astern_from_speed_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 2.0,
+                    "Duration": 16.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                70.0,
+                                70.0
+                            ]
+                        },
+                        {
+                            "Time": 3.0,
+                            "drive_command": [
+                                -80.0,
+                                -80.0
+                            ]
+                        }
+                    ]
+                },
+                "commands_beyond_the_limits": {
+                    "Description": "frozen run otter_trajectory_commands_beyond_the_limits_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 0.0,
+                    "Duration": 30.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                0.0,
+                                -0.0
+                            ]
+                        },
+                        {
+                            "Time": 2.0,
+                            "drive_command": [
+                                150.0,
+                                -150.0
+                            ]
+                        }
+                    ]
+                },
+                "differential_turn": {
+                    "Description": "frozen run otter_trajectory_differential_turn_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 1.0,
+                    "Duration": 60.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                70.0,
+                                70.0
+                            ]
+                        },
+                        {
+                            "Time": 5.0,
+                            "drive_command": [
+                                100.0,
+                                60.0
+                            ]
+                        }
+                    ]
+                },
+                "spin_in_place": {
+                    "Description": "frozen run otter_trajectory_spin_in_place_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 0.0,
+                    "Duration": 40.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                0.0,
+                                -0.0
+                            ]
+                        },
+                        {
+                            "Time": 2.0,
+                            "drive_command": [
+                                60.0,
+                                -60.0
+                            ]
+                        }
+                    ]
+                },
+                "straight_from_rest_thrust_step": {
+                    "Description": "frozen run otter_trajectory_straight_from_rest_thrust_step_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 0.0,
+                    "Duration": 16.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                0.0,
+                                0.0
+                            ]
+                        },
+                        {
+                            "Time": 2.0,
+                            "drive_command": [
+                                80.0,
+                                80.0
+                            ]
+                        }
+                    ]
+                },
+                "zigzag_differential_steps": {
+                    "Description": "frozen run otter_trajectory_zigzag_differential_steps_mss_ed2ce7b.csv (unmodified otter.m at ed2ce7b, payload 25 kg at [0.05, 0, -0.35] m): the commands of its ui columns, held over each sample interval. drive_command is the shaft speed (rad/s) of the port and of the starboard propeller, in this order (n(1), n(2) of otter.m)",
+                    "InitialSurgeSpeed": 1.5,
+                    "Duration": 60.0,
+                    "SampleTime": 0.25,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                95.0,
+                                45.0
+                            ]
+                        },
+                        {
+                            "Time": 10.0,
+                            "drive_command": [
+                                45.0,
+                                95.0
+                            ]
+                        },
+                        {
+                            "Time": 20.0,
+                            "drive_command": [
+                                95.0,
+                                45.0
+                            ]
+                        },
+                        {
+                            "Time": 30.0,
+                            "drive_command": [
+                                45.0,
+                                95.0
+                            ]
+                        },
+                        {
+                            "Time": 40.0,
+                            "drive_command": [
+                                95.0,
+                                45.0
+                            ]
+                        },
+                        {
+                            "Time": 50.0,
+                            "drive_command": [
+                                45.0,
+                                95.0
+                            ]
+                        }
+                    ]
+                }
             }
         },
         "grethe": {

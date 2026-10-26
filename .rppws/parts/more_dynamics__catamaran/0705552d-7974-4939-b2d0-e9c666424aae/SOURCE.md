@@ -17,9 +17,16 @@ revision `ed2ce7b`) as cited in the comment beside it, plus `generate_catamaran_
 
 The part's hull-loads subcomponent selects `manoeuvring_damping = time_constants_surge_blend`
 (`otter.m` 206-217, 244-251: surge force `Xu exp(-3|u_r|) u_r + Xuu |u_r| u_r`, `Xu = -M11/T_surge`
-with `T_surge` 5 s, `Xuu = -24.4 g / Umax^2`; `T_sway` 0.5 s). It is bit-for-bit the MSS form, including
-the payload `eta_0` shift of `otter.m` 265-266, 269 that the registry lists as F-MSS-24 and F-MSS-31 (still present
-at `ed2ce7b`); this part does not correct them.
+with `T_surge` 5 s, `Xuu = -24.4 g / Umax^2`; `T_sway` 0.5 s). The part's restoring selects
+`payload_trim_form = lever_arm_and_heave_shift`, so the part is bit-for-bit the MSS form, including
+the payload `eta_0` shift of `otter.m` 259-269 that the registry lists as F-MSS-24 and F-MSS-31 (still present
+at `ed2ce7b`: the payload weight in heave a second time, and the kinematics at the shifted attitude); this part
+does not correct them. The library's corrected form is the plugin's default, `lever_arm_moment`.
+
+The actuators are the two thrusters of the Otter, linked from the named parts `Otter port thruster` and
+`Otter starboard thruster` (`otter.m` 24-27, 139-146, 230-242): two inputs named `drive_command`, the shaft speed
+of the port (left) and of the starboard (right) propeller in rad/s, in this order (a command schedule gives the
+name its two values in this order; `n(1)` and `n(2)` of `otter.m`).
 
 Every other value (hull geometry, mass, radii of gyration, added-mass coefficients, and the
 hydrostatics, hull-loads and site values of the subcomponents) is set in the part itself with

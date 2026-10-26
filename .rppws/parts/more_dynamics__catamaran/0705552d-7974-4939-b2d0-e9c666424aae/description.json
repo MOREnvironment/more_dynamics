@@ -34,7 +34,25 @@
             "SlotName": "site",
             "Library": "more_dynamics",
             "IsLinked": false
-        }
+        },
+        "actuators": [
+            {
+                "Id": "1c5d8c40-1e41-449a-a4b8-0759b9c76197",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "393cd5a3-419c-4547-ae9c-c114b93f8e45",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            }
+        ]
     },
     "ParentComponentInfo": null
 }

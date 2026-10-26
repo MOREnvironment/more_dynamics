@@ -118,10 +118,11 @@ def full_tensor_rigid_body():
 def hull_with_point_payload():
     """Hull mass plus a point payload (otter.m 94-98, 122-128); ``hull_mass``
     is handed on as a coupling for the added-mass slot's scaled
-    derivatives."""
+    derivatives, and ``payload_mass`` and ``payload_position`` for the restoring's payload trim (the vehicle
+    owns the payload; the restoring reads it by name)."""
     cut = restrict(rigid_body_casadi(mass_properties="hull_with_payload", coriolis="co"), RIGID_BODY_OUTPUTS,
                    "hull_with_point_payload_cut")
-    return with_passthrough(cut, "hull_with_point_payload", ["hull_mass"])
+    return with_passthrough(cut, "hull_with_point_payload", ["hull_mass", "payload_mass", "payload_position"])
 
 
 def hull_with_point_payload_parameters():

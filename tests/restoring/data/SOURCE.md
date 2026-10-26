@@ -33,3 +33,11 @@ Written at the revision named beside them. From `72656d1` to `cc07579`: `otter.m
 ## Re-pin to MSS `99fdf4d` (2026-10-23, MATLAB R2026a Update 4; `99fdf4dbdfe0b3f124e26a689c6aabe0beb5654f`, 41 commits after `cc07579`)
 
 `spheroid_matlab_reference_mss_current.csv` rewritten in place (`imlay61.m` `rho` 1025, `23c307e`; the hydrostatics columns the generator cuts out of the spheroid run). `surface_chain_mss_cc07579.csv`, `surface_gmtrx_mss_current.csv` and `gravity_mss_cc07579.csv` are byte-identical at `99fdf4d` (`Gmtrx.m` and `otter.m` read the same 1025 / 9.81 from `mssConstants.m`). `generate_surface_hydrostatics_mss.m` reads `ws.r_bG` (`otter.m` renamed `rg`).
+
+## Payload trim at MSS `ed2ce7b` (2026-10-26, MATLAB R2026a Update 4; Y3, payload trim form)
+
+| File | What it holds | Made by | Made at MSS |
+|---|---|---|---|
+| `payload_trim_mss_ed2ce7b.csv` | 48 cases (payload masses 0, 10, 25, 50 kg at two positions, six seeded states each, propeller speeds inside the limits, a current): `case_id, mp, rp_1..3, x_1..12, n_1..2, Vc, beta_c`, then for MSS's own payload trim (`otter.m` 259-269) `eta0_1..6` (`eta_0`), `g0_1..6`, `g_mss_1..6` (the restoring vector `G*eta` after the shift), `G_01..36` (row-major), `xdot_mss_1..12` (the unmodified function's derivative); and for the corrected form (lever-arm moment only in `g_0`, kinematics at the actual attitude) `eta0c_1..6`, `g_corr_1..6`, `xdot_corr_1..12`, built from the same call's instrumented workspace | `generate_payload_trim_mss.m` (seed 20261026, numbers `%.17g`; the instrumented copy of `otter.m` equals the unmodified function, max difference 0, checked in the run) | `ed2ce7b` |
+
+Two runs on this machine gave byte-identical files (sha256 `9f1a905873a4fae7a1aac48c41e35b71175b0f3652a4ede7786106419975ee68`). Reader: `test_payload_trim.py`. Over the cases with a payload the two forms' derivatives differ by up to 3.2 (the heave acceleration, m/s^2), so the gate tells them apart.

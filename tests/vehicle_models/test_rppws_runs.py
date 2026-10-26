@@ -88,11 +88,11 @@ def _script():
     return _CACHE["module"]
 
 
-def _simulation(command=None, **options):
+def _simulation(command=None, configuration=CONFIGURATION, **options):
     """A ``VehicleSimulation`` built by rpp's builder from the named part (``command`` a schedule name)."""
     module = _script()
     try:
-        return module.VehicleSimulation(rpp_workspace=str(LIBRARY), rpp_configuration=CONFIGURATION,
+        return module.VehicleSimulation(rpp_workspace=str(LIBRARY), rpp_configuration=configuration,
                                         command=command, **options)
     except ValueError:
         raise
@@ -100,10 +100,10 @@ def _simulation(command=None, **options):
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
 
 
-def _vehicle():
-    if "vehicle" not in _CACHE:
-        _CACHE["vehicle"] = _simulation().vessels[0]
-    return _CACHE["vehicle"]
+def _vehicle(configuration=CONFIGURATION):
+    if ("vehicle", configuration) not in _CACHE:
+        _CACHE[("vehicle", configuration)] = _simulation(configuration=configuration).vessels[0]
+    return _CACHE[("vehicle", configuration)]
 
 
 def _frozen_inputs(vehicle, table):
@@ -250,13 +250,166 @@ def test_a_command_the_configuration_does_not_have_is_refused():
         _simulation("not_a_run")
 
 
-@pytest.mark.parametrize("configuration", ["otter", "grethe"])
+@pytest.mark.parametrize("configuration", ["grethe"])
 def test_the_parts_without_actuators_run_through_the_script_with_zero_input(configuration):
-    """Otter (MSS) and Grethe have no force producer child (their parts carry none): the vehicle takes no input,
-    the script runs it at zero input, and and a command is refused (the configuration has no schedule)."""
+    """Grethe has no force producer child (its part carries none): the vehicle takes no input, the script runs it at
+    zero input, and and a command is refused (the configuration has no schedule)."""
     module = _script()
     simulation = module.VehicleSimulation(rpp_workspace=str(LIBRARY), rpp_configuration=configuration,
                                           duration=5.0, delta_t=0.5)
     assert list(simulation.vessels[0].getInputDescriptions()) == []
     result = simulation.run()[0]
     assert result["inputs"].shape == (11, 0) and np.isfinite(result["states"]).all()
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Otter (MSS): the commanded runs of the unmodified otter.m, through the two linked thrusters
+# ---------------------------------------------------------------------------------------------------------------
+OTTER_CONFIGURATION, OTTER_PART = "otter", "Otter (MSS)"
+OTTER_DATA = Path(__file__).resolve().parent / "data" / "otter"
+OTTER_TAG = "_mss_ed2ce7b"
+OTTER_RUNS = sorted(f.stem[len("otter_trajectory_"):-len(OTTER_TAG)] for f in OTTER_DATA.glob(f"otter_trajectory_*{OTTER_TAG}.csv")
+                    if "tolerances" not in f.name)
+OTTER_COLUMNS = {"drive_command": ("ui_01", "ui_02")}  # port (n(1)), starboard (n(2)) shaft speeds, rad/s
+
+
+def _otter_table(name):
+    data = np.genfromtxt(OTTER_DATA / f"otter_trajectory_{name}{OTTER_TAG}.csv", delimiter=",", names=True)
+    return {key: np.atleast_1d(data[key]) for key in data.dtype.names}
+
+
+def _otter_tolerances():
+    table = {}
+    with open(OTTER_DATA / f"otter_trajectory_tolerances{OTTER_TAG}.csv", newline="") as handle:
+        import csv
+        for row in csv.DictReader(handle):
+            table.setdefault(row["scenario"], np.zeros(12))[int(row["state"]) - 1] = float(row["tolerance"])
+    return table
+
+
+def _otter_inputs(vehicle, table, columns=OTTER_COLUMNS):
+    """The frozen commands as the vehicle's stacked inputs: the two ``drive_command`` inputs take the name's two columns
+    one after the other, in actuator order (port, starboard)."""
+    descriptions = list(vehicle.getInputDescriptions())
+    assert [d.name for d in descriptions] == ["drive_command", "drive_command"] and [d.size for d in descriptions] == [1, 1]
+    return np.column_stack([table[c] for c in columns["drive_command"]])
+
+
+def _otter_rk4_run(vehicle, table, columns=OTTER_COLUMNS, refine=1):
+    """The frozen run stepped by the vehicle's own RK4 at the frozen step (MSS state order), commands held per row;
+    ``refine`` > 1 takes that many times as many steps of the same method (a finer run of the same equations)."""
+    inputs = _otter_inputs(vehicle, table, columns)
+    steps = int(round((table["t"][1] - table["t"][0]) / g3.STEP)) * refine
+    x = g3._mss_to_ours(np.array([table[f"x_{i:02d}"][0] for i in range(1, 13)]))
+    states = np.zeros((len(table["t"]), 12))
+    for row in range(len(table["t"])):
+        states[row] = g3._ours_to_mss(x)
+        if row < len(table["t"]) - 1:
+            for _ in range(steps):
+                x = vehicle.step_vector(x, inputs[row], g3.STEP / refine)
+    return states
+
+
+def _otter_reference(table):
+    return np.column_stack([table[f"x_{i:02d}"] for i in range(1, 13)])
+
+
+def test_the_otter_runs_are_the_six_commanded_runs():
+    assert OTTER_RUNS == ["astern_from_speed", "commands_beyond_the_limits", "differential_turn", "spin_in_place",
+                          "straight_from_rest_thrust_step", "zigzag_differential_steps"]
+    assert sorted(_otter_tolerances()) == OTTER_RUNS
+
+
+def test_the_otter_is_the_named_part_built_by_rpp_with_two_thrusters():
+    vehicle = _vehicle(OTTER_CONFIGURATION)
+    assert type(vehicle).__name__ == "Catamaran"
+    assert [d.name for d in vehicle.getInputDescriptions()] == ["drive_command", "drive_command"]
+    description = json.loads(DESCRIPTION.read_text())
+    part_id = description["Configurations"][OTTER_CONFIGURATION]["Components"]["vessels"][0]["Id"]
+    found = [p for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")
+             if json.loads(p.read_text()).get("Id") == part_id]
+    assert len(found) == 1 and json.loads(found[0].read_text())["Name"] == OTTER_PART
+
+
+@pytest.mark.parametrize("name", OTTER_RUNS)
+def test_G3_through_rpp_otter_trajectory_equals_matlab_rk4_run(name):
+    table = _otter_table(name)
+    error = np.abs(_otter_rk4_run(_vehicle(OTTER_CONFIGURATION), table) - _otter_reference(table)).max(axis=0)
+    tolerance = _otter_tolerances()[name]
+    over = [f"x{i + 1}: {error[i]:.3g} > {tolerance[i]:.3g}" for i in range(12) if error[i] > tolerance[i]]
+    assert not over, f"{name}: " + "; ".join(over)
+
+
+@pytest.mark.parametrize("name", ["differential_turn", "zigzag_differential_steps"])
+def test_G4_swapped_thrusters_or_the_corrected_trim_are_detected(name):
+    """The gate can fail: the two shaft speeds swapped between port and starboard, and the corrected payload trim in
+    place of MSS's (the part's form), each leave the frozen run by far more than its tolerance."""
+    table = _otter_table(name)
+    tolerance = _otter_tolerances()[name]
+    swapped = _otter_rk4_run(_vehicle(OTTER_CONFIGURATION), table, {"drive_command": ("ui_02", "ui_01")})
+    assert (np.abs(swapped - _otter_reference(table)).max(axis=0) > 10 * tolerance).any()
+    p = vc.plugins()
+    thrusters = [(p.Propulsor, vc.pick(p.Propulsor, vc.reference_part(n)))
+                 for n in ("Otter port thruster", "Otter starboard thruster")]
+    corrected = vc.otter(actuators=thrusters)  # the default form, lever_arm_moment
+    run = _otter_rk4_run(corrected, table)
+    assert (np.abs(run - _otter_reference(table)).max(axis=0) > 10 * tolerance).any()
+
+
+@pytest.mark.parametrize("name", OTTER_RUNS)
+def test_the_otter_command_schedule_is_the_frozen_run_sample_by_sample(name):
+    table = _otter_table(name)
+    schedule = json.loads(DESCRIPTION.read_text())["Configurations"][OTTER_CONFIGURATION]["Commands"][name]
+    vehicle = _vehicle(OTTER_CONFIGURATION)
+    names = [d.name for d in vehicle.getInputDescriptions()]
+    sizes = [d.size for d in vehicle.getInputDescriptions()]
+    rows = _script().command_rows(schedule, names, sizes, table["t"])
+    assert np.array_equal(rows, _otter_inputs(vehicle, table))
+    assert schedule["SampleTime"] == table["t"][1] - table["t"][0]
+    assert schedule["Duration"] == table["t"][-1]
+    assert schedule["InitialSurgeSpeed"] == table["x_01"][0] and not any(table[f"x_{i:02d}"][0] for i in range(2, 13))
+
+
+def test_the_otter_has_one_command_per_frozen_run():
+    commands = json.loads(DESCRIPTION.read_text())["Configurations"][OTTER_CONFIGURATION]["Commands"]
+    assert sorted(commands) == OTTER_RUNS
+
+
+REFINE = 4  # steps of the finer RK4 per frozen step: its own step error is (1/4)^4 of the frozen step's
+
+
+@pytest.mark.parametrize("name", OTTER_RUNS)
+def test_the_otter_script_cvodes_run_agrees_with_the_finer_rk4_run_within_the_integrator_bound(name):
+    """The script's CVODES run of the schedule against the same equations stepped four times finer by RK4, within the
+    integrator bound of the REMUS runs above (CVODES's own norm, ``sqrt(12) N (abstol + reltol max|x|)``).
+
+    Why the finer run and not the frozen step: a first version of this test, written like the REMUS one, compared the
+    CVODES run with the RK4 run at the frozen step (0.05 s) and failed on all six runs by factors 1.85-7.1 of the bound.
+    The cause is the RK4 step error of the frozen step, not CVODES: the Otter's heave, roll and pitch modes
+    (natural frequencies of several rad/s) make the frozen step's RK4 differ from a finer run of the same method by
+    1.2e-4 to 2.0e-4 in the worst state of each run (the runs four and ten times finer differ by at most 1.5e-6, 2 % of
+    the bound), while CVODES stays within 0.04-0.24 of its bound of the ten-times-finer run (measured once, as numbers
+    for this note, not asserted). The REMUS runs (slower, Munk couplings removed) do not show it. The G3 gate above compares the frozen step with the frozen step, so MATLAB's and the
+    library's RK4 carry the same step error and agree to 1e-14; this test is about CVODES alone."""
+    table = _otter_table(name)
+    reference = _otter_reference(table)
+    fine = _otter_rk4_run(_vehicle(OTTER_CONFIGURATION), table, refine=REFINE)
+    result = _simulation(name, configuration=OTTER_CONFIGURATION).run()[0]
+    assert np.array_equal(result["time"], table["t"])
+    cvodes = g3._ours_to_mss(result["states"][:, -12:])
+    n = len(table["t"]) - 1
+    bound = np.sqrt(12) * n * (CVODES_ABSTOL + CVODES_RELTOL * np.abs(reference).max(axis=0))
+    error = np.abs(cvodes - fine).max(axis=0)
+    assert (error <= bound).all(), f"{name}: " + "; ".join(
+        f"x{i + 1}: {error[i]:.3g} > {bound[i]:.3g}" for i in range(12) if error[i] > bound[i])
+
+
+@pytest.mark.parametrize("name", OTTER_RUNS)
+def test_the_frozen_step_rk4_error_of_the_otter_runs_is_the_measured_size(name):
+    """The frozen runs (MATLAB's and the library's alike) carry the RK4 step error of 0.05 s: the difference to the
+    run four times finer is below 3e-4 in every state of every run (measured 1.2e-4 to 2.0e-4); a larger one would mean
+    the equations changed, not the step."""
+    table = _otter_table(name)
+    vehicle = _vehicle(OTTER_CONFIGURATION)
+    difference = np.abs(_otter_rk4_run(vehicle, table) - _otter_rk4_run(vehicle, table, refine=REFINE)).max()
+    assert difference < 3e-4, difference

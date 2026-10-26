@@ -23,6 +23,12 @@ takes the parameter ``wetted_surface``; ``"regression_table"`` reads
 its own hydrostatic (zero-speed) term (``models/surge_resistance/ra14_residual_resistance.py``).
 Raise: the wetted surface from the hull lines.
 
+``payload_trim_form`` (surface only; ``"none"`` default, the restoring as ``g = G eta``) adds the shift of the
+equilibrium that a point payload off the centre of flotation causes, ``g = G (eta - eta_0)``, with the payload
+mass and position read as the vehicle's quantities ``payload_mass`` and ``payload_position`` and the forms of
+``models/restoring/payload_trim.py`` (``"lever_arm_moment"``, ``"lever_arm_and_heave_shift"``); the shift and the
+attitude the kinematics are to be taken at are outputs (``payload_trim_offset``, ``kinematic_attitude_offset``).
+
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
@@ -42,6 +48,7 @@ import casadi as ca
 
 from more_transformations.more_casadi_transformations import Parameter
 
+from more_dynamics.models.restoring.payload_trim import PAYLOAD_TRIM_FORMS, payload_trim_offset
 from more_dynamics.models.restoring.submerged import submerged_hydrostatics_casadi
 from more_dynamics.models.restoring.surface import surface_hydrostatics_casadi
 
@@ -119,7 +126,8 @@ DRAFT_PARAMETER = Parameter("draft", (1, 1), "m", "draft T at equilibrium (block
                             0.0, minimum_exclusive=True)
 
 
-def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coefficient_method="given"):
+def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coefficient_method="given",
+                      payload_trim_form="none"):
     """``nabla = m / rho`` fed into the surface restoring block (``hull_count`` 1 or 2, gravity given by the
     site). The hull geometry (``length``, ``hull_beam``, ``hull_waterplane_coefficient``,
     ``hull_lateral_offset`` for two hulls) and the mass, density, gravity and centre of gravity are the
@@ -132,7 +140,10 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coe
     is, by ``wetted_surface_method`` (one of ``WETTED_SURFACE_METHODS``): the Mumford approximation of the
     ``hull_count`` hulls at the equilibrium draft (``"computed"``), the given input of that name (``"given"``), or
     the RA14 regression's hydrostatic value (``"regression_table"``, module docstring; one hull only -- the
-    regression has no multi-hull form, so ``hull_count`` must be 1)."""
+    regression has no multi-hull form, so ``hull_count`` must be 1). ``payload_trim_form`` is ``"none"`` or one of
+    ``PAYLOAD_TRIM_FORMS``: with a form the restoring is ``G (eta - eta_0)`` (module docstring), the vehicle's
+    ``payload_mass`` and ``payload_position`` are inputs and the outputs gain ``payload_trim_offset`` and
+    ``kinematic_attitude_offset``."""
     if wetted_surface_method not in WETTED_SURFACE_METHODS:
         raise ValueError(f"wetted_surface_method must be one of {WETTED_SURFACE_METHODS}, got {wetted_surface_method!r}")
     if wetted_surface_method == "regression_table" and hull_count != 1:
@@ -140,6 +151,8 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coe
     if block_coefficient_method not in BLOCK_COEFFICIENT_METHODS:
         raise ValueError(f"block_coefficient_method must be one of {BLOCK_COEFFICIENT_METHODS}, "
                         f"got {block_coefficient_method!r}")
+    if payload_trim_form != "none" and payload_trim_form not in PAYLOAD_TRIM_FORMS:
+        raise ValueError(f"payload_trim_form must be 'none' or one of {PAYLOAD_TRIM_FORMS}, got {payload_trim_form!r}")
     block = surface_hydrostatics_casadi(hull_count=hull_count, gravity_source="value")
     names = ["mass", "water_density", "gravity", "length", "hull_beam", "hull_waterplane_coefficient"]
     if block_coefficient_method == "given":
@@ -150,6 +163,9 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coe
     for p in SURFACE_RESTORING_PARAMETERS:
         s[p.name] = ca.SX.sym(p.name, *p.shape)
     s["center_of_gravity"] = ca.SX.sym("center_of_gravity", 3)
+    if payload_trim_form != "none":
+        s["payload_mass"] = ca.SX.sym("payload_mass")
+        s["payload_position"] = ca.SX.sym("payload_position", 3)
     s["eta"] = ca.SX.sym("eta", 6)
     displaced_volume = s["mass"] / s["water_density"]  # nabla = m / rho (otter.m 121)
     if block_coefficient_method == "given":
@@ -178,6 +194,13 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coe
     else:  # S = n 1.025 L (C_b B + 1.7 T) per hull (XuuITTC.m 38, Mumford)
         wetted_surface = hull_count * MUMFORD_AREA_FACTOR * s["length"] * (
             hull_block_coefficient * s["hull_beam"] + MUMFORD_DRAFT_FACTOR * draft)
-    return function_from(f"surface_restoring_{hull_count}_hull", s, {
-        "g": out["g"], "G": out["G"], "G_CF": out["G_CF"],
-        "displaced_volume": displaced_volume, "draft": draft, "wetted_surface": wetted_surface})
+    outputs = {"g": out["g"], "G": out["G"], "G_CF": out["G_CF"],
+               "displaced_volume": displaced_volume, "draft": draft, "wetted_surface": wetted_surface}
+    if payload_trim_form != "none":
+        trim = payload_trim_offset(payload_trim_form)(
+            eta=s["eta"], restoring_matrix=out["G"], payload_mass=s["payload_mass"],
+            payload_position=s["payload_position"], gravity=s["gravity"])
+        outputs["g"] = out["G"] @ (s["eta"] - trim["trim_offset"])  # g = G (eta - eta_0) (otter.m 266, 272-)
+        outputs["payload_trim_offset"] = trim["trim_offset"]
+        outputs["kinematic_attitude_offset"] = trim["kinematic_attitude_offset"]
+    return function_from(f"surface_restoring_{hull_count}_hull", s, outputs)

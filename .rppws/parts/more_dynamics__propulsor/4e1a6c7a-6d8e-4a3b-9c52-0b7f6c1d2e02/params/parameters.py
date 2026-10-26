@@ -15,7 +15,7 @@ class ComponentParameters:
     min_command = -101.73666550381692  # rad/s: n_min = -sqrt(0.5 * 13.6 * g / k_neg), g = 9.81 (otter.m:146, mssConstants.m:14)
     max_command = 103.93086427398005  # rad/s: n_max = sqrt(0.5 * 24.4 * g / k_pos), g = 9.81 (otter.m:145, mssConstants.m:14)
     position = [0.0, -0.395, 0.0]  # m: lever arm l = -y_pont, y_pont = 0.395 (otter.m:112, 139-140), no x or z offset in the model
-    direction = [1.0, 0.0, 0.0]  # thrust along the body x axis (otter.m:243)
+    direction = [1.0, 0.0, 0.0]  # thrust along the body x axis (otter.m:242)
     positive_thrust_coefficient = 0.01108  # N s^2/rad^2: otter.m:143 k_pos = 0.02216 / 2 (one thruster)
     negative_thrust_coefficient = 0.006445  # N s^2/rad^2: otter.m:144 k_neg = 0.01289 / 2 (one thruster)
     shaft_torque_scale = 0.0  # the model carries no thruster torque on the body (zero with its reason)
