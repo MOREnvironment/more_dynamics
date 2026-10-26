@@ -1,0 +1,10 @@
+{
+    "Id": "1c13c038-f406-45bb-a0a2-996c7b1c6f05",
+    "Name": "REMUS 100 (MSS) rudder fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

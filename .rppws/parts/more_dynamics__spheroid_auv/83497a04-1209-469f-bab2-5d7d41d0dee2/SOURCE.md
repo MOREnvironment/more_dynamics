@@ -20,9 +20,15 @@ instrumented workspace, not retyped from the thesis (rule 4).
 | `current_form` | `none` | this part is gated in still water |
 | `body_density_method` | `computed` | density derived from `body_mass` on the spheroid's own volume |
 
-Every other value (geometry, mass, roll added-inertia ratio, and the hull-loads, hydrostatics,
-fin-pair, propeller and site values of the subcomponents) is set in the part itself, with its
-source line in the comment beside it: `more_dynamics/DEFAULTS.md` gives value, unit, source
+Every other value (geometry, mass, roll added-inertia ratio, and the hull-loads, hydrostatics
+and site values of the subcomponents) is set in the part itself, with its
+source line in the comment beside it. The actuators are linked named parts: the tail rudder pair
+(`REMUS 100 (MSS) rudder fin`, linked twice), the stern-plane pair (`REMUS 100 (MSS) stern plane fin`, linked
+twice) and the propeller (`REMUS 100 propulsor`): five inputs in this order, four fin deflections (rad,
+`fin_angle_command`: rudder, rudder, stern plane, stern plane) and the shaft speed (rpm, `drive_command`).
+The two fins of a pair take the same value to give `remus100.m`'s single rudder and stern-plane command.
+The earlier composition (the deflection-only fin pairs and the `Propeller` plugin) stays as named parts of
+their own and as a cross-check (`tests/vehicle_models/test_named_vehicles.py`): `more_dynamics/DEFAULTS.md` gives value, unit, source
 line and kind for this part. The plugins carry no vehicle numbers (unset placeholders): a
 value this part leaves out makes the build fail naming it. Three values were still read from
 the former plugin defaults before the placeholders and are now written into the part:

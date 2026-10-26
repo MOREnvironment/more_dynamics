@@ -66,9 +66,15 @@ def test_the_script_description_lists_one_configuration_per_named_vehicle():
         assert json.loads(matches[0].read_text())["Name"] == NAMED[key]
 
 
+def _part_child(plugin, name):
+    """A child context of ``plugin`` with the values of the named part ``name`` (found by its ``Name``)."""
+    return plugin, vc.pick(plugin, vc.reference_part(name))
+
+
 def test_remus_100_from_the_workspace_equals_the_plugins_on_the_part_values():
     """The workspace part built by rpp's builder equals the plugins built from the part's values and selectors
-    (still water; the part's own site: gravity from the latitude, 1026 kg/m^3; MSS's Munk-removed Coriolis)."""
+    (still water; the part's own site: gravity from the latitude, 1026 kg/m^3; MSS's Munk-removed Coriolis), its
+    actuators being four fins (rudder pair, stern-plane pair) and the propulsor, linked from named parts."""
     p = vc.plugins()
     built = _build("remus100")
     site = vc.reference_part("REMUS 100 (MSS) site")
@@ -76,15 +82,43 @@ def test_remus_100_from_the_workspace_equals_the_plugins_on_the_part_values():
                                  site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
                                                 "water_density": site["water_density"]}),
                                  hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
-                                 actuators=[p.FinPairsDeflectionOnly, p.Propeller])
+                                 actuators=[_part_child(p.Fin, "REMUS 100 (MSS) rudder fin")] * 2
+                                 + [_part_child(p.Fin, "REMUS 100 (MSS) stern plane fin")] * 2
+                                 + [_part_child(p.Propulsor, "REMUS 100 propulsor")])
     assert type(built).__name__ == "SpheroidAuv"
-    assert vc.input_names(built) == vc.input_names(reference) == ["fin_deflection_command", "shaft_speed_command"]
+    names = ["fin_angle_command"] * 4 + ["drive_command"]
+    assert vc.input_names(built) == vc.input_names(reference) == names
     a, b = vc.graph_of(built).step, vc.graph_of(reference).step
     rng = np.random.default_rng(5)
     for x in _states(30, 3):
-        u = rng.uniform(-0.3, 0.3, 2)
-        u = np.r_[u, rng.uniform(0.0, 1500.0)]
+        u = np.r_[rng.uniform(-0.3, 0.3, 4), rng.uniform(0.0, 1500.0)]
         assert np.array_equal(np.asarray(a(x, u)), np.asarray(b(x, u)))
+
+
+def test_remus_100_with_four_fins_and_the_propulsor_equals_the_fin_pairs_and_the_propeller_plugins():
+    """Two independent compositions of the same REMUS 100 values: the committed part (four ``Fin`` children and the
+    ``Propulsor``) and the earlier one (the deflection-only fin pairs and the ``Propeller``, their own named parts):
+    the same derivative on random states and commands, the two fins of a pair given the same deflection."""
+    p = vc.plugins()
+    built = _build("remus100")
+    site = vc.reference_part("REMUS 100 (MSS) site")
+    earlier = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
+                               site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
+                                              "water_density": site["water_density"]}),
+                               hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
+                               actuators=[_part_child(p.FinPairsDeflectionOnly, "REMUS 100 fin pairs"),
+                                          _part_child(p.Propeller, "REMUS 100 propeller")])
+    assert vc.input_names(earlier) == ["fin_deflection_command", "shaft_speed_command"]
+    a, b = vc.graph_of(built).step, vc.graph_of(earlier).step
+    rng = np.random.default_rng(6)
+    worst = 0.0
+    for x in _states(30, 7):
+        rudder, stern = rng.uniform(-0.3, 0.3, 2)
+        n = rng.uniform(-1500.0, 1500.0)
+        ours = np.asarray(a(x, [rudder, rudder, stern, stern, n])).ravel()
+        reference = np.asarray(b(x, [rudder, stern, n])).ravel()
+        worst = max(worst, float(np.max(np.abs(ours - reference) / np.maximum(1.0, np.abs(reference)))))
+    assert worst <= 1e-12, worst
 
 
 def test_otter_from_the_workspace_equals_the_frozen_otter_set():

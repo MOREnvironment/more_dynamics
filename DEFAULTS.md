@@ -107,6 +107,23 @@ tables and the comment beside each value (source and kind); a part's `SOURCE.md`
 | `lift_slope` | 3.12 | 1/rad | Prestero 2001, Table A.5, p. 103 (c_L_alpha) | document |
 | `zero_lift_drag` | 0.0 | 1 | zero with its reason: Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by linear_section only) | document |
 
+## REMUS 100 (MSS) rudder fin and stern plane fin (`more_dynamics::Fin`)
+
+The vehicle links each of them twice (four fins, each with its own command). Ideal servo (only the saturation of the
+command), translational inflow, no flow angle, no interference, quadratic-drag section: the deflection-only form of
+`remus100.m` 239-246; two fins of `S_fin` each equal the pair of `A = 2 S_fin`.
+
+| Parameter | Rudder fin | Stern plane fin | Unit | Source | Kind |
+|---|---|---|---|---|---|
+| `fin_position` | [-0.8, 0, 0] | [-0.8, 0, 0] | m | remus100.m:185, 190 x = -a, a = L_auv / 2 | derived (typed: `Fin` has no option that takes it from the hull) |
+| `chord_axis` | [1, 0, 0] | [1, 0, 0] | 1 | BODY FRD | convention |
+| `lift_axis` | [0, -1, 0] | [0, 0, -1] | 1 | sign of the force of a positive deflection, remus100.m:243, 246 | convention |
+| `fin_area` | 0.00665 | 0.00665 | m^2 | remus100.m:180 S_fin | document |
+| `lift_slope` | 0.5 | 0.7 | 1/rad | remus100.m:183 CL_delta_r, 188 CL_delta_s | document |
+| `max_deflection` | 0.3490658503988659 | 0.3490658503988659 | rad | remus100.m:110 delta_max = deg2rad(20) | document |
+| `servo_dynamics`, `servo_rate_limit`, `servo_angle_limit` | 'none', False, 'on_command' | same | - | remus100.m:114-115 (the command saturated, nothing else) | selector |
+| `inflow`, `flow_angle`, `interference`, `section` | 'translational', 'none', 'none', 'quadratic_drag' | same | - | remus100.m:235-246 | selector |
+
 ## Otter (MSS) (`more_dynamics::Catamaran`)
 
 | Parameter | Value | Unit | Source | Kind |
@@ -361,11 +378,13 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 | Named part | `.rppws` location | `SOURCE.md` |
 |---|---|---|
 | REMUS 100 (MSS) | `.rppws/parts/more_dynamics__spheroid_auv/83497a04-1209-469f-bab2-5d7d41d0dee2/` | yes |
-| REMUS 100 fin | `.rppws/parts/more_dynamics__fin/` | yes |
+| REMUS 100 fin | `.rppws/parts/more_dynamics__fin/bca4fba6-...` (one `Fin` with Prestero's values, not wired into a vehicle) | yes |
+| REMUS 100 (MSS) rudder fin, REMUS 100 (MSS) stern plane fin | `.rppws/parts/more_dynamics__fin/` (each linked twice into REMUS 100 (MSS)) | yes, each |
+| REMUS 100 fin pairs, REMUS 100 propeller | `.rppws/parts/more_dynamics__fin_pairs_deflection_only/`, `...__propeller/` (the earlier REMUS 100 composition, kept as parts of their own for the plugins' tests and as a cross-check of the committed vehicle) | no |
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
 | Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
 | NPS AUV II (MSS) | not yet landed | n/a |
-| REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, not wired into a vehicle part) | yes, each |
+| REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, each linked into its vehicle: REMUS 100 (MSS) once, Otter (MSS) one each) | yes, each |
 | Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `...__catamaran/09d55b0c-...`, `...__catamaran/287972df-...` (two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
 
 

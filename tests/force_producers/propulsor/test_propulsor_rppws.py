@@ -3,10 +3,9 @@ those parts, built by rpp's own ``ComponentContextBuilder`` (not assembled by ha
 
 * Every named part of ``more_dynamics::Propulsor`` loads with rpp's parameter store, names only parameters the plugin
   declares, and builds the plugin.
-* A REMUS 100 vehicle whose propeller child is the named part ``REMUS 100 propulsor``, written into a workspace that
-  exists only for the test (the committed vehicle part is not changed), is built by rpp's builder and gives the same
-  dynamics as the committed vehicle with its propeller plugin on random states and commands, and the same
-  ``VehicleSimulation`` (CVODES) run of one command schedule.
+* The committed REMUS 100 (MSS) vehicle links the named part ``REMUS 100 propulsor`` as its propulsor; its equality
+  with the earlier composition (the propeller plugin and the deflection-only fin pairs) and its frozen runs are in
+  ``tests/vehicle_models/test_named_vehicles.py`` and ``test_rppws_runs.py``.
 * An Otter whose two thrusters are the named parts ``Otter port thruster`` and ``Otter starboard thruster``, linked
   into its ``actuators`` list, is built by rpp's builder and gives the same dynamics as the Otter driven by the
   differential-thruster block's wrench. The two thrusters' inputs are both called ``drive_command``: the standard names
@@ -17,7 +16,7 @@ Author:    Enio Krizman
 Date:      2026-10-23
 """
 
-import importlib.util
+import importlib
 import json
 import shutil
 import sys
@@ -35,8 +34,7 @@ from propulsor_contract import rng, two_thruster_values  # noqa: E402
 LIBRARY = Path(__file__).resolve().parents[3]
 RPPWS = LIBRARY / ".rppws"
 PARTS = ("REMUS 100 propulsor", "Otter port thruster", "Otter starboard thruster")
-REMUS_PART, OTTER_PART = "REMUS 100 (MSS)", "Otter (MSS)"
-PROPELLER_NAME = "REMUS 100 propeller"
+OTTER_PART = "Otter (MSS)"
 LIBRARY_NAME = "more_dynamics"
 
 
@@ -117,85 +115,6 @@ def test_a_named_part_describes_a_propulsor_force_producer_with_no_vehicle(name)
     assert description["PluginType"] == "more_dynamics::ForceProducer"
     assert description["ParentComponentInfo"] is None
     assert (_part_dir(name) / "SOURCE.md").is_file()
-
-
-# --------------------------------------------------------------------------
-# REMUS with the named propulsor in place of the propeller
-# --------------------------------------------------------------------------
-def _remus_with_propulsor(tmp_path):
-    vehicle_dir = _part_dir(REMUS_PART)
-    workspace = _workspace(tmp_path, [vehicle_dir])
-    copied = workspace / ".rppws" / "parts" / vehicle_dir.parent.name / vehicle_dir.name
-    propeller_dir = next(d.parent for d in copied.rglob("description.json")
-                         if json.loads(d.read_text()).get("Name") == PROPELLER_NAME)
-    child = json.loads((propeller_dir / "description.json").read_text())
-    child.update({"Name": "REMUS 100 propulsor", "PluginName": "more_dynamics::Propulsor"})
-    (propeller_dir / "description.json").write_text(json.dumps(child, indent=4))
-    shutil.copy(_part_dir("REMUS 100 propulsor") / "params" / "parameters.py", propeller_dir / "params" / "parameters.py")
-    parent = json.loads((copied / "description.json").read_text())
-    for entry in parent["Subcomponents"]["actuators"]:
-        if entry["Id"] == child["Id"]:
-            entry["PluginName"] = "more_dynamics::Propulsor"
-    (copied / "description.json").write_text(json.dumps(parent, indent=4))
-    return workspace, parent["Id"]
-
-
-def _states(n, seed, speed=(0.5, 2.2)):
-    g = np.random.default_rng(seed)
-    for _ in range(n):
-        yield np.concatenate([g.uniform(-0.3, 0.3, 6), g.uniform(*speed, 1), g.uniform(-0.1, 0.1, 2), g.uniform(-0.05, 0.05, 3)])
-
-
-def test_the_remus_with_the_named_propulsor_equals_the_committed_remus_with_its_propeller(tmp_path):
-    workspace, vehicle_id = _remus_with_propulsor(tmp_path)
-    description = _description(workspace, "remus_propulsor", vehicle_id, "more_dynamics::SpheroidAuv")
-    switched = _build(workspace, description, "remus_propulsor")
-    committed = _build(LIBRARY, RPPWS / "script_descriptions" / "vehicle_simulation.json", "remus100")
-    assert vc.input_names(committed) == ["fin_deflection_command", "shaft_speed_command"]
-    assert vc.input_names(switched) == ["fin_deflection_command", "drive_command"]
-    a, b = vc.graph_of(switched), vc.graph_of(committed)
-    g = rng()
-    worst = 0.0
-    for x in _states(40, 20261023):
-        u = np.concatenate([g.uniform(-0.3, 0.3, 2), g.uniform(-1500, 1500, 1)])
-        xa, xb = np.asarray(a.step(x, u)).ravel(), np.asarray(b.step(x, u)).ravel()
-        worst = max(worst, float(np.max(np.abs(xa - xb) / np.maximum(1.0, np.abs(xb)))))
-    assert worst <= 1e-10, worst
-
-
-def _script():
-    """The script module, loaded from its file (it is not a package)."""
-    vc.plugins()
-    try:
-        spec = importlib.util.spec_from_file_location("vehicle_simulation_script", LIBRARY / "scripts" / "vehicles" /
-                                                      "vehicle_simulation.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-    except Exception as exc:  # no rpp, or more_simulation is not installed
-        pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
-    return module
-
-
-def test_the_remus_with_the_named_propulsor_runs_the_same_schedule_as_the_committed_remus(tmp_path):
-    """The committed schedule ``dive_and_level_off`` (frozen run commands, held per sample) run by the script's CVODES
-    integration on both vehicles; the shaft command is named ``shaft_speed_command`` on the committed vehicle and
-    ``drive_command`` on the switched one."""
-    committed_schedule = json.loads((RPPWS / "script_descriptions" / "vehicle_simulation.json").read_text())[
-        "Configurations"]["remus100"]["Commands"]["dive_and_level_off"]
-    renamed = {**committed_schedule, "Steps": [
-        {("drive_command" if k == "shaft_speed_command" else k): v for k, v in step.items()}
-        for step in committed_schedule["Steps"]]}
-    workspace, vehicle_id = _remus_with_propulsor(tmp_path)
-    _description(workspace, "remus_propulsor", vehicle_id, "more_dynamics::SpheroidAuv", {"dive": renamed})
-    module = _script()
-    switched = module.VehicleSimulation(rpp_workspace=str(workspace), rpp_configuration="remus_propulsor",
-                                        command="dive").run()[0]
-    committed = module.VehicleSimulation(rpp_workspace=str(LIBRARY), rpp_configuration="remus100",
-                                         command="dive_and_level_off").run()[0]
-    assert switched["input_names"] == ["fin_deflection_command", "drive_command"]
-    a, b = np.asarray(switched["states"]), np.asarray(committed["states"])
-    assert a.shape == b.shape and np.array_equal(switched["time"], committed["time"])
-    assert float(np.max(np.abs(a - b) / np.maximum(1.0, np.abs(b)))) <= 1e-7
 
 
 # --------------------------------------------------------------------------

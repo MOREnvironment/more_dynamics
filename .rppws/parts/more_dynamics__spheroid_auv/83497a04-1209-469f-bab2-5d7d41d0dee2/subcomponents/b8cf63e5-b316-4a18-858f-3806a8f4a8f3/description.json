@@ -1,0 +1,14 @@
+{
+    "Id": "b8cf63e5-b316-4a18-858f-3806a8f4a8f3",
+    "Name": "Propulsor",
+    "LinkedComponentId": "4e1a6c7a-6d8e-4a3b-9c52-0b7f6c1d2e01",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

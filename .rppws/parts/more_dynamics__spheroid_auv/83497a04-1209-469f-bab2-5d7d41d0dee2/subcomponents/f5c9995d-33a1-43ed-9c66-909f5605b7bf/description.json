@@ -1,11 +1,8 @@
 {
-    "Id": "876c181c-9ee3-46fc-b6f2-fd5df82b206d",
-    "Name": "REMUS 100 fin pairs",
-    "PluginType": "more_dynamics::ForceProducer",
-    "PluginName": "more_dynamics::FinPairsDeflectionOnly",
-    "Library": "more_dynamics",
-    "SubcomponentSpec": {},
-    "Subcomponents": {},
+    "Id": "f5c9995d-33a1-43ed-9c66-909f5605b7bf",
+    "Name": "Rudder fin 2",
+    "LinkedComponentId": "1c13c038-f406-45bb-a0a2-996c7b1c6f05",
+    "LinkedComponentWorkspace": "more_dynamics",
     "ParentComponentInfo": {
         "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
         "PluginType": "more_dynamics::VehicleModel3D",

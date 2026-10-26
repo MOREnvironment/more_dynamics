@@ -179,8 +179,9 @@ def test_the_committed_shared_site_scenario_links_one_site_into_both_boats():
     context.initialize()
     boats = context.get_component("vessels")
     assert len(boats) == 2
-    linked = [json.loads(p.read_text()) for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")
-              if "LinkedComponentId" in p.read_text()]
+    linked = [entry for entry in (json.loads(p.read_text()) for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")
+                                  if "LinkedComponentId" in p.read_text())
+              if entry["ParentComponentInfo"]["SlotName"] == "site"]  # the site links, not the actuator links
     assert len(linked) == 2 and len({entry["LinkedComponentId"] for entry in linked}) == 1
     reference = vc.graph_of(vc.otter()).step
     x = np.r_[np.zeros(6), 1.0, 0.1, 0.0, 0.0, 0.0, 0.2]

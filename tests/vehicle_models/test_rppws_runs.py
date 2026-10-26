@@ -15,8 +15,8 @@ not assembled by ``vehicle_contract`` from the frozen parameter file as
   bound derived below.
 
 A frozen run belongs here when the part's own selectors reproduce it: the full
-vehicle (fins and propeller), the added-mass Coriolis without the Munk
-couplings, still water. The runs of the bare hull and of the Munk-kept form are
+vehicle (four fins, rudder pair and stern-plane pair, and the propulsor), the
+added-mass Coriolis without the Munk couplings, still water. The runs of the bare hull and of the Munk-kept form are
 other compositions of the plugin, and the run in a current needs a part with a
 current form; ``EXCLUDED`` names the one that is left out and why.
 
@@ -54,8 +54,9 @@ SCRIPT = LIBRARY / "scripts" / "vehicles" / "vehicle_simulation.py"
 DESCRIPTION = LIBRARY / ".rppws" / "script_descriptions" / "vehicle_simulation.json"
 CONFIGURATION = "remus100"
 PART = "REMUS 100 (MSS)"
-# the frozen file's command columns (MSS order: rudder, stern plane, shaft speed) as the vehicle's named inputs
-FROZEN_COMMAND_COLUMNS = {"fin_deflection_command": ("ui_01", "ui_02"), "shaft_speed_command": ("ui_03",)}
+# the frozen file's command columns (MSS order: rudder, stern plane, shaft speed) as the vehicle's named inputs: the
+# four fins in the order of the vehicle's actuators (rudder, rudder, stern plane, stern plane), then the propulsor
+FROZEN_COMMAND_COLUMNS = {"fin_angle_command": ("ui_01", "ui_01", "ui_02", "ui_02"), "drive_command": ("ui_03",)}
 CVODES_ABSTOL, CVODES_RELTOL = 1e-8, 1e-6  # more_simulation/simulation.py, _simulate (checked below)
 CURRENT_COLUMNS = ("Vc", "betaVc", "w_c")
 
@@ -107,12 +108,19 @@ def _vehicle():
 
 def _frozen_inputs(vehicle, table):
     """The frozen file's commands as the vehicle's stacked inputs, assembled in the order of its input
-    descriptions by name (a name the table has no column for, or a column no input has, is an error)."""
-    names = [d.name for d in vehicle.getInputDescriptions()]
-    assert sorted(names) == sorted(FROZEN_COMMAND_COLUMNS), names
-    sizes = {d.name: d.size for d in vehicle.getInputDescriptions()}
-    assert all(len(FROZEN_COMMAND_COLUMNS[n]) == sizes[n] for n in names)
-    return np.column_stack([table[c] for n in names for c in FROZEN_COMMAND_COLUMNS[n]])
+    descriptions by name; several inputs of one name (the four fins) take that name's columns one after the other
+    (a name the table has no column for, or a column no input has, is an error)."""
+    descriptions = list(vehicle.getInputDescriptions())
+    assert sorted(set(d.name for d in descriptions)) == sorted(FROZEN_COMMAND_COLUMNS), [d.name for d in descriptions]
+    columns, taken = [], {}
+    for d in descriptions:
+        start = taken.get(d.name, 0)
+        part = FROZEN_COMMAND_COLUMNS[d.name][start:start + d.size]
+        assert len(part) == d.size, d.name
+        taken[d.name] = start + d.size
+        columns += part
+    assert taken == {name: len(c) for name, c in FROZEN_COMMAND_COLUMNS.items()}
+    return np.column_stack([table[c] for c in columns])
 
 
 def _rk4_run(vehicle, table):
@@ -138,8 +146,10 @@ def test_the_runs_of_the_part_are_all_the_full_vehicle_runs_but_the_one_in_a_cur
 def test_the_vehicle_is_the_named_part_built_by_rpp():
     vehicle = _vehicle()
     assert type(vehicle).__name__ == "SpheroidAuv"
-    assert [d.name for d in vehicle.getInputDescriptions()] == ["fin_deflection_command", "shaft_speed_command"]
-    assert [d.size for d in vehicle.getInputDescriptions()] == [2, 1]
+    # four fins (rudder, rudder, stern plane, stern plane) and the propulsor: each actuator names its command after
+    # its plugin, so the four fins carry one name (a schedule gives that name the four values in actuator order)
+    assert [d.name for d in vehicle.getInputDescriptions()] == ["fin_angle_command"] * 4 + ["drive_command"]
+    assert [d.size for d in vehicle.getInputDescriptions()] == [1, 1, 1, 1, 1]
     description = json.loads(DESCRIPTION.read_text())
     part_id = description["Configurations"][CONFIGURATION]["Components"]["vessels"][0]["Id"]
     found = [p for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")
@@ -217,6 +227,22 @@ def test_a_schedule_is_refused_when_it_does_not_match_the_vehicles_input_descrip
     swapped = {"Steps": [{"shaft_speed_command": [900.0], "fin_deflection_command": [0.1, 0.0], "Time": 0.0}]}
     assert command_rows(swapped, names, sizes, times).tolist() == command_rows(good, names, sizes, times).tolist()
     assert command_rows(good, names[::-1], sizes[::-1], times).tolist() == [[900.0, 0.1, 0.0]] * 2
+
+
+def test_inputs_of_one_name_take_that_names_values_one_after_the_other_in_actuator_order():
+    """Four fins and a propulsor: ``fin_angle_command`` four times, ``drive_command`` once."""
+    command_rows = _script().command_rows
+    names, sizes, times = ["fin_angle_command"] * 4 + ["drive_command"], [1] * 5, np.array([0.0, 0.25, 0.5])
+    schedule = {"Steps": [{"Time": 0.0, "fin_angle_command": [1.0, 2.0, 3.0, 4.0], "drive_command": [9.0]},
+                          {"Time": 0.25, "fin_angle_command": [5.0, 6.0, 7.0, 8.0], "drive_command": [9.5]}]}
+    assert command_rows(schedule, names, sizes, times).tolist() == [[1, 2, 3, 4, 9], [5, 6, 7, 8, 9.5],
+                                                                    [5, 6, 7, 8, 9.5]]
+    short = {"Steps": [{"Time": 0.0, "fin_angle_command": [1.0, 2.0], "drive_command": [9.0]}]}
+    with pytest.raises(ValueError, match="fin_angle_command"):
+        command_rows(short, names, sizes, times)
+    # a vehicle with a two-value input and a one-value input of the same name takes three values
+    mixed = {"Steps": [{"Time": 0.0, "u": [1.0, 2.0, 3.0]}]}
+    assert command_rows(mixed, ["u", "u"], [2, 1], np.array([0.0])).tolist() == [[1.0, 2.0, 3.0]]
 
 
 def test_a_command_the_configuration_does_not_have_is_refused():

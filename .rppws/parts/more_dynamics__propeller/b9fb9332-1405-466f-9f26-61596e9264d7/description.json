@@ -1,0 +1,10 @@
+{
+    "Id": "b9fb9332-1405-466f-9f26-61596e9264d7",
+    "Name": "REMUS 100 propeller",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Propeller",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

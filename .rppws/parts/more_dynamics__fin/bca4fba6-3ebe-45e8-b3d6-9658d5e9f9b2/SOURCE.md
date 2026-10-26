@@ -3,7 +3,8 @@
 A named part of `more_dynamics::Fin` (one lifting fin: rigid-point inflow, small-angle flow angle,
 no interference, quadratic-drag section, first-order servo with rate and angle limits). It is the
 reference values the fin tests and a vehicle's fin children are built from; it is not wired into a
-vehicle part yet (the REMUS 100 (MSS) vehicle uses the deflection-only fin pair).
+vehicle part (the REMUS 100 (MSS) vehicle links its own MSS fin parts, `REMUS 100 (MSS) rudder fin` and
+`REMUS 100 (MSS) stern plane fin`).
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|

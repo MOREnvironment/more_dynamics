@@ -13,7 +13,12 @@ schedule ``Configurations.<configuration>.Commands.<name>`` of the script
 description: a table of switching times, each row giving the value of every
 input of the vehicle **by the name of its input description** (the vehicle's
 own ``IODescription`` names, in its own order); a value holds from its time
-until the next row (zero-order hold over each sample interval). ``Duration``,
+until the next row (zero-order hold over each sample interval). An actuator
+names its command after its plugin, so a vehicle with several actuators of one
+plugin (four fins, two thrusters) has several inputs of one name: the value of
+that name is then the values of those inputs one after the other, in the
+vehicle's own actuator order (the order of the vehicle's ``actuators`` list,
+which a command vector of an allocator follows too). ``Duration``,
 ``SampleTime`` and ``InitialSurgeSpeed`` of the schedule are the defaults of
 ``--duration``, ``--delta-t`` and ``--surge-speed``. A schedule that names an
 input the vehicle does not have, leaves one out or gives it the wrong size is
@@ -62,24 +67,33 @@ def load_commands(rpp_workspace, library, script, configuration):
 
 def command_rows(schedule, names, sizes, times):
     """The stacked input rows of ``schedule`` at ``times``: per row the value of the last step whose ``Time`` is
-    not after the sample (to ``1e-9`` s), each input taken by its name, in the order of ``names``."""
+    not after the sample (to ``1e-9`` s), each input taken by its name, in the order of ``names``. Inputs that
+    share a name take the value of that name one after the other, in the order of ``names``."""
     steps = schedule["Steps"]
     given = [{key for key in step if key != "Time"} for step in steps]
+    expected = {}
+    for name, size in zip(names, sizes):
+        expected.setdefault(name, []).append(size)
     for step, keys in zip(steps, given):
-        if keys != set(names):
+        if keys != set(expected):
             raise ValueError(f"command step at t={step['Time']}: inputs {sorted(keys)} but the vehicle's input "
-                             f"descriptions are {list(names)}")
-        for name, size in zip(names, sizes):
-            if len(step[name]) != size:
+                             f"descriptions are {list(dict.fromkeys(names))}")
+        for name, parts in expected.items():
+            if len(step[name]) != sum(parts):
                 raise ValueError(f"command step at t={step['Time']}: input {name!r} has {len(step[name])} values, "
-                                 f"the vehicle's description has {size}")
+                                 f"the vehicle's description has {sum(parts)}")
     switch = np.array([step["Time"] for step in steps], dtype=float)
     if len(steps) == 0 or switch[0] > times[0] + 1e-9 or np.any(np.diff(switch) <= 0.0):
         raise ValueError("command steps must start at the first sample and have increasing times")
     rows = np.zeros((len(times), int(sum(sizes))))
     for k, time in enumerate(times):
         step = steps[int(np.searchsorted(switch, time + 1e-9, side="right")) - 1]
-        rows[k, :] = np.concatenate([np.asarray(step[name], dtype=float) for name in names])
+        taken = {name: 0 for name in expected}
+        pieces = []
+        for name, size in zip(names, sizes):
+            pieces.append(np.asarray(step[name][taken[name]:taken[name] + size], dtype=float))
+            taken[name] += size
+        rows[k, :] = np.concatenate(pieces)
     return rows
 
 

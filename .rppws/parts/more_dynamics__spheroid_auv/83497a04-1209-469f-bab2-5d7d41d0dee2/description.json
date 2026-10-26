@@ -29,20 +29,44 @@
         },
         "actuators": [
             {
-                "Id": "876c181c-9ee3-46fc-b6f2-fd5df82b206d",
+                "Id": "d3ab7da2-03c9-481a-8d1d-8631fa244d7c",
                 "PluginType": "more_dynamics::ForceProducer",
-                "PluginName": "more_dynamics::FinPairsDeflectionOnly",
+                "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": false
+                "IsLinked": true
             },
             {
-                "Id": "b9fb9332-1405-466f-9f26-61596e9264d7",
+                "Id": "f5c9995d-33a1-43ed-9c66-909f5605b7bf",
                 "PluginType": "more_dynamics::ForceProducer",
-                "PluginName": "more_dynamics::Propeller",
+                "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": false
+                "IsLinked": true
+            },
+            {
+                "Id": "bb12ae4d-c964-4d25-9dff-087173afe893",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "90d5e69b-5ae2-4eb1-91b2-ed6c58ea9a54",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Fin",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            },
+            {
+                "Id": "b8cf63e5-b316-4a18-858f-3806a8f4a8f3",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
             }
         ],
         "site": {

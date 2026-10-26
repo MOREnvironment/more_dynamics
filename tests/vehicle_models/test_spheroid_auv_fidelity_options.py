@@ -190,6 +190,18 @@ def _turn_rate(vessel, command):
     return float(np.mean(rates)), float(np.ptp(rates))
 
 
+def _for_vehicle(vessel, command):
+    """The command of a reference part for ``vessel``: the reference part of the MSS forms gives one command per fin
+    pair (rudder, stern plane) and the shaft speed; the REMUS 100 (MSS) part has one actuator per fin (the rudder
+    pair and the stern-plane pair, two fins each), so each pair's command is given to both of its fins."""
+    command = np.asarray(command, float)
+    size = vc.input_size(vessel)
+    if len(command) == size:
+        return command
+    assert len(command) == 3 and size == 5, (len(command), size)
+    return np.array([command[0], command[0], command[1], command[1], command[2]])
+
+
 def _linearisation(vessel, command):
     """Straight-running equilibrium at ``command`` (Newton on the plugin's own dynamics, CasADi Jacobian) and
     the Jacobian over the motion states there."""
@@ -217,12 +229,12 @@ def _roots(vessel, command):
 
 def _assert_matches(vessel, part, case, fraction=None):
     expected = _reference(case, fraction)
-    x, roots, max_re = _roots(vessel, np.array(fp.rudder_command(part, 0.0), float))
+    x, roots, max_re = _roots(vessel, _for_vehicle(vessel, fp.rudder_command(part, 0.0)))
     assert abs(x[6] - expected["cruise_u"]) <= 1e-9
     assert abs(roots[0].real - expected["sway_yaw_root_1_re"]) <= ROOT_TOLERANCE, roots
     assert abs(roots[1].real - expected["sway_yaw_root_2_re"]) <= ROOT_TOLERANCE, roots
     assert abs(max_re - expected["max_re_motion"]) <= ROOT_TOLERANCE
-    mean, _ = _turn_rate(vessel, np.array(fp.rudder_command(part, RUDDER), float))
+    mean, _ = _turn_rate(vessel, _for_vehicle(vessel, fp.rudder_command(part, RUDDER)))
     assert abs(mean - expected["turn_rate_mean"]) <= TURN_TOLERANCE, (mean, expected["turn_rate_mean"])
     return roots, mean
 
@@ -572,7 +584,7 @@ def test_every_remus_part_declares_its_fin_convention(name, expected):
 
 def test_a_positive_rudder_command_turns_the_mss_part_to_starboard():
     vessel = _workspace_vessel(MSS_CONFIGURATION)
-    mean, _ = _turn_rate(vessel, np.array(fp.rudder_command(fp.mss_forms(), RUDDER), float))
+    mean, _ = _turn_rate(vessel, _for_vehicle(vessel, fp.rudder_command(fp.mss_forms(), RUDDER)))
     assert mean > 0
 
 

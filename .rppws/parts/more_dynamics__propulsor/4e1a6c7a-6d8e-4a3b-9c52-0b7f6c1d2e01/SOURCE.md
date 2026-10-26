@@ -1,6 +1,6 @@
 # REMUS 100 propulsor
 
-A named part of `more_dynamics::Propulsor`: the numbers of the `REMUS 100 propeller` part (same lines of `remus100.m` @ ed2ce7b), in the Propulsor's own names. It is not wired into a vehicle part: the `REMUS 100 (MSS)` vehicle keeps its `Propeller` child, the two give the same wrench to 1e-10 on random states (`tests/force_producers/propulsor/test_propulsor_device_compositions.py`).
+A named part of `more_dynamics::Propulsor`: the numbers of the `REMUS 100 propeller` part (same lines of `remus100.m` @ ed2ce7b), in the Propulsor's own names. The `REMUS 100 (MSS)` vehicle links it as its propulsor (the shaft speed command `drive_command`, rpm); the `Propeller` plugin with the `REMUS 100 propeller` part gives the same wrench to 1e-10 on random states (`tests/force_producers/propulsor/test_propulsor_device_compositions.py`) and the same vehicle derivative (`tests/vehicle_models/test_named_vehicles.py`).
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|

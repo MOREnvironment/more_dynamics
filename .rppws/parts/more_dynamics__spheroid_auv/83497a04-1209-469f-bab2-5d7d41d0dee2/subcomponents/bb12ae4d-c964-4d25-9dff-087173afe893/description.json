@@ -1,11 +1,8 @@
 {
-    "Id": "b9fb9332-1405-466f-9f26-61596e9264d7",
-    "Name": "REMUS 100 propeller",
-    "PluginType": "more_dynamics::ForceProducer",
-    "PluginName": "more_dynamics::Propeller",
-    "Library": "more_dynamics",
-    "SubcomponentSpec": {},
-    "Subcomponents": {},
+    "Id": "bb12ae4d-c964-4d25-9dff-087173afe893",
+    "Name": "Stern plane fin 1",
+    "LinkedComponentId": "acc473e1-e6d3-4c5f-b492-b4db41187c85",
+    "LinkedComponentWorkspace": "more_dynamics",
     "ParentComponentInfo": {
         "Id": "83497a04-1209-469f-bab2-5d7d41d0dee2",
         "PluginType": "more_dynamics::VehicleModel3D",

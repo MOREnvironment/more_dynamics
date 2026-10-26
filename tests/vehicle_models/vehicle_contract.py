@@ -93,6 +93,7 @@ def plugins():
             from more_dynamics.plugins.force_producers.fin import Fin
             from more_dynamics.plugins.force_producers.fin_pairs_deflection_only import FinPairsDeflectionOnly
             from more_dynamics.plugins.force_producers.propeller import Propeller
+            from more_dynamics.plugins.force_producers.propulsor import Propulsor
             from more_dynamics.plugins.force_producers.prescribed_wrench import PrescribedWrench
             from more_dynamics.plugins.shared.vehicle_graph import CompositionError
             from more_dynamics.plugins.shared.payload_io import UnsetValues
