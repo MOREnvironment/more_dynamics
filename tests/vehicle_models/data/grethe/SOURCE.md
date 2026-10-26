@@ -43,7 +43,7 @@ A second implementation of the same craft in MSS style (`CRAFT/USV/models/grethe
 | File | Holds |
 |---|---|
 | `grethe_m_derivative.csv` | 300 states and commands (thrust N, angle rad): outboard wrench `tau_out`, `xdot` (thrust vector, restoring at the body origin), `xdot_x_ref` (restoring at x = -2.24 m), leg-force variants |
-| `grethe_m_payload_derivative.csv` | 12 cases, 25 kg payload at a seeded position (red gate: the library has no payload trim form) |
+| `grethe_m_payload_derivative.csv` | 12 cases, 25 kg payload at a seeded position (the payload trim: green since the surface restoring has `payload_trim_form`) |
 | `grethe_m_mass_matrix.csv`, `grethe_m_outboard.json` | `M` and the outboard limits read from the model file |
 | `grethe_m_trajectory_<run>[_x_ref|_leg].csv`, `grethe_m_trajectory_tolerances*.csv` | open-loop RK4 runs (h = 0.05 s, command held 0.5 s) and the per-state tolerance (largest effect of a 1e-9 derivative error or of reordering the RK4 sum) |
 
@@ -51,4 +51,31 @@ Runs (`_ramp` files: thrust step and coast-down with the smoothstep residual; `x
 
 **Disagreements found (not tuned):** (1) the part's `reference_point` [-2.24, 0, 0] places the restoring matrix at the outboard, not at the body origin (the point P of `Gmtrx.m`); the model file defaults to the origin and both are gated (`gate`, `x_ref`); (2) payload: the model file includes the payload lever-arm trim moment, the library has no form for it (red test); (3) the outboard leg normal force exists only in the model file (red test); (4) the model file ramps the residual resistance below Fn_V 0.6 (smoothstep, default), the library steps; the gates use the file's `ramp = false` set and a red test names the missing ramp form. **Values chosen in the model file, not in the part:** waterplane coefficient 0.41 (fitted to the logged 1.85 s roll period), T_yaw 4 s and N_v 2500 N m s/m (chosen for a yaw-stable open loop and about 7 deg/s at 20 deg steering); the gate tests pass them to the library as overrides, the part is unchanged.
 
+**Resolved 2026-10-26 (Y3):** the four disagreements are closed and the overrides are gone. The `Monohull`'s surface restoring has `payload_trim_form` (the payload trim, gated), the `Propulsor` has the leg force housing and the thrust-command forms, the surge resistance has the ramped residual (`ittc_residual_ramped`), the part's `reference_point` is the origin, and the part carries the model file's own values (waterplane coefficient 0.41, T_yaw 4 s, N_v 2500); the gates in `test_monohull_grethe.py` run on the part with form switches only.
+
 Author: Enio Krizman · Date: 2026-10-09 (references of 2026-10-23 added)
+
+## The plant of the part (`grethe_m_plant_*`, 2026-10-26, MATLAB R2026a Update 4, Y3)
+
+The named part "Grethe" follows the model file (E-145 Q7) and carries its outboard with the actuator equations the file leaves
+to its caller. The model file takes the actual thrust and steering angle as inputs; `SIMgrethe.m` 151-154 and 257-259 give
+the thrust a first-order lag and the steering a lag with rate and angle limits. The generator builds that plant, in
+continuous form (`SIMgrethe.m` takes an Euler step; the part integrates the states with the vehicle's own RK4):
+`T' = (T_c - T) / T_thrust`, `delta' = satlim((satlim(delta_c, +-delta_max) - delta) / T_delta, +-ddelta_max)`, the model file
+called with its defaults (leg force, residual ramp, restoring at the origin, no payload). The generator reads
+`T_thrust`, `T_delta`, `ddelta_max`, `delta_max` from the file's `lim` (`grethe_m_plant.json`), it types none of them.
+
+| File | What it holds |
+|---|---|
+| `grethe_m_plant.json` | the four actuator values read from `lim` |
+| `grethe_m_plant_derivative.csv` | G1: 300 seeded cases, `xa_01..14` = [actual thrust, actual angle, x(12) in MSS order], `uc_01..02` the commands (some beyond the limits: thrust beyond +-600 N, angle beyond +-0.9 rad), `xadot_01..14` the plant's derivative |
+| `grethe_m_plant_trajectory_<run>.csv` | G3: the six runs of `exGrethe.m` (its lines 62-71) on the plant; `t, ui_01..02` (commands), `x_01..12`, `act_01..02` (actual thrust, angle), the commands held 10 steps, RK4 at 0.05 s, actuators at rest at the start |
+| `grethe_m_plant_trajectory_tolerances.csv` | per run and state (the 14), the largest effect of a 1e-9 derivative error or of reordering the RK4 sum; at most 9e-5 |
+
+**The references do not move with the MSS re-pin.** The generator was run on MSS `ed2ce7b` (a clean `git archive` of it) with
+`grethe.m` and `exGrethe.m` of the fork's `grethe-vehicle` branch at `679a6e8` added: the 24 files that existed before come out
+byte-identical, the 9 new ones were reproduced byte for byte by a second run. (`grethe.m` itself is in neither MSS revision;
+`MSS_DIR` must hold both.) The earlier model-file sets (`gate`, `leg`, `x_ref`, `ramp`) stay as the option-by-option references:
+the part reproduces them with ideal actuators and the matching form switches (`housing`, the surge resistance form, the
+restoring point). `grethe_parameters.json` and the U8a CSVs above are the parameter set and references of the independent
+block gates, kept as they were; the named part's values are the model file's (see the part's own `SOURCE.md`).

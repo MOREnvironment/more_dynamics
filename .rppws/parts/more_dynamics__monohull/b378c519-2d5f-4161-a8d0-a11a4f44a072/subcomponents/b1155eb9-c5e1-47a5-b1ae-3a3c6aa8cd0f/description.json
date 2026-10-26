@@ -1,0 +1,17 @@
+{
+    "Id": "b1155eb9-c5e1-47a5-b1ae-3a3c6aa8cd0f",
+    "Name": "Grethe (stress test) hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::SurfaceHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "b378c519-2d5f-4161-a8d0-a11a4f44a072",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Monohull",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

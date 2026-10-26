@@ -128,6 +128,8 @@ FORMS = {
                                                        command_unit="rpm"),
     ("drive", "normalized_lag"): _form("propulsor.drive.normalized_lag"),
     ("drive", "speed_command_normalized"): _form("propulsor.drive.speed_command_normalized"),
+    ("drive", "thrust_command"): _form("propulsor.drive.thrust_command"),
+    ("drive", "thrust_command_lag"): _form("propulsor.drive.thrust_command_lag"),
     ("steering", "fixed"): _form("propulsor.steering.fixed"),
     ("steering", "servo_ideal"): _form("servo.servo", "servo", **SERVO_SETTINGS["ideal"]),
     ("steering", "servo_no_limits"): _form("servo.servo", "servo", **SERVO_SETTINGS["no_limits"]),
@@ -142,6 +144,7 @@ FORMS = {
     ("inflow", "none"): _form("propulsor.inflow.none"),
     ("inflow", "speed_magnitude"): _form("propulsor.inflow.speed_magnitude"),
     ("inflow", "surge_component"): _form("propulsor.inflow.surge_component"),
+    ("inflow", "horizontal_speed_floored"): _form("propulsor.inflow.horizontal_speed_floored"),
     ("law", "open_water_bollard"): _form("propulsor.law.open_water_bollard", open_water_coefficients="polynomial"),
     ("law", "open_water_linearized"): _form("propulsor.law.open_water_linearized", open_water_coefficients="polynomial"),
     ("law", "open_water_linearized_given"): _form("propulsor.law.open_water_linearized", open_water_coefficients="given"),
@@ -155,6 +158,7 @@ FORMS = {
     ("law", "jet_momentum_flux_bollard_point"): _form("propulsor.law.jet_momentum_flux",
                                                       flow_coefficient_method="from_bollard_point"),
     ("law", "jet_pump_system_match"): _form("propulsor.law.jet_pump_system_match"),
+    ("law", "thrust_power_limited"): _form("propulsor.law.thrust_power_limited"),
     ("housing", "none"): _form("propulsor.housing.none"),
     ("housing", "leg_normal_force"): _form("propulsor.housing.leg_normal_force"),
 }
@@ -200,6 +204,8 @@ DECLARED = {
     ("drive", "normalized_lag"): {"thrust_rise_time": POSITIVE("s"), "thrust_fall_time": POSITIVE("s")},
     ("drive", "speed_command_normalized"): {"max_shaft_speed": POSITIVE("rev/s"),
                                             "min_shaft_speed": _decl(S, "rev/s", None, False, 0.0)},
+    ("drive", "thrust_command"): {},
+    ("drive", "thrust_command_lag"): {"thrust_time_constant": POSITIVE("s")},
     ("steering", "fixed"): {},
     ("steering", "servo_ideal"): {"max_deflection": POSITIVE("rad")},
     ("steering", "servo_no_limits"): {},
@@ -220,6 +226,7 @@ DECLARED = {
     ("inflow", "speed_magnitude"): {"thrust_deduction": FRACTION, "wake_fraction": FRACTION},
     ("inflow", "surge_component"): {"thrust_deduction": FRACTION, "advance_speed_factor": ANY("1"),
                                     "wake_fraction": FRACTION},
+    ("inflow", "horizontal_speed_floored"): {"speed_floor": POSITIVE("m/s")},
     ("law", "open_water_bollard"): _OPEN_WATER,
     ("law", "open_water_linearized"): _OPEN_WATER,
     ("law", "open_water_linearized_given"): {**_OPEN_WATER, "thrust_torque_coefficients": _decl((4, 1), "1")},
@@ -241,6 +248,7 @@ DECLARED = {
         "pump_head_coefficient_at_zero_flow": POSITIVE("1"), "pump_head_slope": _decl(S, "1", 0.0),
         "nozzle_loss_coefficient": _decl(S, "1", 0.0), "inlet_loss_coefficient": FRACTION,
         "pump_efficiency": _decl(S, "1", 0.0, True, 1.0)},
+    ("law", "thrust_power_limited"): {"max_thrust": POSITIVE("N"), "delivered_power": POSITIVE("W")},
     ("housing", "none"): {},
     ("housing", "leg_normal_force"): {"leg_area": POSITIVE("m^2"), "leg_aspect_ratio": POSITIVE("1")},
 }
@@ -249,8 +257,8 @@ SKELETON_DECLARED = {"shaft_torque_scale": _decl(S, "1", 0.0)}
 # Units of the pair drive / law (a proposal not yet accepted)
 DRIVE_UNITS = {"speed_command_rpm": "rev/s", "speed_command_rad_s": "rev/s",
                "power_limited_speed_command_rpm": "rev/s", "normalized_lag": "1",
-               "speed_command_normalized": "rev/s"}
-LAW_UNITS = {"normalized_linear": "1"}   # every other law accepts "rev/s"
+               "speed_command_normalized": "rev/s", "thrust_command": "N", "thrust_command_lag": "N"}
+LAW_UNITS = {"normalized_linear": "1", "thrust_power_limited": "N"}   # every other law accepts "rev/s"
 
 # The waterjet laws (options; none is yet the default jet law)
 JET_LAWS = ("jet_bollard_quadratic", "jet_bilinear_speed", "jet_momentum_flux_given",

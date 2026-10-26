@@ -15,7 +15,7 @@ is the sum, the signed generalized force the vehicle adds
 Inputs by name, from the vehicle and the hydrostatics: ``relative_velocity``,
 ``mass_matrix``, ``restoring_matrix_at_flotation``, ``length``, ``draft``,
 ``water_density``, ``section_beam``; with ``surge_resistance`` in
-``("ittc", "ittc_residual")`` also ``mass``, ``wetted_surface`` and
+``("ittc", "ittc_residual", "ittc_residual_ramped")`` also ``mass``, ``wetted_surface`` and
 ``kinematic_viscosity``. A vehicle that gives no ``wetted_surface`` is
 refused with the missing name. The ITTC/residual resistance is added to the
 calibrated damping, which already contains a surge term; whether the two are
@@ -28,7 +28,8 @@ term of time constant ``surge_time_constant`` faded by ``exp(-surge_blend_decay
 |u_r|)`` plus a quadratic term from the top speed and thrust; the other five
 terms unchanged); ``linear_coupled`` is a given or identified 2x2
 sway/yaw law, ``Y_r = N_v = 0`` until identified (raise: circle-test
-identification); the Hoerner section is a published table (raise: a
+identification); ``time_constants_coupled`` takes ``Y_v``, ``N_r`` from the time constants (``-M22 / T_sway``,
+``-M66 / T_yaw``) and the two coupling terms ``[Y_r, N_v]`` as given (the diagonal terms are computed, not typed); the Hoerner section is a published table (raise: a
 tank-measured section drag); the ITTC line is a physics form with a printed
 form factor (raise: a measured resistance curve); the RA14 residual term is a
 published regression keyed on an unmeasured length (raise: an identified
@@ -60,18 +61,22 @@ from more_dynamics.models.cross_flow.cross_flow_strip import cross_flow_strip_re
 from more_dynamics.models.damping.hydrodynamic_load_parts import (
     coupled_manoeuvring_damping_surface, coupled_manoeuvring_damping_surface_parameters,
     surge_resistance_ittc, surge_resistance_ittc_parameters, surge_resistance_ittc_residual,
-    surge_resistance_ittc_residual_parameters, time_constant_damping_surface,
+    surge_resistance_ittc_residual_parameters, surge_resistance_ittc_residual_ramped,
+    surge_resistance_ittc_residual_ramped_parameters, time_constant_damping_surface,
     time_constant_damping_surface_blend, time_constant_damping_surface_blend_parameters,
     time_constant_damping_surface_parameters)
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, payload_name, refuses_unset
 
-SURGE_RESISTANCES = ("none", "ittc", "ittc_residual")
-MANOEUVRING_DAMPINGS = ("time_constants", "time_constants_surge_blend", "linear_coupled", "linear_coupled_modulus")
+SURGE_RESISTANCES = ("none", "ittc", "ittc_residual", "ittc_residual_ramped")
+MANOEUVRING_DAMPINGS = ("time_constants", "time_constants_surge_blend", "linear_coupled", "linear_coupled_modulus",
+                        "time_constants_coupled")
 CROSS_FLOW_FORMS = ("hoerner_strips", "none")
 
-_SURGE_RESISTANCE_FUNCTIONS = {"ittc": surge_resistance_ittc, "ittc_residual": surge_resistance_ittc_residual}
+_SURGE_RESISTANCE_FUNCTIONS = {"ittc": surge_resistance_ittc, "ittc_residual": surge_resistance_ittc_residual,
+                               "ittc_residual_ramped": surge_resistance_ittc_residual_ramped}
 _SURGE_RESISTANCE_PARAMETER_FUNCTIONS = {
-    "ittc": surge_resistance_ittc_parameters, "ittc_residual": surge_resistance_ittc_residual_parameters}
+    "ittc": surge_resistance_ittc_parameters, "ittc_residual": surge_resistance_ittc_residual_parameters,
+    "ittc_residual_ramped": surge_resistance_ittc_residual_ramped_parameters}
 
 
 class SurfaceHullLoads(HydrodynamicsModel):
@@ -85,6 +90,7 @@ class SurfaceHullLoads(HydrodynamicsModel):
         ParameterDescription("surge_blend_decay", unset()),  # otter.m 245 exp(-3 |u_r|) (read with "time_constants_surge_blend")
         ParameterDescription("manoeuvring_damping", "time_constants"),
         ParameterDescription("sway_yaw_derivatives", unset()),  # read with "linear_coupled"/"_modulus"
+        ParameterDescription("sway_yaw_coupling", unset()),  # [Y_r, N_v], read with "time_constants_coupled" (with time_constants)
         ParameterDescription("modulus_coefficients", unset()),  # read with "linear_coupled_modulus"; zero (module docstring)
         ParameterDescription("cross_flow", "hoerner_strips"),
         ParameterDescription("surge_resistance", "none"),
@@ -117,8 +123,11 @@ class SurfaceHullLoads(HydrodynamicsModel):
                                          time_constant_damping_surface_blend_parameters())
         else:
             modulus = manoeuvring == "linear_coupled_modulus"
-            self._damping = frozen_block(context, coupled_manoeuvring_damping_surface(modulus=modulus),
-                                         coupled_manoeuvring_damping_surface_parameters(modulus=modulus))
+            from_time_constants = manoeuvring == "time_constants_coupled"
+            self._damping = frozen_block(
+                context, coupled_manoeuvring_damping_surface(modulus=modulus, from_time_constants=from_time_constants),
+                coupled_manoeuvring_damping_surface_parameters(modulus=modulus,
+                                                               from_time_constants=from_time_constants))
         self._cross_flow = (cross_flow_strip_rectangular_section_hoerner()
                             if cross_flow_form == "hoerner_strips" else None)
         self._surge = None

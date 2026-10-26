@@ -569,7 +569,7 @@
             }
         },
         "grethe": {
-            "Description": "Grethe, NTNU Mariner 5 USV, monohull class (A-43/A-64/E-101 values)",
+            "Description": "Grethe, NTNU Mariner 5 USV, monohull class with her steerable outboard: the model file grethe.m (revision 679a6e8 of the grethe-vehicle branch of the MSS fork)",
             "Components": {
                 "vessels": [
                     {
@@ -577,6 +577,184 @@
                         "PluginName": "more_dynamics::Monohull"
                     }
                 ]
+            },
+            "Commands": {
+                "straight_from_rest_thrust_step": {
+                    "Description": "frozen plant run grethe_m_plant_trajectory_straight_from_rest_thrust_step.csv (grethe.m at 679a6e8 with its defaults and its caller's actuator equations): the commands of its ui columns, held over each sample interval. drive_command is the thrust command (N), steering_command the steering angle command (rad, positive = thrust force to starboard); the actuators start at rest",
+                    "InitialSurgeSpeed": 0.0,
+                    "Duration": 150.0,
+                    "SampleTime": 0.5,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                400.0
+                            ],
+                            "steering_command": [
+                                0.0
+                            ]
+                        }
+                    ]
+                },
+                "coast_down_from_2p4": {
+                    "Description": "frozen plant run grethe_m_plant_trajectory_coast_down_from_2p4.csv (grethe.m at 679a6e8 with its defaults and its caller's actuator equations): the commands of its ui columns, held over each sample interval. drive_command is the thrust command (N), steering_command the steering angle command (rad, positive = thrust force to starboard); the actuators start at rest",
+                    "InitialSurgeSpeed": 2.4,
+                    "Duration": 100.0,
+                    "SampleTime": 0.5,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                0.0
+                            ],
+                            "steering_command": [
+                                0.0
+                            ]
+                        }
+                    ]
+                },
+                "turning_circle_20deg": {
+                    "Description": "frozen plant run grethe_m_plant_trajectory_turning_circle_20deg.csv (grethe.m at 679a6e8 with its defaults and its caller's actuator equations): the commands of its ui columns, held over each sample interval. drive_command is the thrust command (N), steering_command the steering angle command (rad, positive = thrust force to starboard); the actuators start at rest",
+                    "InitialSurgeSpeed": 2.4,
+                    "Duration": 120.0,
+                    "SampleTime": 0.5,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.3490658503988659
+                            ]
+                        }
+                    ]
+                },
+                "steering_square_wave_5deg": {
+                    "Description": "frozen plant run grethe_m_plant_trajectory_steering_square_wave_5deg.csv (grethe.m at 679a6e8 with its defaults and its caller's actuator equations): the commands of its ui columns, held over each sample interval. drive_command is the thrust command (N), steering_command the steering angle command (rad, positive = thrust force to starboard); the actuators start at rest",
+                    "InitialSurgeSpeed": 2.4,
+                    "Duration": 120.0,
+                    "SampleTime": 0.5,
+                    "Steps": [
+                        {
+                            "Time": 0.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 10.5,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 20.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 30.500000000000004,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 40.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 50.50000000000001,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 60.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 70.5,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 80.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 90.5,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 100.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 110.5,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                -0.08726646259971647
+                            ]
+                        },
+                        {
+                            "Time": 120.0,
+                            "drive_command": [
+                                450.0
+                            ],
+                            "steering_command": [
+                                0.08726646259971647
+                            ]
+                        }
+                    ]
+                }
             }
         },
         "shared_site": {
@@ -601,6 +779,17 @@
                     {
                         "Id": "f1911ae2-0643-4e5a-a740-768bd93dd9eb",
                         "PluginName": "more_dynamics::DerivativeAuv"
+                    }
+                ]
+            }
+        },
+        "grethe_stress_test": {
+            "Description": "Grethe (yaw-unstable stress test): the Grethe part with N_v = Y_r = 0 and T_yaw 16 s, the earlier yaw damping, unstable in open loop; a controller stress test, not a vehicle estimate",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "b378c519-2d5f-4161-a8d0-a11a4f44a072",
+                        "PluginName": "more_dynamics::Monohull"
                     }
                 ]
             }

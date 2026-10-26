@@ -9,14 +9,16 @@ steering command), from outside; ``relative_velocity`` and ``water_density`` are
 name. States: ``drive_state`` then ``servo_state`` (each absent when its part has none).
 
 Selectors (the choices are the keys of ``FORMS``): ``drive`` (a shaft-speed command in rpm or rad/s, the
-same with a shaft-power cap, a normalised command mapped to a shaft speed, or a normalised effort with a
-first-order lag), ``steering`` (fixed, the servo with its three switches set as four named settings, or
-the clamped nozzle angle), ``mounting`` (a fixed shaft by Euler angles or by a direction, an azimuth about
-the body z axis, a steered rotation, or the direction formula of the shared jet nozzle), ``inflow`` (none,
-the speed magnitude, the surge component), ``law`` (the open-water propeller laws, the quadratic law of
-two thrusters, the waterjet laws, the normalised linear law), ``housing`` (none, or the normal force of an
-outboard leg). The drive and the law must pass the same unit (rev/s for a shaft speed, 1 for a normalised
-effort); a pair that does not is refused when the plugin is initialised, naming both.
+same with a shaft-power cap, a normalised command mapped to a shaft speed, a normalised effort with a
+first-order lag, or a thrust command in newtons handed on as it is or through a first-order lag), ``steering``
+(fixed, the servo with its three switches set as four named settings, or the clamped nozzle angle),
+``mounting`` (a fixed shaft by Euler angles or by a direction, an azimuth about the body z axis, a steered
+rotation, or the direction formula of the shared jet nozzle), ``inflow`` (none, the speed magnitude, the surge
+component, the horizontal speed bounded below), ``law`` (the open-water propeller laws, the quadratic law of
+two thrusters, the waterjet laws, the normalised linear law, the thrust command limited by the power delivered
+over the speed), ``housing`` (none, or the normal force of an outboard leg). The drive and the law must pass
+the same unit (rev/s for a shaft speed, 1 for a normalised effort, N for a thrust); a pair that does not is
+refused when the plugin is initialised, naming both.
 
 ``steering_convention`` (``"port_positive"`` or ``"starboard_positive"``) is read by the azimuth mounting
 only: the name says which way the boat turns for a positive angle when the unit is aft of the CO.
@@ -45,13 +47,15 @@ from rpp_py.parameter_description import ParameterDescription
 from more_transformations.more_casadi_transformations import check_values, freeze, unset
 from more_dynamics.models.propulsor import propulsor as skeleton
 from more_dynamics.models.propulsor.drive import (normalized_lag, power_limited_speed_command, speed_command,
-                                                  speed_command_normalized)
+                                                  speed_command_normalized, thrust_command, thrust_command_lag)
 from more_dynamics.models.propulsor.housing import leg_normal_force, none as housing_none
-from more_dynamics.models.propulsor.inflow import none as inflow_none, speed_magnitude, surge_component
+from more_dynamics.models.propulsor.inflow import (horizontal_speed_floored, none as inflow_none, speed_magnitude,
+                                                    surge_component)
 from more_dynamics.models.propulsor.law import (jet_bilinear_speed, jet_bollard_quadratic, jet_momentum_flux,
                                                 jet_pump_system_match, normalized_linear, open_water_bollard,
                                                 open_water_linearized, open_water_polynomial,
-                                                open_water_signed_advance, quadratic_asymmetric)
+                                                open_water_signed_advance, quadratic_asymmetric,
+                                                thrust_power_limited)
 from more_dynamics.models.propulsor.mounting import (azimuth, fixed_direction, fixed_euler, jet_nozzle_direction,
                                                      steered_rotation)
 from more_dynamics.models.propulsor.steering import fixed, jet_nozzle_clamp
@@ -77,7 +81,8 @@ FORMS = {
               "speed_command_rad_s": _form(speed_command, command_unit="rad/s"),
               "power_limited_speed_command_rpm": _form(power_limited_speed_command, command_unit="rpm"),
               "speed_command_normalized": _form(speed_command_normalized),
-              "normalized_lag": _form(normalized_lag)},
+              "normalized_lag": _form(normalized_lag),
+              "thrust_command": _form(thrust_command), "thrust_command_lag": _form(thrust_command_lag)},
     "steering": {"fixed": _form(fixed),
                  **{name: _form(servo, "servo", **settings) for name, settings in SERVO_SETTINGS.items()},
                  "jet_nozzle_clamp": _form(jet_nozzle_clamp)},
@@ -85,7 +90,8 @@ FORMS = {
                  "azimuth": _form(azimuth), "jet_nozzle_direction": _form(jet_nozzle_direction),
                  "steered_rotation": _form(steered_rotation)},
     "inflow": {"none": _form(inflow_none), "speed_magnitude": _form(speed_magnitude),
-               "surge_component": _form(surge_component)},
+               "surge_component": _form(surge_component),
+               "horizontal_speed_floored": _form(horizontal_speed_floored)},
     "law": {"open_water_bollard": _form(open_water_bollard, open_water_coefficients="polynomial"),
             "open_water_linearized": _form(open_water_linearized, open_water_coefficients="polynomial"),
             "open_water_linearized_given": _form(open_water_linearized, open_water_coefficients="given"),
@@ -95,7 +101,8 @@ FORMS = {
             "jet_bollard_quadratic": _form(jet_bollard_quadratic), "jet_bilinear_speed": _form(jet_bilinear_speed),
             "jet_momentum_flux_given": _form(jet_momentum_flux, flow_coefficient_method="given"),
             "jet_momentum_flux_bollard_point": _form(jet_momentum_flux, flow_coefficient_method="from_bollard_point"),
-            "jet_pump_system_match": _form(jet_pump_system_match)},
+            "jet_pump_system_match": _form(jet_pump_system_match),
+            "thrust_power_limited": _form(thrust_power_limited)},
     "housing": {"none": _form(housing_none), "leg_normal_force": _form(leg_normal_force)},
 }
 
@@ -142,6 +149,7 @@ class Propulsor(ForceProducer):
         ParameterDescription("min_shaft_speed", unset()),  # rev/s: shaft speed at a command of -1
         ParameterDescription("thrust_rise_time", unset()),  # s: time constant when the effort rises
         ParameterDescription("thrust_fall_time", unset()),  # s: time constant when the effort falls
+        ParameterDescription("thrust_time_constant", unset()),  # s: time constant of the thrust's first-order lag
         ParameterDescription("max_deflection", unset()),  # rad: maximum commanded angle, limiting the target before the lag
         ParameterDescription("max_rate", unset()),  # rad/s: maximum angular rate
         ParameterDescription("time_constant", unset()),  # s: first-order lag time constant
@@ -156,6 +164,7 @@ class Propulsor(ForceProducer):
         ParameterDescription("thrust_deduction", unset()),  # 1: thrust deduction t of the thrust (1 - t) T
         ParameterDescription("wake_fraction", unset()),  # 1: wake fraction w of the advance speed (1 - w) U
         ParameterDescription("advance_speed_factor", unset()),  # 1: factor c_Va of the advance speed
+        ParameterDescription("speed_floor", unset()),  # m/s: lowest horizontal speed the advance speed takes
         ParameterDescription("diameter", unset()),  # m: propeller diameter D
         ParameterDescription("pitch_diameter_ratio", unset()),  # 1: pitch ratio P/D
         ParameterDescription("blade_area_ratio", unset()),  # 1: expanded blade-area ratio A_E/A_O
@@ -166,7 +175,7 @@ class Propulsor(ForceProducer):
         ParameterDescription("reverse_torque_factor", unset()),  # 1: factor on K_Q for n < 0
         ParameterDescription("positive_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varad^2: k_pos: T = k_pos omega |omega| for omega > 0
         ParameterDescription("negative_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varad^2: k_neg: T = k_neg omega |omega| for omega <= 0
-        ParameterDescription("max_thrust", unset()),  # N: thrust at an effort of 1
+        ParameterDescription("max_thrust", unset()),  # N: thrust at an effort of 1, or maximum thrust of the unit
         ParameterDescription("thrust_coefficient", unset()),  # 1: scale of the thrust
         ParameterDescription("bollard_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varev^2: k of T = k n^2 at the bollard
         ParameterDescription("speed_squared_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varev^2: b1 of T = b1 n^2 + b2 n Va
@@ -181,6 +190,7 @@ class Propulsor(ForceProducer):
         ParameterDescription("nozzle_loss_coefficient", unset()),  # 1: phi_n: nozzle loss as a fraction of the jet head
         ParameterDescription("inlet_loss_coefficient", unset()),  # 1: eps: share of the intake ram head lost
         ParameterDescription("pump_efficiency", unset()),  # 1: eta_p of the shaft torque
+        ParameterDescription("delivered_power", unset()),  # W: power delivered to the water P
         ParameterDescription("leg_area", unset()),  # m^2: leg and fin area A_leg
         ParameterDescription("leg_aspect_ratio", unset()),  # 1: leg aspect ratio AR
     ]

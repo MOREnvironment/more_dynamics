@@ -250,18 +250,6 @@ def test_a_command_the_configuration_does_not_have_is_refused():
         _simulation("not_a_run")
 
 
-@pytest.mark.parametrize("configuration", ["grethe"])
-def test_the_parts_without_actuators_run_through_the_script_with_zero_input(configuration):
-    """Grethe has no force producer child (its part carries none): the vehicle takes no input, the script runs it at
-    zero input, and and a command is refused (the configuration has no schedule)."""
-    module = _script()
-    simulation = module.VehicleSimulation(rpp_workspace=str(LIBRARY), rpp_configuration=configuration,
-                                          duration=5.0, delta_t=0.5)
-    assert list(simulation.vessels[0].getInputDescriptions()) == []
-    result = simulation.run()[0]
-    assert result["inputs"].shape == (11, 0) and np.isfinite(result["states"]).all()
-
-
 # ---------------------------------------------------------------------------------------------------------------
 # Otter (MSS): the commanded runs of the unmodified otter.m, through the two linked thrusters
 # ---------------------------------------------------------------------------------------------------------------
@@ -413,3 +401,81 @@ def test_the_frozen_step_rk4_error_of_the_otter_runs_is_the_measured_size(name):
     vehicle = _vehicle(OTTER_CONFIGURATION)
     difference = np.abs(_otter_rk4_run(vehicle, table) - _otter_rk4_run(vehicle, table, refine=REFINE)).max()
     assert difference < 3e-4, difference
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Grethe: the commanded plant runs (the model file grethe.m with its defaults and its caller's actuator equations)
+# ---------------------------------------------------------------------------------------------------------------
+GRETHE_CONFIGURATION = "grethe"
+GRETHE_DATA = Path(__file__).resolve().parent / "data" / "grethe"
+# the runs the schedule can express: the state starts at rest or at a surge speed with the actuators at rest (the two
+# free decays start with an attitude, which a schedule has no key for)
+GRETHE_RUNS = ["coast_down_from_2p4", "steering_square_wave_5deg", "straight_from_rest_thrust_step", "turning_circle_20deg"]
+GRETHE_COLUMNS = {"drive_command": ("ui_01",), "steering_command": ("ui_02",)}  # thrust command N, steering angle command rad
+
+
+def _grethe_table(name):
+    data = np.genfromtxt(GRETHE_DATA / f"grethe_m_plant_trajectory_{name}.csv", delimiter=",", names=True)
+    return {key: np.atleast_1d(data[key]) for key in data.dtype.names}
+
+
+def _grethe_inputs(vehicle, table):
+    descriptions = list(vehicle.getInputDescriptions())
+    assert [d.name for d in descriptions] == ["drive_command", "steering_command"]
+    return np.column_stack([table[c] for d in descriptions for c in GRETHE_COLUMNS[d.name]])
+
+
+def _grethe_rk4_run(vehicle, table, refine=1):
+    """The frozen plant run by the vehicle's own RK4 (the commands held per row; ``refine`` times as many steps), states
+    in the file's order ``x_01..12`` then the actual thrust and steering angle."""
+    inputs = _grethe_inputs(vehicle, table)
+    steps = int(round((table["t"][1] - table["t"][0]) / g3.STEP)) * refine
+    x = g3._mss_to_ours(np.r_[[table[f"x_{i:02d}"][0] for i in range(1, 13)], table["act_01"][0], table["act_02"][0]],
+                        vehicle)
+    states = np.zeros((len(table["t"]), 14))
+    for row in range(len(table["t"])):
+        states[row] = g3._ours_to_mss(x, vehicle)
+        if row < len(table["t"]) - 1:
+            for _ in range(steps):
+                x = vehicle.step_vector(x, inputs[row], g3.STEP / refine)
+    return states
+
+
+def _grethe_reference(table):
+    return np.column_stack([table[f"x_{i:02d}"] for i in range(1, 13)] + [table["act_01"], table["act_02"]])
+
+
+def test_the_grethe_has_one_command_per_run_the_schedule_can_express():
+    commands = json.loads(DESCRIPTION.read_text())["Configurations"][GRETHE_CONFIGURATION]["Commands"]
+    assert sorted(commands) == GRETHE_RUNS
+
+
+@pytest.mark.parametrize("name", GRETHE_RUNS)
+def test_the_grethe_command_schedule_is_the_frozen_plant_run_sample_by_sample(name):
+    table = _grethe_table(name)
+    schedule = json.loads(DESCRIPTION.read_text())["Configurations"][GRETHE_CONFIGURATION]["Commands"][name]
+    vehicle = _vehicle(GRETHE_CONFIGURATION)
+    names = [d.name for d in vehicle.getInputDescriptions()]
+    sizes = [d.size for d in vehicle.getInputDescriptions()]
+    rows = _script().command_rows(schedule, names, sizes, table["t"])
+    assert np.array_equal(rows, _grethe_inputs(vehicle, table))
+    assert schedule["SampleTime"] == table["t"][1] - table["t"][0] and schedule["Duration"] == table["t"][-1]
+    assert schedule["InitialSurgeSpeed"] == table["x_01"][0]
+    assert not any(table[f"x_{i:02d}"][0] for i in range(2, 13)) and not table["act_01"][0] and not table["act_02"][0]
+
+
+@pytest.mark.parametrize("name", GRETHE_RUNS)
+def test_the_grethe_script_cvodes_run_agrees_with_the_finer_rk4_run_within_the_integrator_bound(name):
+    """The script's CVODES run of the schedule against the same plant stepped four times finer by RK4, within the
+    integrator bound of the runs above (the Otter section explains why the finer run and not the frozen step)."""
+    table = _grethe_table(name)
+    reference = _grethe_reference(table)
+    fine = _grethe_rk4_run(_vehicle(GRETHE_CONFIGURATION), table, refine=REFINE)
+    result = _simulation(name, configuration=GRETHE_CONFIGURATION).run()[0]
+    assert np.allclose(result["time"], table["t"], rtol=0.0, atol=1e-9)  # the file's times are k * 0.05 * 10 in floating point
+    cvodes = g3._ours_to_mss(result["states"], _vehicle(GRETHE_CONFIGURATION))
+    n = len(table["t"]) - 1
+    bound = np.sqrt(14) * n * (CVODES_ABSTOL + CVODES_RELTOL * np.abs(reference).max(axis=0))
+    error = np.abs(cvodes - fine).max(axis=0)
+    assert (error <= bound).all(), f"{name}: " + "; ".join(
+        f"state {i + 1}: {error[i]:.3g} > {bound[i]:.3g}" for i in range(14) if error[i] > bound[i])

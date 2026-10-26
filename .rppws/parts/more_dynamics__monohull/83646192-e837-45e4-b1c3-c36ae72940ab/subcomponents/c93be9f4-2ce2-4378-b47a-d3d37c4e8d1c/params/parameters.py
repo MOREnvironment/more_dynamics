@@ -7,10 +7,11 @@ from __future__ import annotations
 
 
 class ComponentParameters:
-    manoeuvring_damping = "linear_coupled"  # owner decision: A-64 Section 3.4 G0 set
-    sway_yaw_derivatives = [-251.875, 0.0, 0.0, -229.86112500000002]  # [Y_v, Y_r, N_v, N_r]: Y_v = -M22/T_sway, N_r = -M66/T_yaw (time_constants [8, 16] s); Y_r = N_v = 0, unidentified (E-101 Q2 a)
+    manoeuvring_damping = "time_constants_coupled"  # Y_v = -M22 / T_sway and N_r = -M66 / T_yaw computed, Y_r and N_v given (grethe.m 361-369)
+    time_constants = [8.0, 4.0]  # s: [T_sway, T_yaw] (grethe.m 251-252, estimates; T_yaw chosen with N_v for a yaw-stable open loop)
+    sway_yaw_coupling = [0.0, 2500.0]  # [Y_r, N_v], N s/m and N m s/m (grethe.m 363-364: Y_r = 0 not identified; N_v = 2500 chosen, no source)
     cross_flow = "hoerner_strips"  # A-64 Section 3.4
-    surge_resistance = "ittc_residual"  # owner decision: E-101 Q1 a
+    surge_resistance = "ittc_residual_ramped"  # ITTC friction plus the RA14 residual, its range edge softened by a smoothstep (grethe.m 386-388, 443-495; owner E-101 Q1 a)
     time_constant = 15.0  # estimate: A-43 M26 (= M20 T1)
     form_factor = 0.1  # published: Fossen 2011 p. 125; A-43 M27
     crossover_speed = 2.0  # published (MSS constant): A-43 M28

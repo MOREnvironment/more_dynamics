@@ -125,8 +125,20 @@ def surge_resistance_ittc_residual_parameters():
     return _subset(declared, _ITTC_OWN + ("ittc_reynolds_floor",))
 
 
+def surge_resistance_ittc_residual_ramped():
+    """The ITTC 1957 friction line plus the RA14 residual-resistance prior with the range edge of the regression
+    softened by a smoothstep (``models/surge_resistance/ra14_residual_resistance.py``, ``residual_coefficient_ramped``)."""
+    return surge_damping_casadi(surge_form="ittc_residual_ramped")
+
+
+def surge_resistance_ittc_residual_ramped_parameters():
+    """Own declared parameters: the same set as ``"ittc_residual"``."""
+    declared = surge_damping_parameters("ittc_residual_ramped", ittc_reynolds_bound="floor")
+    return _subset(declared, _ITTC_OWN + ("ittc_reynolds_floor",))
+
+
 MANOEUVRING_DAMPING_FORMS = ("time_constants", "time_constants_surge_blend", "linear_coupled",
-                             "linear_coupled_modulus")
+                             "linear_coupled_modulus", "time_constants_coupled")
 
 SWAY_YAW_DERIVATIVES_PARAMETER = Parameter(
     "sway_yaw_derivatives", (4, 1), "N*s/m, N*s, N*m*s/m, N*m*s",
@@ -134,6 +146,10 @@ SWAY_YAW_DERIVATIVES_PARAMETER = Parameter(
     "tau_N = N_v v_r + N_r r_r (manoeuvring_damping='linear_coupled'); given, identified, or from "
     "the time-constant formula Y_v = -M22/T_sway, N_r = -M66/T_yaw with Y_r = N_v = 0 (unidentified, "
     "E-101 Q2 a)")
+SWAY_YAW_COUPLING_PARAMETER = Parameter(
+    "sway_yaw_coupling", (2, 1), "N*s/m, N*m*s/m",
+    "[Y_r, N_v] of the coupled linear sway-yaw law (manoeuvring_damping='time_constants_coupled'), the two terms "
+    "the time constants do not give; given or identified, zero while unidentified (E-101 Q2 a)")
 MODULUS_COEFFICIENTS_PARAMETER = Parameter(
     "modulus_coefficients", (2, 1), "N*s^2/m^2, N*m*s^2/m^2",
     "[Y_vv, N_rr] of a second-order sway/yaw term Y_vv |v_r| v_r, N_rr |r_r| r_r "
@@ -142,22 +158,33 @@ MODULUS_COEFFICIENTS_PARAMETER = Parameter(
     "not used by any default (rule 21)")
 
 
-def coupled_manoeuvring_damping_surface(*, modulus=False):
+def coupled_manoeuvring_damping_surface(*, modulus=False, from_time_constants=False):
     """Surge/heave/roll/pitch as the surface calibration (otter.m 195-207:
     ``Xu`` from the top speed and thrust, ``Zw``/``Kp``/``Mq`` from damping
     ratios and natural frequencies, unchanged from ``time_constant_damping_surface``);
     sway and yaw as a coupled linear law from ``sway_yaw_derivatives`` (E-101
     Q2 a: ``Y_r = N_v = 0`` until identified), optionally plus a second-order
     ``modulus_coefficients`` term (zero, unsourced placeholder, module
-    docstring, ``modulus=True``)."""
+    docstring, ``modulus=True``). With ``from_time_constants`` the diagonal terms come from the time constants,
+    ``Y_v = -M22 / T_sway`` and ``N_r = -M66 / T_yaw`` (Fossen 2011, eq. 6.76, p. 125; ``otter.m`` 211-217; the model
+    file ``grethe.m`` 336-345), and ``sway_yaw_coupling`` gives ``[Y_r, N_v]``, in place of the four
+    ``sway_yaw_derivatives`` (one quantity, one value: the two diagonal terms are not typed again)."""
     mass = ca.SX.sym("mass_matrix", 6, 6)
     restoring = ca.SX.sym("restoring_matrix", 6, 6)
     nu_r = ca.SX.sym("nu_r", 6)
     max_forward_thrust = ca.SX.sym("max_forward_thrust")
     max_speed = ca.SX.sym("max_speed")
     damping_ratios = ca.SX.sym("damping_ratios", 3)
-    sway_yaw = ca.SX.sym("sway_yaw_derivatives", 4)
-    y_v, y_r, n_v, n_r = sway_yaw[0], sway_yaw[1], sway_yaw[2], sway_yaw[3]
+    if from_time_constants:
+        time_constants = ca.SX.sym("time_constants", 2)
+        coupling = ca.SX.sym("sway_yaw_coupling", 2)
+        y_v, n_r = -mass[1, 1] / time_constants[0], -mass[5, 5] / time_constants[1]  # D_ii = M_ii / T_i (Fossen 2011, eq. 6.76, p. 125)
+        y_r, n_v = coupling[0], coupling[1]
+        sway_yaw_inputs = {"time_constants": time_constants, "sway_yaw_coupling": coupling}
+    else:
+        sway_yaw = ca.SX.sym("sway_yaw_derivatives", 4)
+        y_v, y_r, n_v, n_r = sway_yaw[0], sway_yaw[1], sway_yaw[2], sway_yaw[3]
+        sway_yaw_inputs = {"sway_yaw_derivatives": sway_yaw}
     zeta3, zeta4, zeta5 = damping_ratios[0], damping_ratios[1], damping_ratios[2]
     w3 = ca.sqrt(restoring[2, 2] / mass[2, 2])  # (Fossen 2011, eqs. 4.51-4.53, p. 68; otter.m 197)
     w4 = ca.sqrt(restoring[3, 3] / mass[3, 3])  # (otter.m 198)
@@ -179,7 +206,7 @@ def coupled_manoeuvring_damping_surface(*, modulus=False):
     damping_derivatives = ca.vertcat(x_u, y_v, z_w, k_p, m_q, n_r)  # the diagonal part only
     inputs = {"nu_r": nu_r, "mass_matrix": mass, "restoring_matrix": restoring,
              "max_forward_thrust": max_forward_thrust, "max_speed": max_speed,
-             "damping_ratios": damping_ratios, "sway_yaw_derivatives": sway_yaw}
+             "damping_ratios": damping_ratios, **sway_yaw_inputs}
     if modulus:
         modulus_coefficients = ca.SX.sym("modulus_coefficients", 2)
         # placeholder, zero by default (module docstring: not sourced, not used by any default)
@@ -190,12 +217,16 @@ def coupled_manoeuvring_damping_surface(*, modulus=False):
                          {"D": d, "tau": tau, "damping_derivatives": damping_derivatives})
 
 
-def coupled_manoeuvring_damping_surface_parameters(*, modulus=False):
+def coupled_manoeuvring_damping_surface_parameters(*, modulus=False, from_time_constants=False):
     """``max_forward_thrust``, ``max_speed``, ``damping_ratios`` (the surface
-    form's own, unchanged), ``sway_yaw_derivatives``, and
-    ``modulus_coefficients`` when ``modulus=True``."""
+    form's own, unchanged), ``sway_yaw_derivatives`` (or, with ``from_time_constants``, ``time_constants`` and
+    ``sway_yaw_coupling``), and ``modulus_coefficients`` when ``modulus=True``."""
     surface_own = _subset(linear_damping_parameters("surface"), ("max_forward_thrust", "max_speed", "damping_ratios"))
-    declared = surface_own + (SWAY_YAW_DERIVATIVES_PARAMETER,)
+    if from_time_constants:
+        declared = surface_own + _subset(linear_damping_parameters("surface"), ("time_constants",)) + (
+            SWAY_YAW_COUPLING_PARAMETER,)
+    else:
+        declared = surface_own + (SWAY_YAW_DERIVATIVES_PARAMETER,)
     return declared + ((MODULUS_COEFFICIENTS_PARAMETER,) if modulus else ())
 
 

@@ -1,0 +1,50 @@
+{
+    "Id": "b378c519-2d5f-4161-a8d0-a11a4f44a072",
+    "Name": "Grethe (yaw-unstable stress test)",
+    "PluginType": "more_dynamics::VehicleModel3D",
+    "PluginName": "more_dynamics::Monohull",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {
+        "actuators": "List[more_dynamics::ForceProducer]",
+        "site": "more_dynamics::SiteModel",
+        "hydrostatics": "more_dynamics::HydrostaticsModel",
+        "hydrodynamics": "more_dynamics::HydrodynamicsModel"
+    },
+    "Subcomponents": {
+        "hydrostatics": {
+            "Id": "84105a0b-3ee3-4b5b-9367-11e936c4b40e",
+            "PluginType": "more_dynamics::HydrostaticsModel",
+            "PluginName": "more_dynamics::SurfaceRestoring",
+            "SlotName": "hydrostatics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "hydrodynamics": {
+            "Id": "b1155eb9-c5e1-47a5-b1ae-3a3c6aa8cd0f",
+            "PluginType": "more_dynamics::HydrodynamicsModel",
+            "PluginName": "more_dynamics::SurfaceHullLoads",
+            "SlotName": "hydrodynamics",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "site": {
+            "Id": "c50871ef-5927-4c0f-8f87-1d7548873dd3",
+            "PluginType": "more_dynamics::SiteModel",
+            "PluginName": "more_dynamics::Site",
+            "SlotName": "site",
+            "Library": "more_dynamics",
+            "IsLinked": false
+        },
+        "actuators": [
+            {
+                "Id": "339d5a1f-1853-4c58-ae52-8e9708773503",
+                "PluginType": "more_dynamics::ForceProducer",
+                "PluginName": "more_dynamics::Propulsor",
+                "SlotName": "actuators",
+                "Library": "more_dynamics",
+                "IsLinked": true
+            }
+        ]
+    },
+    "ParentComponentInfo": null
+}

@@ -11,7 +11,7 @@ class ComponentParameters:
     length = 5.2  # document: A-43 M1, F003 p2, M001 p7 (overall length)
     beam = 2.15  # document: A-43 M2, F003 p2, M001 p7, D002 p1
     hull_block_coefficient = 0.234  # derived: A-43 M4, 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness
-    hull_waterplane_coefficient = 0.8  # estimate: A-43 M14
+    hull_waterplane_coefficient = 0.41  # fitted: grethe.m 242 Cw, chosen so that the roll period is the logged 1.85 s (a hard-chine hull would be 0.7-0.8; it absorbs the unexplained roll stiffness)
     hull_mass = 806.0  # document: A-43 M7, F003 p2 (FAT, +/- 20 kg)
     payload_mass = 0.0  # a bare hull; the 2026 field payload (USBL mount, battery packs) is not weighed (A-43 M8, gap)
     hull_center_of_gravity = [0.0, 0.0, 0.025]  # estimate: A-43 M9

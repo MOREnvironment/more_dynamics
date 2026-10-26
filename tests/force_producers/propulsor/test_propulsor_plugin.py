@@ -116,9 +116,11 @@ def _partner(slot, variant):
                              "none")))
     forms[slot] = variant
     if slot == "drive":
-        forms["law"] = "normalized_linear" if DRIVE_UNITS[variant] == "1" else "quadratic_asymmetric"
+        forms["law"] = {"1": "normalized_linear", "N": "thrust_power_limited"}.get(DRIVE_UNITS[variant],
+                                                                                   "quadratic_asymmetric")
     if slot == "law":
-        forms["drive"] = "normalized_lag" if LAW_UNITS.get(variant, "rev/s") == "1" else "speed_command_rpm"
+        forms["drive"] = {"1": "normalized_lag", "N": "thrust_command"}.get(LAW_UNITS.get(variant, "rev/s"),
+                                                                            "speed_command_rpm")
     return forms
 
 

@@ -42,6 +42,9 @@ MSS attributes the surge added mass to Söding (1982), not read here.
   Froude-scaled to the hull from its own 100000 lb basis
   (``models/surge_resistance/ra14_residual_resistance.py``); 0 below the regression's
   stated validity ``Fn_V = 0.6`` (A-64 hidden assumption 3, same module);
+* ``"ittc_residual_ramped"``: the same with the residual's range edge softened: below ``Fn_V = 0.6`` the residual is
+  its edge value times a smoothstep from zero at rest (``residual_coefficient_ramped``, a construction of the model
+  file ``grethe.m``, not a published law), so the resistance has no step at the edge;
 * ``"exp_ittc"``: the ship law of MSS release 2.0.2 (``osv.m`` 182-185,
   ``hydroVessel.m`` 88-89 at ``cc07579``), ``D_nl,11 = exp(-k_u |u_r|) D11 -
   Xuu |u_r|``, ``X = -D_nl,11 u_r`` (``osv.m`` 204), with ``D11 = M(1,1) /
@@ -148,15 +151,16 @@ ITTC_LOG10_OFFSET = 2.0
 # forceSurgeDamping.m 71 (ac77394): added to Rn inside the logarithm (MSS line only).
 REYNOLDS_LOG_OFFSET = 1e-10
 
-SURGE_FORMS = ("ittc", "ittc_residual", "max_thrust", "exp_ittc")
+SURGE_FORMS = ("ittc", "ittc_residual", "ittc_residual_ramped", "max_thrust", "exp_ittc")
 SURGE_BLENDS = ("symmetric", "signed")
 ITTC_REYNOLDS_BOUNDS = ("floor", "offset")
-_ITTC_FORMS = ("ittc", "ittc_residual", "exp_ittc")
+_ITTC_FORMS = ("ittc", "ittc_residual", "ittc_residual_ramped", "exp_ittc")
 
 # Named outputs per form, in order.
 SURGE_DAMPING_OUTPUTS = {
     "ittc": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
     "ittc_residual": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
+    "ittc_residual_ramped": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
     "max_thrust": ("tau", "added_mass", "linear_coefficient", "quadratic_coefficient"),
     "exp_ittc": ("tau", "linear_coefficient", "quadratic_coefficient", "surge_damping_coefficient"),
 }
@@ -199,6 +203,7 @@ _REYNOLDS_FLOOR = Parameter(
 _COUPLINGS = {
     "ittc": (_MASS, _WETTED_SURFACE),
     "ittc_residual": (_MASS, _WETTED_SURFACE),
+    "ittc_residual_ramped": (_MASS, _WETTED_SURFACE),
     "max_thrust": (_MASS,),
     "exp_ittc": (_MASS_MATRIX, _WETTED_SURFACE),
 }
@@ -208,6 +213,8 @@ _DECLARATIONS = {
              _KINEMATIC_VISCOSITY, _SURGE_ADDED_MASS_FACTOR),
     "ittc_residual": (_LENGTH, _WATER_DENSITY, _TIME_CONSTANT, _FORM_FACTOR, _CROSSOVER_SPEED,
                       _KINEMATIC_VISCOSITY, _SURGE_ADDED_MASS_FACTOR),
+    "ittc_residual_ramped": (_LENGTH, _WATER_DENSITY, _TIME_CONSTANT, _FORM_FACTOR, _CROSSOVER_SPEED,
+                             _KINEMATIC_VISCOSITY, _SURGE_ADDED_MASS_FACTOR),
     "max_thrust": (
         _LENGTH,
         _WATER_DENSITY,
@@ -286,14 +293,17 @@ def _ittc_quadratic_coefficient(p, c, u_r):
     return -0.5 * p["water_density"] * c["wetted_surface"] * (1 + p["form_factor"]) * friction
 
 
-def _ittc_residual_quadratic_coefficient(p, c, u_r):
+def _ittc_residual_quadratic_coefficient(p, c, u_r, *, ramped=False):
     """``C_T = (1+k) C_F + C_R`` (Fossen 2011, eq. 6.82's own decomposition,
     p. 125): the ITTC friction line of ``_ittc_quadratic_coefficient`` plus
     the RA14 residual term (``models/surge_resistance/ra14_residual_resistance.py``),
-    same sign convention (``Xuu < 0``)."""
+    same sign convention (``Xuu < 0``); with ``ramped`` the residual's range edge is softened by a smoothstep
+    (``residual_coefficient_ramped``)."""
     friction = _ittc_quadratic_coefficient(p, c, u_r)
     displaced_volume = c["mass"] / p["water_density"]
-    residual = ra14_residual_resistance.residual_coefficient(displaced_volume, p["length"], u_r)
+    residual_form = (ra14_residual_resistance.residual_coefficient_ramped if ramped
+                     else ra14_residual_resistance.residual_coefficient)
+    residual = residual_form(displaced_volume, p["length"], u_r)
     return friction - 0.5 * p["water_density"] * c["wetted_surface"] * residual
 
 
@@ -309,8 +319,8 @@ def _blended(nu_r, c, p, surge_form, surge_blend):
     linear_coefficient = -(mass - surge_acceleration_derivative) / p["time_constant"]
     if surge_form == "ittc":
         quadratic_coefficient = _ittc_quadratic_coefficient(p, c, u_r)
-    elif surge_form == "ittc_residual":
-        quadratic_coefficient = _ittc_residual_quadratic_coefficient(p, c, u_r)
+    elif surge_form in ("ittc_residual", "ittc_residual_ramped"):
+        quadratic_coefficient = _ittc_residual_quadratic_coefficient(p, c, u_r, ramped=surge_form == "ittc_residual_ramped")
     else:
         quadratic_coefficient = -p["max_thrust"] / p["max_speed"] ** 2  # (forceSurgeDamping.m 66 @ ac77394)
     # symmetric |u_r| by default; u_r as forceSurgeDamping.m 79 (ac77394) with "signed"

@@ -1,0 +1,17 @@
+{
+    "Id": "c50871ef-5927-4c0f-8f87-1d7548873dd3",
+    "Name": "Grethe (stress test) site",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::Site",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "b378c519-2d5f-4161-a8d0-a11a4f44a072",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Monohull",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

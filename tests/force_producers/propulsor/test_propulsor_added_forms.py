@@ -199,36 +199,7 @@ def test_the_leg_force_scales_with_density_and_area_and_the_lift_slope_of_the_as
     assert max_diff(longer, ratio * base) <= 1e-12
 
 
-@pytest.mark.parametrize("name", ["turning_circle_20deg", "steering_square_wave_5deg"])
-def test_G3_the_model_files_leg_runs_equal_the_vehicle_with_the_leg_wrench_added(name):
-    point, _ = grethe.SETS["gate"]
-    table = grethe._table(f"grethe_m_trajectory_{name}_leg.csv")
-    tolerances = {int(r["state"]): float(r["tolerance"]) for r in grethe._read_csv("grethe_m_trajectory_tolerances_leg.csv")
-                  if r["scenario"] == name}
-    vehicle = grethe._mss_vehicle(point)
-    dynamics = vc.graph_of(vehicle).step
-    thrust_vector = grethe._outboard()
-    commands = np.column_stack([table["ui_01"], table["ui_02"]])
-
-    def rate(x, ui):
-        delta = float(np.clip(ui[1], -DELTA_MAX, DELTA_MAX))
-        nu = x[6:12]
-        tau = thrust_vector(nu, ui[0], delta) + np.array(outboard_leg_normal_force(nu, delta, POSITION, RHO, A_LEG, AR_LEG),
-                                                         dtype=float).reshape(-1)
-        return np.asarray(dynamics(x, tau)).ravel()
-
-    x = vc.mss_to_ours(grethe._columns(table, "x", 12)[0])
-    states = np.zeros((len(table["t"]), 12))
-    for row in range(len(table["t"])):
-        states[row] = vc.ours_to_mss(x)
-        if row < len(table["t"]) - 1:
-            for _ in range(grethe.HOLD_STEPS):
-                k1 = rate(x, commands[row]); k2 = rate(x + 0.5 * grethe.STEP * k1, commands[row])
-                k3 = rate(x + 0.5 * grethe.STEP * k2, commands[row]); k4 = rate(x + grethe.STEP * k3, commands[row])
-                x = x + grethe.STEP / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-    error = np.abs(states - grethe._columns(table, "x", 12)).max(axis=0)
-    over = [f"x{i + 1}: {error[i]:.3g} > {tolerances[i + 1]:.3g}" for i in range(12) if error[i] > tolerances[i + 1]]
-    assert not over, f"{name}: " + "; ".join(over)
+# (the model file's leg runs are gated on the part itself: tests/vehicle_models/test_monohull_grethe.py, set ``leg``)
 
 
 # --------------------------------------------------------------------------

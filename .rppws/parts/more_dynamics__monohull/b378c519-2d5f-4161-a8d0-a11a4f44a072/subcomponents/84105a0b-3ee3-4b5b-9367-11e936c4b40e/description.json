@@ -1,0 +1,17 @@
+{
+    "Id": "84105a0b-3ee3-4b5b-9367-11e936c4b40e",
+    "Name": "Grethe (stress test) hydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SurfaceRestoring",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "b378c519-2d5f-4161-a8d0-a11a4f44a072",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Monohull",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

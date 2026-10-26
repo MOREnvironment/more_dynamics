@@ -194,7 +194,7 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `length` | 5.2 | m | A-43 M1, F003 p2, M001 p7 (overall length) | document |
 | `beam` | 2.15 | m | A-43 M2, F003 p2, M001 p7, D002 p1 | document |
 | `hull_block_coefficient` | 0.234 | 1 | A-43 M4, 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness | derived |
-| `hull_waterplane_coefficient` | 0.8 | 1 | A-43 M14 | estimate |
+| `hull_waterplane_coefficient` | 0.41 | 1 | grethe.m:242 Cw, chosen so that the roll period is the logged 1.85 s (a hard-chine hull would be 0.7-0.8: it absorbs the unexplained roll stiffness) | fitted |
 | `hull_mass` | 806.0 | kg | A-43 M7, F003 p2 (FAT, +/- 20 kg) | document |
 | `payload_mass` | 0.0 | kg | a bare hull; the 2026 field payload (USBL mount, battery packs) is not weighed (A-43 M8, gap) | gap |
 | `hull_center_of_gravity` | [0.0, 0.0, 0.025] | m | A-43 M9 | estimate |
@@ -213,7 +213,8 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `hull_count` | 1 | - | A-43 M15, monohull | convention |
 | `longitudinal_inertia_factor` | 1.0 | 1 | A-43 M17 | estimate |
 | `longitudinal_center_of_flotation` | -0.3 | m | A-43 M18 | estimate |
-| `reference_point` | [-2.24, 0.0, 0.0] | m | E-101 Q4 a, CO at the midpoint of the waterline length | owner decision |
+| `reference_point` | [0.0, 0.0, 0.0] | m | the body origin, the midpoint of the waterline length (E-101 Q4 a; grethe.m:349 `x_ref` 0); the earlier [-2.24, 0, 0] put the restoring matrix at the outboard | owner decision |
+| `payload_trim_form` | "lever_arm_moment" (plugin default, not set) | - | grethe.m:414-419: the payload weight is in the loaded displacement, only its lever arm moves the equilibrium | selector |
 | `wetted_surface_method` | "regression_table" | - | A-64 Section 3.3 R11 | owner decision |
 
 ## Grethe site (`more_dynamics::Site`)
@@ -230,11 +231,12 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|
-| `manoeuvring_damping` | "linear_coupled" | - | A-64 Section 3.4 G0 set | owner decision |
-| `sway_yaw_derivatives` | [-251.875, 0.0, 0.0, -229.86112500000002] | N s/m, N m s | [Y_v, Y_r, N_v, N_r]: Y_v = -M22/T_sway, N_r = -M66/T_yaw (time_constants [8, 16] s); Y_r = N_v = 0, unidentified (E-101 Q2 a) | gap |
+| `manoeuvring_damping` | "time_constants_coupled" | - | Y_v = -M22 / T_sway and N_r = -M66 / T_yaw computed, Y_r and N_v given (grethe.m:361-369) | selector |
+| `time_constants` | [8.0, 4.0] | s | [T_sway, T_yaw] (grethe.m:251-252; T_yaw chosen with N_v for a yaw-stable open loop) | estimate |
+| `sway_yaw_coupling` | [0.0, 2500.0] | N s/m, N m s/m | [Y_r, N_v] (grethe.m:363-364): Y_r = 0 not identified; N_v = 2500 chosen, no source | estimate (chosen) |
 | `cross_flow` | "hoerner_strips" | - | A-64 Section 3.4 | selector |
-| `surge_resistance` | "ittc_residual" | - | E-101 Q1 a | owner decision |
-| `time_constant` | 15.0 | s | A-43 M26 (= M20 T1) | estimate |
+| `surge_resistance` | "ittc_residual_ramped" | - | ITTC friction plus the RA14 residual, its range edge softened by a smoothstep (grethe.m:386-388, 443-495; E-101 Q1 a) | owner decision |
+| `time_constant` | 15.0 | s | grethe.m:256 T_1 | estimate |
 | `form_factor` | 0.1 | 1 | Fossen 2011 p. 125; A-43 M27 | published |
 | `crossover_speed` | 2.0 | m/s | A-43 M28 | published |
 | `surge_added_mass_factor` | 2.7 | 1 | addedMassSurge.m 34; A-43 | published |
@@ -243,17 +245,40 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `max_speed` | 2.4 | m/s | fitted from her 2026 control-station logs, through water, logged band 2.32-2.47 m/s (A-74 section 1); replace by the full-throttle runs of the sea trials (X-9 G14) | fitted |
 | `damping_ratios` | [0.3, 0.05, 0.5] | 1 | [heave, roll, pitch]: roll 0.05 fitted from her logs, band 0.03-0.08 (A-74 section 3, owner E-135); heave 0.3 and pitch 0.5 approved guess 2026-10-12 (owner E-135), no source, until the quay free decays (X-9 G12) | roll fitted; heave, pitch approved guess |
 
+## Grethe outboard (`more_dynamics::Propulsor`)
+
+Selectors: `drive` "thrust_command_lag", `steering` "servo_lag_rate_angle", `mounting` "azimuth", `inflow` "horizontal_speed_floored", `law` "thrust_power_limited", `housing` "leg_normal_force" (grethe.m:38-48, 262-271, 391-408; SIMgrethe.m:257-259). Inputs: `drive_command` (thrust command, N) and `steering_command` (angle command, rad, positive = thrust force to starboard); states: the actual thrust and the actual steering angle.
+
+| Parameter | Value | Unit | Source | Kind |
+|---|---|---|---|---|
+| `steering_convention` | "port_positive" | - | the same formula grethe.m:276 names `starboard_positive` | selector |
+| `shaft_torque_scale` | 0.0 | 1 | the model file has no shaft torque on the body | convention |
+| `thrust_time_constant` | 0.3 | s | grethe.m:268 T_thrust | estimate |
+| `max_deflection` | 0.6108652381980153 | rad | grethe.m:265 delta_max = 35 deg (the logs imply 53-80 deg in turns from rest, conditional on the inertia estimate) | estimate |
+| `max_rate` | 1.0471975511965976 | rad/s | grethe.m:266 ddelta_max = 60 deg/s | estimate |
+| `time_constant` | 0.5 | s | grethe.m:267 T_delta | estimate |
+| `position` | [-2.24, 0.0, 0.55] | m | grethe.m:264 r_P: x from the drawing, z the hub depth | estimate |
+| `speed_floor` | 0.1 | m/s | grethe.m:391 | numerical floor |
+| `max_thrust` | 511.5 | N | grethe.m:262 T_max: the Torqeedo data sheet | document |
+| `delivered_power` | 1120.0 | W | grethe.m:263 P_prop: the data sheet, power delivered to the water | document |
+| `leg_area` | 0.04 | m^2 | grethe.m:269 A_leg | estimate (a construction) |
+| `leg_aspect_ratio` | 1.5 | 1 | grethe.m:270 AR_leg | estimate (a construction) |
+
+## Grethe (yaw-unstable stress test) (`more_dynamics::Monohull`)
+
+The Grethe part with one change in its hull loads, for a controller stress test, not a vehicle estimate: `time_constants` [8.0, 16.0] s and `sway_yaw_coupling` [0.0, 0.0] (the earlier yaw damping: N_v = Y_r = 0, T_yaw 16 s). Open loop the plant is unstable in yaw, a real pole of about +0.33 rad/s at 1.5 m/s with no steering. Every other value is the Grethe part's (a test asserts it); it links the same outboard.
+
 ## `more_dynamics::Propulsor`
 
-One propulsor: six sockets, each holding the part its selector names (`models/propulsor`); several propulsors on one vehicle are several entries of the vehicle's `actuators` list. Every number of every part is `unset()` here and given by a named part (a value the selected parts read and the part leaves out makes the build fail, naming it); a number a selected part does not read is left unset and is not asked for. The shaft-speed drive and the law must pass the same unit (`rev/s` for a shaft speed, `1` for a normalised effort), else the build refuses, naming both. The default selectors are a jet with a unit-length thrust direction (a normalised effort with a first-order lag, a servo with rate and angle limits, a rotation for the direction, a linear thrust law); no reference part carries numbers for them, so a build with the defaults alone names every number it lacks. The parts that exist are below.
+One propulsor: six sockets, each holding the part its selector names (`models/propulsor`); several propulsors on one vehicle are several entries of the vehicle's `actuators` list. Every number of every part is `unset()` here and given by a named part (a value the selected parts read and the part leaves out makes the build fail, naming it); a number a selected part does not read is left unset and is not asked for. The drive and the law must pass the same unit (`rev/s` for a shaft speed, `1` for a normalised effort, `N` for a thrust), else the build refuses, naming both. The default selectors are a jet with a unit-length thrust direction (a normalised effort with a first-order lag, a servo with rate and angle limits, a rotation for the direction, a linear thrust law); no reference part carries numbers for them, so a build with the defaults alone names every number it lacks. The parts that exist are below.
 
 | Parameter | Default | Unit | Read by | Meaning |
 |---|---|---|---|---|
-| `drive` | "normalized_lag" | - | selector | the drive part: `speed_command_rpm`, `speed_command_rad_s`, `power_limited_speed_command_rpm`, `speed_command_normalized`, `normalized_lag` |
+| `drive` | "normalized_lag" | - | selector | the drive part: `speed_command_rpm`, `speed_command_rad_s`, `power_limited_speed_command_rpm`, `speed_command_normalized`, `normalized_lag`, `thrust_command`, `thrust_command_lag` |
 | `steering` | "servo_lag_rate_angle" | - | selector | the steering part: `fixed`, `servo_ideal`, `servo_no_limits`, `servo_lag_rate_angle`, `servo_output_saturated`, `jet_nozzle_clamp` |
 | `mounting` | "steered_rotation" | - | selector | the mounting part: `fixed_euler`, `fixed_direction`, `azimuth`, `jet_nozzle_direction`, `steered_rotation` |
-| `inflow` | "none" | - | selector | the inflow part: `none`, `speed_magnitude`, `surge_component` |
-| `law` | "normalized_linear" | - | selector | the law part: `open_water_bollard`, `open_water_linearized`, `open_water_linearized_given`, `open_water_polynomial`, `open_water_signed_advance`, `quadratic_asymmetric`, `normalized_linear`, `jet_bollard_quadratic`, `jet_bilinear_speed`, `jet_momentum_flux_given`, `jet_momentum_flux_bollard_point`, `jet_pump_system_match` |
+| `inflow` | "none" | - | selector | the inflow part: `none`, `speed_magnitude`, `surge_component`, `horizontal_speed_floored` |
+| `law` | "normalized_linear" | - | selector | the law part: `open_water_bollard`, `open_water_linearized`, `open_water_linearized_given`, `open_water_polynomial`, `open_water_signed_advance`, `quadratic_asymmetric`, `normalized_linear`, `jet_bollard_quadratic`, `jet_bilinear_speed`, `jet_momentum_flux_given`, `jet_momentum_flux_bollard_point`, `jet_pump_system_match`, `thrust_power_limited` |
 | `housing` | "none" | - | selector | the housing part: `none`, `leg_normal_force` |
 | `steering_convention` | "port_positive" | - | mounting: azimuth | `port_positive` or `starboard_positive`: which way the boat turns for a positive angle when the unit is aft of the CO (selector; refused for a unit at or ahead of the CO) |
 | `shaft_torque_scale` | unset | 1 | skeleton | share of the shaft torque that reacts on the body (physical: 1) |
@@ -266,6 +291,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `min_shaft_speed` | unset | rev/s | drive: speed_command_normalized | shaft speed at a command of -1 (astern), not above zero |
 | `thrust_rise_time` | unset | s | drive: normalized_lag | time constant when the effort rises |
 | `thrust_fall_time` | unset | s | drive: normalized_lag | time constant when the effort falls |
+| `thrust_time_constant` | unset | s | drive: thrust_command_lag | time constant of the thrust's first-order lag |
 | `max_deflection` | unset | rad | steering: servo_ideal; steering: servo_lag_rate_angle; steering: servo_output_saturated | maximum commanded angle, limiting the target before the lag (MSS remus100.m 113-114 with no lag; Murray-Smith 2016 Fig. 1 p. 246 with the lag) |
 | `max_rate` | unset | rad/s | steering: servo_lag_rate_angle; steering: servo_output_saturated | maximum angular rate (Murray-Smith 2016 Fig. 1 p. 246; Sarhadi 2026 Fig. 4 p. 4) |
 | `time_constant` | unset | s | steering: servo_lag_rate_angle; steering: servo_output_saturated | first-order lag time constant (Murray-Smith 2016 Fig. 1 p. 246) |
@@ -280,6 +306,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `thrust_deduction` | unset | 1 | inflow: speed_magnitude; inflow: surge_component | thrust deduction t: thrust (1 - t) T |
 | `wake_fraction` | unset | 1 | inflow: speed_magnitude; inflow: surge_component | wake fraction w: Va = (1 - w) U_r |
 | `advance_speed_factor` | unset | 1 | inflow: surge_component | c_Va of Va = c_Va (1 - w) u_r |
+| `speed_floor` | unset | m/s | inflow: horizontal_speed_floored | lowest horizontal speed the advance speed takes (numerical floor) |
 | `diameter` | unset | m | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | propeller diameter D |
 | `pitch_diameter_ratio` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | pitch ratio P/D |
 | `blade_area_ratio` | unset | 1 | law: open_water_bollard; law: open_water_linearized; law: open_water_linearized_given; law: open_water_polynomial; law: open_water_signed_advance | expanded blade-area ratio A_E/A_O |
@@ -305,6 +332,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `nozzle_loss_coefficient` | unset | 1 | law: jet_pump_system_match | phi_n: nozzle loss as a fraction of the jet head |
 | `inlet_loss_coefficient` | unset | 1 | law: jet_pump_system_match | eps: share of the intake ram head lost |
 | `pump_efficiency` | unset | 1 | law: jet_pump_system_match | eta_p of the shaft torque |
+| `delivered_power` | unset | W | law: thrust_power_limited | power delivered to the water P (the thrust limit is min(max_thrust, P / U)) |
 | `leg_area` | unset | m^2 | housing: leg_normal_force | leg and fin area A_leg |
 | `leg_aspect_ratio` | unset | 1 | housing: leg_normal_force | leg aspect ratio AR |
 
@@ -386,7 +414,9 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 | REMUS 100 (MSS) rudder fin, REMUS 100 (MSS) stern plane fin | `.rppws/parts/more_dynamics__fin/` (each linked twice into REMUS 100 (MSS)) | yes, each |
 | REMUS 100 fin pairs, REMUS 100 propeller | `.rppws/parts/more_dynamics__fin_pairs_deflection_only/`, `...__propeller/` (the earlier REMUS 100 composition, kept as parts of their own for the plugins' tests and as a cross-check of the committed vehicle) | no |
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
-| Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | `tests/vehicle_models/data/grethe/SOURCE.md` plus the part's own |
+| Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | the part's own (the values of the model file grethe.m) |
+| Grethe (yaw-unstable stress test) | `.rppws/parts/more_dynamics__monohull/b378c519-2d5f-4161-a8d0-a11a4f44a072/` (configuration `grethe_stress_test`) | no (a copy of Grethe with one change, see its section) |
+| Grethe outboard | `.rppws/parts/more_dynamics__propulsor/` (linked into both Grethe parts) | yes |
 | NPS AUV II (MSS) | not yet landed | n/a |
 | REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, each linked into its vehicle: REMUS 100 (MSS) once, Otter (MSS) one each) | yes, each |
 | Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `...__catamaran/09d55b0c-...`, `...__catamaran/287972df-...` (two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |

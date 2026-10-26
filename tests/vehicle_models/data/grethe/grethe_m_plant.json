@@ -1,0 +1,6 @@
+{
+  "thrust_time_constant": 0.3,
+  "steering_time_constant": 0.5,
+  "steering_rate_limit": 1.0471975511965976,
+  "steering_angle_limit": 0.6108652381980153
+}

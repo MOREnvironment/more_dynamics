@@ -15,7 +15,9 @@ craft's own ITTC friction ``C_F,std`` (RA14 p. 11 basis) -- the residual that
 transfers. The scaling procedure is a construction of A-64
 (`agents-more/20_sources/monohull_structure_for_grethe.md` hidden assumption
 3), not an equation printed in the paper. Below ``Fn_V = 0.6`` the regression
-does not cover the hull and ``C_R`` is clamped to 0 (A-64, same place).
+does not cover the hull and ``C_R`` is clamped to 0 (A-64, same place);
+``residual_coefficient_ramped`` instead takes the value at the range edge times a smoothstep from zero at rest
+(the model file ``grethe.m`` has this form as its default, ``residualCoefficient``).
 
 ``wetted_surface_coefficient(displaced_volume, length)`` reads the same
 ``S/V^(2/3)`` regression at ``Fn_V = 0`` (the cubic's constant term, ``D(s)``
@@ -98,11 +100,10 @@ def _cubic_in_froude(coefficients, s, froude):
     return a * froude**3 + b * froude**2 + c * froude + d
 
 
-def residual_coefficient(displaced_volume, length, speed):
-    """``C_R(Fn_V)``: the RA14 residual coefficient (module docstring),
-    0 below ``VALIDITY_FROUDE_NUMBER``."""
+def _regression_residual(displaced_volume, length, speed):
+    """The residual coefficient the regression gives at ``speed`` (m/s, positive), with no regard to its range:
+    scale to the standard craft, read ``R/Delta`` and ``S/V^(2/3)``, subtract the standard craft's friction."""
     s = length / displaced_volume ** (1.0 / 3.0)
-    speed = ca.fmax(ca.fabs(speed), _SPEED_FLOOR)
     froude = speed / ca.sqrt(GRAVITY * displaced_volume ** (1.0 / 3.0))
     r_over_delta = _cubic_in_froude(R_COEFFICIENTS, s, froude)
     s_coefficient = _cubic_in_froude(S_COEFFICIENTS, s, froude)
@@ -117,8 +118,31 @@ def residual_coefficient(displaced_volume, length, speed):
     reynolds_standard = ca.fmax(speed_standard * length_standard / STANDARD_KINEMATIC_VISCOSITY,
                                _STANDARD_REYNOLDS_FLOOR)
     friction_standard = ITTC_FRICTION_FACTOR / (ca.log10(reynolds_standard) - ITTC_LOG10_OFFSET) ** 2
-    residual = total_coefficient_standard - friction_standard
-    return ca.if_else(froude < VALIDITY_FROUDE_NUMBER, 0.0, residual)
+    return total_coefficient_standard - friction_standard
+
+
+def residual_coefficient(displaced_volume, length, speed):
+    """``C_R(Fn_V)``: the RA14 residual coefficient (module docstring),
+    0 below ``VALIDITY_FROUDE_NUMBER``."""
+    speed = ca.fmax(ca.fabs(speed), _SPEED_FLOOR)
+    froude = speed / ca.sqrt(GRAVITY * displaced_volume ** (1.0 / 3.0))
+    return ca.if_else(froude < VALIDITY_FROUDE_NUMBER, 0.0, _regression_residual(displaced_volume, length, speed))
+
+
+def residual_coefficient_ramped(displaced_volume, length, speed):
+    """``C_R(Fn_V)`` with the range edge softened: at and above ``VALIDITY_FROUDE_NUMBER`` the regression's value; below
+    it the value at the range edge times a smoothstep ``3 q^2 - 2 q^3`` of ``q = Fn_V / 0.6``, from zero at rest to
+    one at the edge. The regression says nothing below its range: the smoothstep is a construction that removes the
+    step of ``residual_coefficient`` at ``Fn_V = 0.6`` (a force of about 57 N to 115 N at 1.8 m/s for a 5.2 m hull), not
+    a published law; raise: a resistance measured below the range (a coast-down)."""
+    speed = ca.fmax(ca.fabs(speed), _SPEED_FLOOR)
+    unit_speed = ca.sqrt(GRAVITY * displaced_volume ** (1.0 / 3.0))
+    froude = speed / unit_speed
+    below = froude < VALIDITY_FROUDE_NUMBER
+    q = froude / VALIDITY_FROUDE_NUMBER
+    ramp = ca.if_else(below, 3 * q**2 - 2 * q**3, 1.0)
+    evaluated_speed = ca.if_else(below, VALIDITY_FROUDE_NUMBER * unit_speed, speed)
+    return ramp * _regression_residual(displaced_volume, length, evaluated_speed)
 
 
 def wetted_surface_coefficient(displaced_volume, length):

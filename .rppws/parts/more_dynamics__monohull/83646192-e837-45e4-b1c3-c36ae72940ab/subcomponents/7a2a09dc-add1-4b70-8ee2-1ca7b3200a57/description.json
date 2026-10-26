@@ -1,0 +1,14 @@
+{
+    "Id": "7a2a09dc-add1-4b70-8ee2-1ca7b3200a57",
+    "Name": "Outboard",
+    "LinkedComponentId": "cbf1652f-b35b-4c04-8eec-6b5f44f13c7d",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "83646192-e837-45e4-b1c3-c36ae72940ab",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::Monohull",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

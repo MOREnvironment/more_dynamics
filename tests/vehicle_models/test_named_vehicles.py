@@ -25,7 +25,8 @@ import vehicle_contract as vc
 LIBRARY = Path(__file__).resolve().parents[2]
 RPPWS = LIBRARY / ".rppws"
 DESCRIPTION = RPPWS / "script_descriptions" / "vehicle_simulation.json"
-NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe", "npsauv": "NPS AUV II"}
+NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe", "npsauv": "NPS AUV II",
+         "grethe_stress_test": "Grethe (yaw-unstable stress test)"}
 
 
 def _build(configuration):
@@ -151,12 +152,13 @@ def _own_parameters(part_id):
 
 
 def test_grethe_from_the_workspace_builds_with_its_own_selectors():
-    """Structural only (physics gates are U8a/U8b's ``test_monohull_grethe.py``): the part
-    builds as a ``Monohull`` with no open actuator input, and its two children' own parameter
-    files (not the plugins' defaults) carry E-101's selectors."""
+    """Structural only (physics gates are ``test_monohull_grethe.py``): the part builds as a ``Monohull`` with one
+    outboard (a thrust command and a steering angle command, and the two actuator states behind them), and its
+    children's own parameter files (not the plugins' defaults) carry the forms of the model file ``grethe.m``."""
     built = _build("grethe")
     assert type(built).__name__ == "Monohull"
-    assert vc.input_names(built) == []
+    assert vc.input_names(built) == ["drive_command", "steering_command"]
+    assert vc.actuator_state_count(built) == 2
     description = json.loads(DESCRIPTION.read_text())
     vessel = description["Configurations"]["grethe"]["Components"]["vessels"][0]
     root = next(p for p in RPPWS.joinpath("parts").rglob("description.json")
@@ -166,10 +168,13 @@ def test_grethe_from_the_workspace_builds_with_its_own_selectors():
     hydrodynamics = _own_parameters(record["Subcomponents"]["hydrodynamics"]["Id"])
     root_params = _own_parameters(vessel["Id"])
     assert root_params["added_mass_mass_basis"] == "displaced"
+    assert root_params["hull_waterplane_coefficient"] == 0.41  # fitted to the logged roll period (grethe.m 242)
     assert hydrostatics["wetted_surface_method"] == "regression_table"
-    assert hydrodynamics["manoeuvring_damping"] == "linear_coupled"
-    assert hydrodynamics["surge_resistance"] == "ittc_residual"
-    assert hydrodynamics["sway_yaw_derivatives"] == [-251.875, 0.0, 0.0, -229.86112500000002]
+    assert hydrostatics["reference_point"] == [0.0, 0.0, 0.0]  # the waterline midpoint, E-101 Q4 a
+    assert hydrodynamics["manoeuvring_damping"] == "time_constants_coupled"
+    assert hydrodynamics["surge_resistance"] == "ittc_residual_ramped"
+    assert hydrodynamics["time_constants"] == [8.0, 4.0] and hydrodynamics["sway_yaw_coupling"] == [0.0, 2500.0]
+    assert "sway_yaw_derivatives" not in hydrodynamics  # computed from the time constants, not typed again
 
 
 def test_every_parameter_file_names_only_parameters_its_plugin_declares():

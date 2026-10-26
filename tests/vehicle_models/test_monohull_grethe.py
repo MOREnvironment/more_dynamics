@@ -68,9 +68,20 @@ def _row_floats(row, prefix, count):
     return np.array([float(row[f"{prefix}_{i + 1:02d}"]) for i in range(count)])
 
 
+# The U8a parameter set's own sway and yaw derivatives [Y_v, Y_r, N_v, N_r]: Y_v = -M22 / T_sway and N_r = -M66 / T_yaw for
+# the data file's time constants [8, 16] s on its mass matrix, Y_r = N_v = 0 (E-101 Q2 a, unidentified). The named part of
+# that day carried them as numbers; the part now computes them from its own time constants (manoeuvring_damping
+# ``time_constants_coupled``) and follows the model file ``grethe.m``, so this set keeps its own.
+U8A_SWAY_YAW_DERIVATIVES = [-251.875, 0.0, 0.0, -229.86112500000002]
+
+
 def _part_values(cls, name):
-    """The values of a named part of the library's workspace that ``cls`` declares as parameters."""
-    return vc.pick(cls, vc.reference_part(name))
+    """The values of a named part of the library's workspace that ``cls`` declares as parameters; for the hull loads of
+    the U8a set (this file's sections 1-7) the coupled law with that set's own derivatives."""
+    values = vc.pick(cls, vc.reference_part(name))
+    if name == "Grethe hull loads":
+        values = {**values, "manoeuvring_damping": "linear_coupled", "sway_yaw_derivatives": U8A_SWAY_YAW_DERIVATIVES}
+    return values
 
 
 def _grethe(*, vehicle_params=None, hydrostatics_params=None, hydrodynamics_params=None, values=None,
@@ -525,18 +536,37 @@ def test_named_part_grethe_with_the_full_g0_target_set_does_not_build_yet(tmp_pa
 # (8) G1 / G3 against the MATLAB model file of the same craft (MSS style, ``data/grethe/generate_grethe_mss.m``)
 #
 # A self-made reference, not a validation: the model file was written beside the library's Monohull from the same
-# cited equations and the same part values, so agreement shows the two implementations compute the same
-# equations; it says nothing about the real boat (field level is G7a). Tolerances: G1 1e-9 as every gate here; G3
-# the per-run, per-state tolerance file of the generator (the largest effect of a 1e-9 derivative error or of
-# reordering the RK4 sum), not widened.
+# cited equations, so agreement shows the two implementations compute the same equations; it says nothing about the
+# real boat (field level is G7a). Tolerances: G1 1e-9 as every gate here; G3 the per-run, per-state tolerance file of
+# the generator (the largest effect of a 1e-9 derivative error or of reordering the RK4 sum), not widened.
+#
+# The vehicle is the named part "Grethe" itself: its hull values, forms and its outboard (the ``Propulsor`` with the
+# thrust command, the steering servo, the power limit and the leg force) are the part's, no value is overridden here.
+# Two kinds of gate:
+#  * the plant of the part (the named part built by rpp's builder, actuator states and all) against the plant of the
+#    model file with its defaults and its caller's actuator equations (``grethe_m_plant_*``);
+#  * the model file's own options against the part's forms, with ideal actuators (the thrust and angle commands taken
+#    as the actual ones, as the model file takes them): the leg force (housing), the residual ramp (surge resistance
+#    form), the restoring point (``x_ref``), the payload trim; a form that is switched here is a selector of the part,
+#    not a value.
 # ---------------------------------------------------------------------------
 
 STEP = 0.05  # s, the MATLAB runs' RK4 step
 HOLD_STEPS = 10  # steps over which the command is held (one row of a run)
 G3_RUNS = ["straight_from_rest_thrust_step", "coast_down_from_2p4", "turning_circle_20deg",
            "steering_square_wave_5deg", "roll_free_decay", "pitch_free_decay"]
-# reference set -> (restoring point of the part, file suffix): the model file's own default is the body origin
-SETS = {"gate": ([0.0, 0.0, 0.0], ""), "x_ref": ([-2.24, 0.0, 0.0], "_x_ref")}  # both with the residual zero below Fn_V 0.6
+# set -> (file suffix, runs, housing, surge resistance form, restoring point, derivative column suffix,
+#         outboard wrench column suffix): the options of the model file (``opt.leg``, ``opt.ramp``, ``opt.x_ref``)
+SETS = {
+    "gate": ("", G3_RUNS, "none", "ittc_residual", [0.0, 0.0, 0.0], "xdot", "tau_out"),
+    "leg": ("_leg", ["turning_circle_20deg", "steering_square_wave_5deg"], "leg_normal_force", "ittc_residual",
+            [0.0, 0.0, 0.0], "xdot_leg", "tau_out_leg"),
+    "x_ref": ("_x_ref", G3_RUNS, "none", "ittc_residual", [-2.24, 0.0, 0.0], "xdot_x_ref", None),
+    "ramp": ("_ramp", ["straight_from_rest_thrust_step", "coast_down_from_2p4"], "none", "ittc_residual_ramped",
+             [0.0, 0.0, 0.0], "xdot_ramp", None),
+}
+CASES = [(name, runs) for name, (_, runs, *_rest) in SETS.items()]
+PART = "Grethe"
 
 
 def _table(name):
@@ -548,141 +578,254 @@ def _columns(table, prefix, count):
     return np.column_stack([table[f"{prefix}_{i + 1:02d}"] for i in range(count)])
 
 
-# values the MATLAB model file chooses that differ from Grethe's part (a fitted waterplane coefficient and chosen
-# yaw damping, labelled in its header); the part itself is not changed
-MODEL_FILE_WATERPLANE_COEFFICIENT = 0.41
-MODEL_FILE_YAW = {"time_constants": (8.0, 4.0), "N_v": 2500.0}  # T_sway, T_yaw (s); N_v (N m s/m)
+def _values(plugin, part, **overrides):
+    """The values of a named part that ``plugin`` declares, with the form switches of a test over them (the part's own,
+    not the U8a set's of ``_part_values``)."""
+    return {**vc.pick(plugin, vc.reference_part(part)), **overrides}
 
 
-def _mss_vehicle(restoring_point, **vehicle_params):
+def _part_vehicle(set_name="gate", **vehicle_params):
+    """The part's plugins assembled with ideal actuators (the thrust and steering commands are the actual ones) and
+    the form switches of one set of the model file's options; every number is the part's."""
     p = vc.plugins()
-    values = {**GRETHE_RAW, "surge_resistance": "ittc_residual", "wetted_surface_method": "regression_table",
-              "hull_waterplane_coefficient": MODEL_FILE_WATERPLANE_COEFFICIENT}
-    bare = _grethe(values=values, hydrostatics_params={"reference_point": restoring_point}, actuators=[p.PrescribedWrench],
-                   vehicle_params=vehicle_params)
-    mass = _mass_matrix(bare)
-    t_sway, t_yaw = MODEL_FILE_YAW["time_constants"]
-    sway_yaw = [-mass[1, 1] / t_sway, 0.0, MODEL_FILE_YAW["N_v"], -mass[5, 5] / t_yaw]  # [Y_v, Y_r, N_v, N_r]
-    return _grethe(values=values, vehicle_params=vehicle_params,
-                   hydrostatics_params={"reference_point": restoring_point},
-                   hydrodynamics_params={**_part_values(p.SurfaceHullLoads, "Grethe hull loads"),
-                                         "sway_yaw_derivatives": sway_yaw},
-                   actuators=[p.PrescribedWrench])
+    _, _, housing, surge, point, _, _ = SETS[set_name]
+    outboard = _values(p.Propulsor, "Grethe outboard", drive="thrust_command", steering="servo_ideal", housing=housing)
+    return vc.build_context(
+        p.Monohull, _values(p.Monohull, PART, **vehicle_params), site=(p.Site, _values(p.Site, "Grethe site")),
+        hydrostatics=(p.SurfaceRestoring, _values(p.SurfaceRestoring, "Grethe hydrostatics", reference_point=point)),
+        hydrodynamics=(p.SurfaceHullLoads, _values(p.SurfaceHullLoads, "Grethe hull loads", surge_resistance=surge)),
+        actuators=[(p.Propulsor, outboard)])
 
 
-def _outboard():
-    from more_dynamics.models.outboard.outboard_motor import outboard_motor_throttle_casadi
-    block = outboard_motor_throttle_casadi()
-    data = json.loads((DATA / "grethe_m_outboard.json").read_text())
-
-    def wrench(nu, thrust, delta):
-        return np.asarray(block(thrust=thrust, delta=delta, nu_r=nu, max_thrust=data["max_thrust"],
-                                max_propulsive_power=data["max_propulsive_power"],
-                                position=data["position"])["tau"]).ravel()
-    return wrench
+def _part_by_rpp(configuration="grethe"):
+    """The named part built by rpp's own builder (the vehicle with its actuator states)."""
+    import test_named_vehicles as named
+    return named._build(configuration)
 
 
-@pytest.mark.parametrize("set_name", ["gate", "x_ref"])
-def test_G1_monohull_derivative_equals_the_matlab_model_file(set_name):
-    point, _ = SETS[set_name]
-    vehicle = _mss_vehicle(point)
+@pytest.mark.parametrize("set_name", list(SETS))
+def test_G1_derivative_of_the_part_equals_the_model_file_option_by_option(set_name):
+    _, _, _, _, _, column, _ = SETS[set_name]
+    vehicle = _part_vehicle(set_name)
     table = _table("grethe_m_derivative.csv")
     n = len(table["case_id"])
-    x, tau = _columns(table, "x", 12), _columns(table, "tau_out", 6)
-    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x).T, tau.T)
-    reference = _columns(table, "xdot" if set_name == "gate" else "xdot_x_ref", 12)
-    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T) - reference).max(axis=0)
+    x, ui = _columns(table, "x", 12), _columns(table, "ui", 2)
+    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(x).T, ui.T)
+    error = np.abs(vc.ours_to_mss(np.asarray(xdot).T) - _columns(table, column, 12)).max(axis=0)
     assert error.max() <= G1_TOLERANCE, f"max |diff| per state {error}"
 
 
-def test_G1_mass_matrix_equals_the_matlab_model_file():
-    table = _table("grethe_m_mass_matrix.csv")
-    reference = np.column_stack([table[f"M_{j}"] for j in range(1, 7)])
-    mass = _mass_matrix(_mss_vehicle(SETS["gate"][0]))
-    assert np.abs(mass - reference).max() <= G1_TOLERANCE
-
-
-def test_G1_outboard_wrench_equals_the_matlab_model_file_thrust_vector():
+@pytest.mark.parametrize("set_name", ["gate", "leg"])
+def test_G1_outboard_wrench_of_the_part_equals_the_model_file_thrust_vector_and_leg(set_name):
+    """The wrench of the outboard (thrust vector at the motor, with the leg force in the ``leg`` set) at the case's state,
+    thrust and angle, against the model file's ``tau_out`` (the power cap is in it: thrusts beyond +-511.5 N)."""
+    *_, wrench_column = SETS[set_name]
+    vehicle = _part_vehicle(set_name)
     table = _table("grethe_m_derivative.csv")
-    wrench = _outboard()
+    x, ui, reference = _columns(table, "x", 12), _columns(table, "ui", 2), _columns(table, wrench_column, 6)
     worst = 0.0
-    for i in range(len(table["case_id"])):
-        nu = _columns(table, "x", 12)[i, :6]
-        mine = wrench(nu, table["ui_01"][i], table["ui_02"][i])
-        worst = max(worst, np.abs(mine - _columns(table, "tau_out", 6)[i]).max())
+    for k in range(len(table["case_id"])):
+        signals = vehicle.signals(vc.mss_to_ours(x[k]), ui[k])
+        worst = max(worst, np.abs(np.asarray(signals["actuators.0.generated_force"]).ravel() - reference[k]).max())
     assert worst <= G1_TOLERANCE, worst
 
 
-def test_G1_payload_derivative_equals_the_matlab_model_file():
-    """Red on purpose (rule 21): the model file shifts the roll and pitch equilibrium by the moment of the payload's
-    lever arm (``G eta_0 = g_0``, without the heave double count of otter.m); the library's ``Monohull`` has no
-    payload trim form (the planned ``payload_trim_form`` option is not built), so a 25 kg payload off the
-    centreline differs in the roll acceleration (0.09-0.54 rad/s^2 over the seeded cases), the other states by
-    < 1e-2. Not tuned: the missing term is the finding."""
+def test_G1_mass_matrix_of_the_part_equals_the_model_file():
+    table = _table("grethe_m_mass_matrix.csv")
+    reference = np.column_stack([table[f"M_{j}"] for j in range(1, 7)])
+    assert np.abs(_mass_matrix(_part_vehicle()) - reference).max() <= G1_TOLERANCE
+
+
+def test_G1_payload_derivative_of_the_part_equals_the_model_file():
+    """The payload trim of the part (the lever-arm moment, the payload weight not counted again in heave) against the
+    model file's: 25 kg at a seeded position, the derivative of 12 seeded states."""
     table = _table("grethe_m_payload_derivative.csv")
-    n = len(table["case_id"])
-    wrench = _outboard()
     worst = 0.0
-    for i in range(n):
+    for i in range(len(table["case_id"])):
         position = [table[f"payload_position_{j:02d}"][i] for j in (1, 2, 3)]
-        vehicle = _mss_vehicle([0.0, 0.0, 0.0], payload_mass=float(table["payload_mass"][i]), payload_position=position)
-        x = _columns(table, "x", 12)[i]
-        tau = wrench(x[:6], table["ui_01"][i], table["ui_02"][i])
-        xdot = vc.dynamics_map(vehicle, 1)(vc.mss_to_ours(x).reshape(12, 1), tau.reshape(6, 1))
+        vehicle = _part_vehicle(payload_mass=float(table["payload_mass"][i]), payload_position=position)
+        x, ui = _columns(table, "x", 12)[i], _columns(table, "ui", 2)[i]
+        xdot = vc.dynamics_map(vehicle, 1)(vc.mss_to_ours(x).reshape(12, 1), ui.reshape(2, 1))
         worst = max(worst, np.abs(vc.ours_to_mss(np.asarray(xdot).T)[0] - _columns(table, "xdot", 12)[i]).max())
     assert worst <= G1_TOLERANCE, worst
 
 
-def _run_rk4(vehicle, table):
-    """The frozen run stepped with RK4 at the frozen step; the outboard wrench is evaluated at every stage from
-    the stage's state, as the model file does."""
-    dynamics = vc.graph_of(vehicle).step
-    wrench = _outboard()
-    commands = np.column_stack([table["ui_01"], table["ui_02"]])
-
-    def rate(x, ui):
-        tau = wrench(x[6:12], ui[0], ui[1])  # x is ours: [eta; nu]
-        return np.asarray(dynamics(x, tau)).ravel()
-
+def _rk4_run(vehicle, table, commands):
+    """The frozen run stepped by the vehicle's own RK4 at the frozen step, each command held ``HOLD_STEPS`` steps."""
     x = vc.mss_to_ours(_columns(table, "x", 12)[0])
     states = np.zeros((len(table["t"]), 12))
     for row in range(len(table["t"])):
         states[row] = vc.ours_to_mss(x)
         if row < len(table["t"]) - 1:
             for _ in range(HOLD_STEPS):
-                k1 = rate(x, commands[row]); k2 = rate(x + 0.5 * STEP * k1, commands[row])
-                k3 = rate(x + 0.5 * STEP * k2, commands[row]); k4 = rate(x + STEP * k3, commands[row])
-                x = x + STEP / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+                x = vehicle.step_vector(x, commands[row], STEP)
     return states
 
 
-@pytest.mark.parametrize("set_name", ["gate", "x_ref"])
-@pytest.mark.parametrize("name", G3_RUNS)
-def test_G3_monohull_trajectory_equals_the_matlab_model_file_rk4_run(name, set_name):
-    point, suffix = SETS[set_name]
-    table = _table(f"grethe_m_trajectory_{name}{suffix}.csv")
+def _tolerances(name, suffix):
     tolerances = {}
     for r in _read_csv(f"grethe_m_trajectory_tolerances{suffix}.csv"):
         if r["scenario"] == name:
             tolerances[int(r["state"])] = float(r["tolerance"])
-    error = np.abs(_run_rk4(_mss_vehicle(point), table) - _columns(table, "x", 12)).max(axis=0)
+    return tolerances
+
+
+@pytest.mark.parametrize("set_name, name", [(s, r) for s, runs in CASES for r in runs])
+def test_G3_trajectory_of_the_part_equals_the_model_file_rk4_run_option_by_option(set_name, name):
+    suffix, *_ = SETS[set_name]
+    table = _table(f"grethe_m_trajectory_{name}{suffix}.csv")
+    tolerances = _tolerances(name, suffix)
+    commands = np.column_stack([table["ui_01"], table["ui_02"]])
+    error = np.abs(_rk4_run(_part_vehicle(set_name), table, commands) - _columns(table, "x", 12)).max(axis=0)
     over = [f"x{i + 1}: {error[i]:.3g} > {tolerances[i + 1]:.3g}" for i in range(12) if error[i] > tolerances[i + 1]]
     assert not over, f"{name}: " + "; ".join(over)
 
 
-def test_the_outboard_leg_normal_force_is_a_form_of_the_library():
-    """The model file's ``leg`` set (turning circle and square wave with the normal force of the outboard leg,
-    ``grethe_m_trajectory_*_leg.csv``) has no counterpart in the library: the outboard model carries thrust
-    vectoring only (``models/outboard/outboard_motor.py``). Red until a leg-force form exists (not tuned away)."""
-    import more_dynamics.models.outboard.outboard_motor as outboard
-    assert hasattr(outboard, "outboard_leg_normal_force"), (
-        "no leg normal-force form in more_dynamics.models.outboard: the 'leg' reference set cannot be gated")
+# --- the plant of the part itself: actuator states included ---------------------------------------------------------
+
+def _plant_rk4_run(vehicle, table):
+    """The frozen plant run (``grethe_m_plant_trajectory_*``) by the vehicle's own RK4 at the frozen step; the state is
+    ours [thrust, steering angle, eta, nu], read back in the file's order ``x_01..12, act_01..02``."""
+    commands = np.column_stack([table["ui_01"], table["ui_02"]])
+    x = vc.mss_to_ours(np.r_[_columns(table, "x", 12)[0], _columns(table, "act", 2)[0]], vehicle)
+    states = np.zeros((len(table["t"]), 14))
+    for row in range(len(table["t"])):
+        states[row] = vc.ours_to_mss(x, vehicle)
+        if row < len(table["t"]) - 1:
+            for _ in range(HOLD_STEPS):
+                x = vehicle.step_vector(x, commands[row], STEP)
+    return states
 
 
-def test_the_residual_resistance_ramp_below_the_regression_range_is_a_form_of_the_library():
-    """The model file's default ramps the residual coefficient from zero to its value at Fn_V = 0.6 with a smoothstep
-    (``grethe_m_trajectory_*_ramp.csv``, ``xdot_ramp`` columns); the library's residual is zero below 0.6 and steps
-    at 1.805 m/s. Red until a ramp form exists (the gates above use the model file's ``ramp = false`` set)."""
-    from more_dynamics.models.surge_resistance import ra14_residual_resistance as ra14
-    assert hasattr(ra14, "residual_coefficient_ramped"), (
-        "no ramped residual form in more_dynamics.models.surge_resistance: the 'ramp' reference set cannot be gated")
+def _plant_tolerances(name):
+    tolerances = {}
+    for r in _read_csv("grethe_m_plant_trajectory_tolerances.csv"):
+        if r["scenario"] == name:
+            tolerances[int(r["state"])] = float(r["tolerance"])
+    return tolerances
+
+
+def test_the_part_is_the_monohull_with_one_outboard_and_its_actuator_states():
+    vehicle = _part_by_rpp()
+    assert type(vehicle).__name__ == "Monohull"
+    assert vc.input_names(vehicle) == ["drive_command", "steering_command"]
+    assert vc.actuator_state_count(vehicle) == 2  # the actual thrust and the actual steering angle
+
+
+def test_G1_plant_derivative_of_the_part_equals_the_model_file_with_its_callers_actuators():
+    vehicle = _part_by_rpp()
+    table = _table("grethe_m_plant_derivative.csv")
+    n = len(table["case_id"])
+    xa, uc, reference = _columns(table, "xa", 14), _columns(table, "uc", 2), _columns(table, "xadot", 14)
+    mss_states = np.column_stack([xa[:, 2:14], xa[:, 0:2]])  # the file's [thrust, angle, x(12)] as [x(12), actuators]
+    xdot = vc.dynamics_map(vehicle, n)(vc.mss_to_ours(mss_states, vehicle).T, uc.T)
+    mine = vc.ours_to_mss(np.asarray(xdot).T, vehicle)  # [nu_dot; eta_dot; actuator derivatives]
+    expected = np.column_stack([reference[:, 2:14], reference[:, 0:2]])
+    error = np.abs(mine - expected).max(axis=0)
+    assert error.max() <= G1_TOLERANCE, f"max |diff| per state {error}"
+
+
+@pytest.mark.parametrize("name", G3_RUNS)
+def test_G3_plant_trajectory_of_the_part_equals_the_model_file_with_its_callers_actuators(name):
+    table = _table(f"grethe_m_plant_trajectory_{name}.csv")
+    reference = np.column_stack([_columns(table, "x", 12), _columns(table, "act", 2)])
+    error = np.abs(_plant_rk4_run(_part_by_rpp(), table) - reference).max(axis=0)
+    tolerances = _plant_tolerances(name)
+    over = [f"state {i + 1}: {error[i]:.3g} > {tolerances[i + 1]:.3g}" for i in range(14) if error[i] > tolerances[i + 1]]
+    assert not over, f"{name}: " + "; ".join(over)
+
+
+def test_G4_a_plant_without_the_leg_or_with_other_actuator_lags_is_detected():
+    """The gate can fail: the same run with the leg force switched off and with the steering lag doubled misses the
+    frozen plant run by far more than its tolerance."""
+    p = vc.plugins()
+    table = _table("grethe_m_plant_trajectory_turning_circle_20deg.csv")
+    reference = np.column_stack([_columns(table, "x", 12), _columns(table, "act", 2)])
+    tolerance = _plant_tolerances("turning_circle_20deg")
+    outboard = _values(p.Propulsor, "Grethe outboard", housing="none")
+    slow = _values(p.Propulsor, "Grethe outboard", time_constant=1.0)
+    for changed in (outboard, slow):
+        vehicle = vc.build_context(
+            p.Monohull, _values(p.Monohull, PART), site=(p.Site, _values(p.Site, "Grethe site")),
+            hydrostatics=(p.SurfaceRestoring, _values(p.SurfaceRestoring, "Grethe hydrostatics")),
+            hydrodynamics=(p.SurfaceHullLoads, _values(p.SurfaceHullLoads, "Grethe hull loads")),
+            actuators=[(p.Propulsor, changed)])
+        error = np.abs(_plant_rk4_run(vehicle, table) - reference).max(axis=0)
+        assert any(error[i] > 10 * tolerance[i + 1] for i in range(14))
+
+
+def test_the_outboard_values_of_the_part_are_the_model_files_limits():
+    """The part's outboard numbers equal the ones read from the model file's ``lim`` (not typed in the data files)."""
+    outboard = vc.reference_part("Grethe outboard")
+    lim = json.loads((DATA / "grethe_m_outboard.json").read_text())
+    plant = json.loads((DATA / "grethe_m_plant.json").read_text())
+    assert outboard["max_thrust"] == lim["max_thrust"] and outboard["delivered_power"] == lim["max_propulsive_power"]
+    assert list(outboard["position"]) == lim["position"]
+    assert outboard["thrust_time_constant"] == plant["thrust_time_constant"]
+    assert outboard["time_constant"] == plant["steering_time_constant"]
+    assert outboard["max_rate"] == plant["steering_rate_limit"] and outboard["max_deflection"] == plant["steering_angle_limit"]
+    assert lim["steering_convention"] == "starboard_positive" and outboard["steering_convention"] == "port_positive"  # one formula, two names
+
+
+RPPWS = Path(__file__).resolve().parents[2] / ".rppws"
+
+
+def _tree(name):
+    """``(parameter values by slot, the id the actuator links point to)`` of the named part ``name`` and its own
+    children (the slot ``root`` is the vehicle's own file)."""
+    from rpp_orchestrator.component_storage import ComponentParameterStore
+    folder = next(d.parent for d in RPPWS.joinpath("parts").rglob("description.json")
+                  if json.loads(d.read_text()).get("Name") == name)
+    record = json.loads((folder / "description.json").read_text())
+    store = ComponentParameterStore()
+    values = {"root": store.load(folder)}
+    links = []
+    for slot, entry in record["Subcomponents"].items():
+        for item in (entry if isinstance(entry, list) else [entry]):
+            child = folder / "subcomponents" / item["Id"]
+            if item["IsLinked"]:
+                links.append(json.loads((child / "description.json").read_text())["LinkedComponentId"])
+            else:
+                values[slot] = store.load(child)
+    return values, links
+
+
+def test_the_stress_test_part_differs_from_the_part_in_two_numbers_of_the_hull_loads_only():
+    """"Grethe (yaw-unstable stress test)" is a copy of the part with the earlier yaw damping: every parameter file is
+    equal to the part's but the hull loads' ``time_constants`` and ``sway_yaw_coupling``, and it links the same outboard."""
+    main, main_links = _tree(PART)
+    stress, stress_links = _tree("Grethe (yaw-unstable stress test)")
+    assert main_links == stress_links and len(main_links) == 1
+    assert main.keys() == stress.keys() == {"root", "hydrostatics", "hydrodynamics", "site"}
+    for slot in main:
+        assert main[slot].keys() == stress[slot].keys(), slot
+        different = {n for n in main[slot] if repr(main[slot][n]) != repr(stress[slot][n])}
+        assert different == ({"time_constants", "sway_yaw_coupling"} if slot == "hydrodynamics" else set()), slot
+    assert list(stress["hydrodynamics"]["time_constants"]) == [8.0, 16.0]
+    assert list(stress["hydrodynamics"]["sway_yaw_coupling"]) == [0.0, 0.0]
+    assert list(main["hydrodynamics"]["time_constants"]) == [8.0, 4.0]
+    assert list(main["hydrodynamics"]["sway_yaw_coupling"]) == [0.0, 2500.0]
+
+
+def _yaw_sway_poles(vehicle, speed=1.5):
+    """Eigenvalues of the sway and yaw dynamics linearised at a straight run, no steering, at ``speed`` m/s (the
+    Jacobian of ``[v_dot, r_dot]`` over ``[v, r]``, the rest of the state at its straight-run values)."""
+    import casadi as ca
+    graph = vc.graph_of(vehicle)
+    step = graph.step
+    n = step.size1_in(0)
+    x = ca.SX.sym("x", n)
+    u = ca.SX.zeros(2)
+    base = np.zeros(n)
+    base[-6] = speed  # u, the first of the six body velocities
+    jacobian = ca.Function("j", [x], [ca.jacobian(step(x, u), x)])
+    full = np.asarray(jacobian(base))
+    v, r = n - 5, n - 1  # sway velocity, yaw rate: the second and the last of the six body velocities
+    return np.linalg.eigvals(full[np.ix_([v, r], [v, r])])
+
+
+def test_the_part_is_stable_in_yaw_and_the_stress_test_part_is_not():
+    poles = _yaw_sway_poles(_part_by_rpp("grethe"))
+    stress = _yaw_sway_poles(_part_by_rpp("grethe_stress_test"))
+    assert poles.real.max() < 0.0, poles
+    assert stress.real.max() > 0.1, stress  # an unstable real pole, growing with speed (the Munk moment, N_v = Y_r = 0)

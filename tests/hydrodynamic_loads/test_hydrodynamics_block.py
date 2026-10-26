@@ -1102,9 +1102,9 @@ def test_G2_function_signatures():
     for form in surge.SURGE_FORMS:
         floor = "ittc_reynolds_floor" in surge.surge_damping_casadi(surge_form=form).name_in()
         # every form that evaluates the ITTC friction line carries the floor;
-        # "ittc_residual" adds its residual term to that same line
-        assert floor == (form in ("ittc", "ittc_residual", "exp_ittc")), form
-    for form in ("ittc", "ittc_residual", "exp_ittc"):
+        # "ittc_residual" and "ittc_residual_ramped" add their residual term to that same line
+        assert floor == (form in ("ittc", "ittc_residual", "ittc_residual_ramped", "exp_ittc")), form
+    for form in ("ittc", "ittc_residual", "ittc_residual_ramped", "exp_ittc"):
         assert surge.surge_damping_casadi(surge_form=form).name_in()[-1] == "ittc_reynolds_floor", form
         assert "ittc_reynolds_floor" not in surge.surge_damping_casadi(
             surge_form=form, ittc_reynolds_bound="offset").name_in(), form
