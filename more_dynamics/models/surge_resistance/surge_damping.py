@@ -44,7 +44,7 @@ MSS attributes the surge added mass to Söding (1982), not read here.
   stated validity ``Fn_V = 0.6`` (A-64 hidden assumption 3, same module);
 * ``"ittc_residual_ramped"``: the same with the residual's range edge softened: below ``Fn_V = 0.6`` the residual is
   its edge value times a smoothstep from zero at rest (``residual_coefficient_ramped``, a construction of the model
-  file ``grethe.m``, not a published law), so the resistance has no step at the edge;
+  file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, not a published law), so the resistance has no step at the edge;
 * ``"exp_ittc"``: the ship law of MSS release 2.0.2 (``osv.m`` 182-185,
   ``hydroVessel.m`` 88-89 at ``cc07579``), ``D_nl,11 = exp(-k_u |u_r|) D11 -
   Xuu |u_r|``, ``X = -D_nl,11 u_r`` (``osv.m`` 204), with ``D11 = M(1,1) /

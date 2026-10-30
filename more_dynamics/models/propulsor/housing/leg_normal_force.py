@@ -11,8 +11,8 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion Control.
     Wiley. Ch. 12, eq. 12.226, p. 400.
-[Krizman] Krizman, E. Model file ``grethe.m``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
-    CRAFT/USV/models/grethe.m 269-271, 400-408 (read; the file may still be revised).
+[Krizman] Krizman, E. Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
+    CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 269-271, 400-408 (read; the file may still be revised).
 
 Author:    Enio Krizman
 Date:      2026-10-23

@@ -1,4 +1,4 @@
-"""Two forms of the hull loads of a monohull that the model file ``grethe.m`` has and the library had not:
+"""Two forms of the hull loads of a monohull that the model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` has and the library had not:
 
 * the residual coefficient with the range edge of the regression softened (``residual_coefficient_ramped``, surge form
   ``ittc_residual_ramped``): equal to the regression's own coefficient from ``Fn_V = 0.6`` upward, zero at rest, a smoothstep

@@ -154,7 +154,7 @@ def _own_parameters(part_id):
 def test_grethe_from_the_workspace_builds_with_its_own_selectors():
     """Structural only (physics gates are ``test_monohull_grethe.py``): the part builds as a ``Monohull`` with one
     outboard (a thrust command and a steering angle command, and the two actuator states behind them), and its
-    children's own parameter files (not the plugins' defaults) carry the forms of the model file ``grethe.m``."""
+    children's own parameter files (not the plugins' defaults) carry the forms of the model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``."""
     built = _build("grethe")
     assert type(built).__name__ == "Monohull"
     assert vc.input_names(built) == ["drive_command", "steering_command"]
@@ -168,7 +168,7 @@ def test_grethe_from_the_workspace_builds_with_its_own_selectors():
     hydrodynamics = _own_parameters(record["Subcomponents"]["hydrodynamics"]["Id"])
     root_params = _own_parameters(vessel["Id"])
     assert root_params["added_mass_mass_basis"] == "displaced"
-    assert root_params["hull_waterplane_coefficient"] == 0.41  # fitted to the logged roll period (grethe.m 242)
+    assert root_params["hull_waterplane_coefficient"] == 0.41  # fitted to the logged roll period (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 242)
     assert hydrostatics["wetted_surface_method"] == "regression_table"
     assert hydrostatics["reference_point"] == [0.0, 0.0, 0.0]  # the waterline midpoint, E-101 Q4 a
     assert hydrodynamics["manoeuvring_damping"] == "time_constants_coupled"

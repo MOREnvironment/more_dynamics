@@ -3,14 +3,14 @@ the load torque ignored. The thrust is limited where the law knows the limit (a 
 delivered and the speed of the water).
 
 The output ``drive_output`` is a thrust in newtons (unit ``"N"``), the unit the thrust-command laws accept. This is
-the form of a unit commanded by its thrust, whose actuator dynamics are the caller's, as ``grethe.m`` takes its
-thrust ``ui(1)`` as the actual thrust (``grethe.m`` 38-48, "the lag ... applied by the caller");
+the form of a unit commanded by its thrust, whose actuator dynamics are the caller's, as ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` takes its
+thrust ``ui(1)`` as the actual thrust (``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` 38-48, "the lag ... applied by the caller");
 ``thrust_command_lag`` is the same with the lag as a state of the unit.
 
 References
 ----------
-[Krizman] Krizman, E. Model file ``grethe.m``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
-    CRAFT/USV/models/grethe.m 38-48, 391-393 (the thrust input and its limit; read, the file may still be revised).
+[Krizman] Krizman, E. Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
+    CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 38-48, 391-393 (the thrust input and its limit; read, the file may still be revised).
 
 Author:    Enio Krizman
 Date:      2026-10-26

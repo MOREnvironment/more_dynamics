@@ -17,7 +17,7 @@ transfers. The scaling procedure is a construction of A-64
 3), not an equation printed in the paper. Below ``Fn_V = 0.6`` the regression
 does not cover the hull and ``C_R`` is clamped to 0 (A-64, same place);
 ``residual_coefficient_ramped`` instead takes the value at the range edge times a smoothstep from zero at rest
-(the model file ``grethe.m`` has this form as its default, ``residualCoefficient``).
+(the model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` has this form as its default, ``residualCoefficient``).
 
 ``wetted_surface_coefficient(displaced_volume, length)`` reads the same
 ``S/V^(2/3)`` regression at ``Fn_V = 0`` (the cubic's constant term, ``D(s)``

@@ -4,14 +4,14 @@ load torque ignored. The output ``drive_output`` is the actual thrust in newtons
 
     d(thrust)/dt = (command - thrust) / T_thrust
 
-The lag of the thrust of the outboard of ``grethe.m``: its ``lim.T_thrust`` is a time constant the caller applies to
-the thrust command (``SIMgrethe.m`` 257, ``Th = Th + h/T_T (thrust_c - Th)``); here it is the continuous form of that
+The lag of the thrust of the outboard of ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``: its ``lim.T_thrust`` is a time constant the caller applies to
+the thrust command (``SIMgrethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` 257, ``Th = Th + h/T_T (thrust_c - Th)``); here it is the continuous form of that
 state, integrated with the vehicle's own RK4.
 
 References
 ----------
-[Krizman] Krizman, E. Model file ``grethe.m`` and its simulator ``SIMgrethe.m``, MSS fork branch ``grethe-vehicle``
-    @ 679a6e8, CRAFT/USV/models/grethe.m 268 (``T_thrust``), CRAFT/USV/SIMgrethe.m 151-154, 257-259 (read, the
+[Krizman] Krizman, E. Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` and its simulator ``SIMgrethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle``
+    @ 679a6e8, CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 268 (``T_thrust``), CRAFT/USV/SIMgrethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 151-154, 257-259 (read, the
     files may still be revised).
 
 Author:    Enio Krizman

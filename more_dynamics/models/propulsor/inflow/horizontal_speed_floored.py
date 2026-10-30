@@ -4,8 +4,8 @@ rest), thrust factor 1, torque factor 1. The speed has a zero (not NaN) derivati
 
 References
 ----------
-[Krizman] Krizman, E. Model file ``grethe.m``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
-    CRAFT/USV/models/grethe.m 391 (``U_h = max(sqrt(nu_r(1)^2 + nu_r(2)^2), 0.1)``; read, the file may still be
+[Krizman] Krizman, E. Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
+    CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 391 (``U_h = max(sqrt(nu_r(1)^2 + nu_r(2)^2), 0.1)``; read, the file may still be
     revised).
 
 Author:    Enio Krizman
@@ -27,7 +27,7 @@ def horizontal_speed_floored_casadi():
     p = symbols(declared)
     inputs = {"nu_r": ca.SX.sym("nu_r", 6), "thrust_axis": ca.SX.sym("thrust_axis", 3),
               "thrust_position": ca.SX.sym("thrust_position", 3)}
-    advance = ca.fmax(safe_norm(inputs["nu_r"][0:2]), p["speed_floor"])  # U_h = max(|nu_r(1:2)|, floor) (grethe.m 391)
+    advance = ca.fmax(safe_norm(inputs["nu_r"][0:2]), p["speed_floor"])  # U_h = max(|nu_r(1:2)|, floor) (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 391)
     return part_function("horizontal_speed_floored", inputs,
                          {"advance_speed": advance, "thrust_factor": ca.SX(1.0), "torque_factor": ca.SX(1.0)},
                          p, declared)

@@ -167,7 +167,7 @@ def coupled_manoeuvring_damping_surface(*, modulus=False, from_time_constants=Fa
     ``modulus_coefficients`` term (zero, unsourced placeholder, module
     docstring, ``modulus=True``). With ``from_time_constants`` the diagonal terms come from the time constants,
     ``Y_v = -M22 / T_sway`` and ``N_r = -M66 / T_yaw`` (Fossen 2011, eq. 6.76, p. 125; ``otter.m`` 211-217; the model
-    file ``grethe.m`` 336-345), and ``sway_yaw_coupling`` gives ``[Y_r, N_v]``, in place of the four
+    file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` 336-345), and ``sway_yaw_coupling`` gives ``[Y_r, N_v]``, in place of the four
     ``sway_yaw_derivatives`` (one quantity, one value: the two diagonal terms are not typed again)."""
     mass = ca.SX.sym("mass_matrix", 6, 6)
     restoring = ca.SX.sym("restoring_matrix", 6, 6)

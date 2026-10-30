@@ -196,7 +196,7 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `length` | 5.2 | m | A-43 M1, F003 p2, M001 p7 (overall length) | document |
 | `beam` | 2.15 | m | A-43 M2, F003 p2, M001 p7, D002 p1 | document |
 | `hull_block_coefficient` | 0.234 | 1 | A-43 M4, 806 / (1025 * 5.2 * 2.15 * 0.3), a mass knob not hull fullness | derived |
-| `hull_waterplane_coefficient` | 0.41 | 1 | grethe.m:242 Cw, chosen so that the roll period is the logged 1.85 s (a hard-chine hull would be 0.7-0.8: it absorbs the unexplained roll stiffness) | fitted |
+| `hull_waterplane_coefficient` | 0.41 | 1 | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):242 Cw, chosen so that the roll period is the logged 1.85 s (a hard-chine hull would be 0.7-0.8: it absorbs the unexplained roll stiffness) | fitted |
 | `hull_mass` | 806.0 | kg | A-43 M7, F003 p2 (FAT, +/- 20 kg) | document |
 | `payload_mass` | 0.0 | kg | a bare hull; the 2026 field payload (USBL mount, battery packs) is not weighed (A-43 M8, gap) | gap |
 | `hull_center_of_gravity` | [0.0, 0.0, 0.025] | m | A-43 M9 | estimate |
@@ -215,8 +215,8 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `hull_count` | 1 | - | A-43 M15, monohull | convention |
 | `longitudinal_inertia_factor` | 1.0 | 1 | A-43 M17 | estimate |
 | `longitudinal_center_of_flotation` | -0.3 | m | A-43 M18 | estimate |
-| `reference_point` | [0.0, 0.0, 0.0] | m | the body origin, the midpoint of the waterline length (E-101 Q4 a; grethe.m:349 `x_ref` 0); the earlier [-2.24, 0, 0] put the restoring matrix at the outboard | owner decision |
-| `payload_trim_form` | "lever_arm_moment" (plugin default, not set) | - | grethe.m:414-419: the payload weight is in the loaded displacement, only its lever arm moves the equilibrium | selector |
+| `reference_point` | [0.0, 0.0, 0.0] | m | the body origin, the midpoint of the waterline length (E-101 Q4 a; grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):349 `x_ref` 0); the earlier [-2.24, 0, 0] put the restoring matrix at the outboard | owner decision |
+| `payload_trim_form` | "lever_arm_moment" (plugin default, not set) | - | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):414-419: the payload weight is in the loaded displacement, only its lever arm moves the equilibrium | selector |
 | `wetted_surface_method` | "regression_table" | - | A-64 Section 3.3 R11 | owner decision |
 
 ## Grethe site (`more_dynamics::Site`)
@@ -233,12 +233,12 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|
-| `manoeuvring_damping` | "time_constants_coupled" | - | Y_v = -M22 / T_sway and N_r = -M66 / T_yaw computed, Y_r and N_v given (grethe.m:361-369) | selector |
-| `time_constants` | [8.0, 4.0] | s | [T_sway, T_yaw] (grethe.m:251-252; T_yaw chosen with N_v for a yaw-stable open loop) | estimate |
-| `sway_yaw_coupling` | [0.0, 2500.0] | N s/m, N m s/m | [Y_r, N_v] (grethe.m:363-364): Y_r = 0 not identified; N_v = 2500 chosen, no source | estimate (chosen) |
+| `manoeuvring_damping` | "time_constants_coupled" | - | Y_v = -M22 / T_sway and N_r = -M66 / T_yaw computed, Y_r and N_v given (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):361-369) | selector |
+| `time_constants` | [8.0, 4.0] | s | [T_sway, T_yaw] (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):251-252; T_yaw chosen with N_v for a yaw-stable open loop) | estimate |
+| `sway_yaw_coupling` | [0.0, 2500.0] | N s/m, N m s/m | [Y_r, N_v] (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):363-364): Y_r = 0 not identified; N_v = 2500 chosen, no source | estimate (chosen) |
 | `cross_flow` | "hoerner_strips" | - | A-64 Section 3.4 | selector |
-| `surge_resistance` | "ittc_residual_ramped" | - | ITTC friction plus the RA14 residual, its range edge softened by a smoothstep (grethe.m:386-388, 443-495; E-101 Q1 a) | owner decision |
-| `time_constant` | 15.0 | s | grethe.m:256 T_1 | estimate |
+| `surge_resistance` | "ittc_residual_ramped" | - | ITTC friction plus the RA14 residual, its range edge softened by a smoothstep (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):386-388, 443-495; E-101 Q1 a) | owner decision |
+| `time_constant` | 15.0 | s | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):256 T_1 | estimate |
 | `form_factor` | 0.1 | 1 | Fossen 2011 p. 125; A-43 M27 | published |
 | `crossover_speed` | 2.0 | m/s | A-43 M28 | published |
 | `surge_added_mass_factor` | 2.7 | 1 | addedMassSurge.m 34; A-43 | published |
@@ -249,22 +249,22 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 
 ## Grethe outboard (`more_dynamics::Propulsor`)
 
-Selectors: `drive` "thrust_command_lag", `steering` "servo_lag_rate_angle", `mounting` "azimuth", `inflow` "horizontal_speed_floored", `law` "thrust_power_limited", `housing` "leg_normal_force" (grethe.m:38-48, 262-271, 391-408; SIMgrethe.m:257-259). Inputs: `drive_command` (thrust command, N) and `steering_command` (angle command, rad, positive = thrust force to starboard); states: the actual thrust and the actual steering angle.
+Selectors: `drive` "thrust_command_lag", `steering` "servo_lag_rate_angle", `mounting` "azimuth", `inflow` "horizontal_speed_floored", `law` "thrust_power_limited", `housing` "leg_normal_force" (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):38-48, 262-271, 391-408; SIMgrethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):257-259). Inputs: `drive_command` (thrust command, N) and `steering_command` (angle command, rad, positive = thrust force to starboard); states: the actual thrust and the actual steering angle.
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|
-| `steering_convention` | "port_positive" | - | the same formula grethe.m:276 names `starboard_positive` | selector |
+| `steering_convention` | "port_positive" | - | the same formula grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):276 names `starboard_positive` | selector |
 | `shaft_torque_scale` | 0.0 | 1 | the model file has no shaft torque on the body | convention |
-| `thrust_time_constant` | 0.3 | s | grethe.m:268 T_thrust | estimate |
-| `max_deflection` | 0.6108652381980153 | rad | grethe.m:265 delta_max = 35 deg (the logs imply 53-80 deg in turns from rest, conditional on the inertia estimate) | estimate |
-| `max_rate` | 1.0471975511965976 | rad/s | grethe.m:266 ddelta_max = 60 deg/s | estimate |
-| `time_constant` | 0.5 | s | grethe.m:267 T_delta | estimate |
-| `position` | [-2.24, 0.0, 0.55] | m | grethe.m:264 r_P: x from the drawing, z the hub depth | estimate |
-| `speed_floor` | 0.1 | m/s | grethe.m:391 | numerical floor |
-| `max_thrust` | 511.5 | N | grethe.m:262 T_max: the Torqeedo data sheet | document |
-| `delivered_power` | 1120.0 | W | grethe.m:263 P_prop: the data sheet, power delivered to the water | document |
-| `leg_area` | 0.04 | m^2 | grethe.m:269 A_leg | estimate (a construction) |
-| `leg_aspect_ratio` | 1.5 | 1 | grethe.m:270 AR_leg | estimate (a construction) |
+| `thrust_time_constant` | 0.3 | s | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):268 T_thrust | estimate |
+| `max_deflection` | 0.6108652381980153 | rad | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):265 delta_max = 35 deg (the logs imply 53-80 deg in turns from rest, conditional on the inertia estimate) | estimate |
+| `max_rate` | 1.0471975511965976 | rad/s | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):266 ddelta_max = 60 deg/s | estimate |
+| `time_constant` | 0.5 | s | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):267 T_delta | estimate |
+| `position` | [-2.24, 0.0, 0.55] | m | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):264 r_P: x from the drawing, z the hub depth | estimate |
+| `speed_floor` | 0.1 | m/s | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):391 | numerical floor |
+| `max_thrust` | 511.5 | N | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):262 T_max: the Torqeedo data sheet | document |
+| `delivered_power` | 1120.0 | W | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):263 P_prop: the data sheet, power delivered to the water | document |
+| `leg_area` | 0.04 | m^2 | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):269 A_leg | estimate (a construction) |
+| `leg_aspect_ratio` | 1.5 | 1 | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):270 AR_leg | estimate (a construction) |
 
 ## Grethe (yaw-unstable stress test) (`more_dynamics::Monohull`)
 
@@ -419,7 +419,7 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 | REMUS 100 (MSS, ocean current) | `.rppws/parts/more_dynamics__spheroid_auv/0894facd-2fd1-45bf-ba09-71c4a2e91f91/` (a copy of REMUS 100 (MSS) with `current_form = "yaw_rate_terms"`, `remus100.m` 118-123; same linked actuators; a test asserts that nothing else differs) | yes |
 | REMUS 100 (MSS, quaternion) | `.rppws/parts/more_dynamics__spheroid_auv/92e634eb-ef30-44d1-8fed-8cd28a876dc2/` (a copy of REMUS 100 (MSS, ocean current) with `kinematics_form = "unit_quaternion"`: 13 states; a test asserts that nothing else differs) | yes |
 | Otter (MSS, ocean current) | `.rppws/parts/more_dynamics__catamaran/d046ae58-8a9f-40ac-a806-10578eb0fd09/` (a copy of Otter (MSS) with `current_form = "full_rotation_rate"`, `otter.m` 120-125; same linked actuators; a test asserts that nothing else differs) | yes |
-| Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | the part's own (the values of the model file grethe.m) |
+| Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | the part's own (the values of the model file grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)) |
 | Grethe (yaw-unstable stress test) | `.rppws/parts/more_dynamics__monohull/b378c519-2d5f-4161-a8d0-a11a4f44a072/` (configuration `grethe_stress_test`) | no (a copy of Grethe with one change, see its section) |
 | Grethe outboard | `.rppws/parts/more_dynamics__propulsor/` (linked into both Grethe parts) | yes |
 | NPS AUV II (MSS) | not yet landed | n/a |

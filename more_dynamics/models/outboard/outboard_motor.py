@@ -60,8 +60,8 @@ References
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
     licence, revision ``6e78e98``: ``LIBRARY/modeling/wageningen.m`` 6;
     ``CRAFT/AUV/models/remus100.m`` 250.
-[Krizman] Krizman, E. (2026). Model file ``grethe.m``, MSS fork branch ``grethe-vehicle``, revision
-    ``679a6e8``: ``CRAFT/USV/models/grethe.m`` 269-271, 400-408 (the leg normal force, ``outboard_leg_normal_force``;
+[Krizman] Krizman, E. (2026). Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle``, revision
+    ``679a6e8``: ``CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` 269-271, 400-408 (the leg normal force, ``outboard_leg_normal_force``;
     the file may still be revised). Whicker, L. F. and Fehlner, L. F. (1958), the rudder lift slope the file adapts
     (page not read).
 
@@ -166,18 +166,18 @@ def outboard_leg_normal_force(nu_r, delta, position, density, leg_area, leg_aspe
     Flow at the leg ``u_l = u_r - y_P r_r``, ``v_l = v_r + x_P r_r``; unit normal to the motor axis ``n = [-sin d,
     cos d]``; ``v_n = u_l n_x + v_l n_y``; ``U_l = sqrt(u_l^2 + v_l^2 + 1e-6)``; ``F_n = -1/2 rho A C_L' U_l v_n``
     with the slope ``C_L' = 6.13 AR / (AR + 2.25)``; the force ``F_n n`` acts at the motor position (the
-    model file ``grethe.m`` 400-408 with the slope of 269-271, in the author's MSS fork at 679a6e8: the slope is
+    model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)`` 400-408 with the slope of 269-271, in the author's MSS fork at 679a6e8: the slope is
     the rudder lift slope of Whicker and Fehlner adapted to the leg, a construction; the ``1e-6`` under the root
     is the model file's guard against a zero flow). Wrench of a point force ``[f; r x f]`` (Fossen 2011, eq.
     12.226, p. 400)."""
-    slope = 6.13 * leg_aspect_ratio / (leg_aspect_ratio + 2.25)  # normal-force slope per rad (grethe.m 271)
-    flow_x = nu_r[0] - position[1] * nu_r[5]  # flow at the leg (grethe.m 401)
-    flow_y = nu_r[1] + position[0] * nu_r[5]  # (grethe.m 402)
-    normal_x, normal_y = -ca.sin(delta), ca.cos(delta)  # normal to the motor axis (grethe.m 403)
-    normal_speed = flow_x * normal_x + flow_y * normal_y  # (grethe.m 404)
-    speed = ca.sqrt(flow_x**2 + flow_y**2 + LEG_SPEED_GUARD)  # (grethe.m 405)
-    normal_force = -0.5 * density * leg_area * slope * speed * normal_speed  # (grethe.m 406)
-    return wrench(ca.vertcat(normal_force * normal_x, normal_force * normal_y, 0.0), position)  # (grethe.m 407-408; Fossen 2011, eq. 12.226, p. 400)
+    slope = 6.13 * leg_aspect_ratio / (leg_aspect_ratio + 2.25)  # normal-force slope per rad (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 271)
+    flow_x = nu_r[0] - position[1] * nu_r[5]  # flow at the leg (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 401)
+    flow_y = nu_r[1] + position[0] * nu_r[5]  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 402)
+    normal_x, normal_y = -ca.sin(delta), ca.cos(delta)  # normal to the motor axis (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 403)
+    normal_speed = flow_x * normal_x + flow_y * normal_y  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 404)
+    speed = ca.sqrt(flow_x**2 + flow_y**2 + LEG_SPEED_GUARD)  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 405)
+    normal_force = -0.5 * density * leg_area * slope * speed * normal_speed  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 406)
+    return wrench(ca.vertcat(normal_force * normal_x, normal_force * normal_y, 0.0), position)  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 407-408; Fossen 2011, eq. 12.226, p. 400)
 
 
 def outboard_motor_rpm_casadi(*, power_limit=True, clip_advance_ratio=False):

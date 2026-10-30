@@ -10,10 +10,10 @@ measured thrust curve; raise: bollard pulls and runs at known speed and throttle
 
 References
 ----------
-[Krizman] Krizman, E. Model file ``grethe.m``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
-    CRAFT/USV/models/grethe.m 391-393 (``T_lim = min(T_max, P_prop/U_h)``, ``Th = satlim(ui(1), -T_lim, T_lim)``; read,
+[Krizman] Krizman, E. Model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, MSS fork branch ``grethe-vehicle`` @ 679a6e8,
+    CRAFT/USV/models/grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 391-393 (``T_lim = min(T_max, P_prop/U_h)``, ``Th = satlim(ui(1), -T_lim, T_lim)``; read,
     the file may still be revised); its ``T_max`` and ``P_prop`` are the Torqeedo data sheet's maximum thrust and power
-    delivered to the water (grethe.m 262-263, vendor document, not read here).
+    delivered to the water (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 262-263, vendor document, not read here).
 
 Author:    Enio Krizman
 Date:      2026-10-26
@@ -36,7 +36,7 @@ def thrust_power_limited_casadi():
     declared = thrust_power_limited_parameters()
     p = symbols(declared)
     command, advance, density = ca.SX.sym("drive_output"), ca.SX.sym("advance_speed"), ca.SX.sym("water_density")
-    limit = ca.fmin(p["max_thrust"], p["delivered_power"] / advance)  # T_lim = min(T_max, P / U) (grethe.m 392)
+    limit = ca.fmin(p["max_thrust"], p["delivered_power"] / advance)  # T_lim = min(T_max, P / U) (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 392)
     return part_function("thrust_power_limited", {"drive_output": command, "advance_speed": advance,
                                                   "water_density": density},
-                         {"thrust": saturate(command, -limit, limit), "torque": ca.SX(0.0)}, p, declared)  # (grethe.m 393)
+                         {"thrust": saturate(command, -limit, limit), "torque": ca.SX(0.0)}, p, declared)  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 393)

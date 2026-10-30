@@ -7,7 +7,7 @@ the azimuth mounting and the normal force of an outboard leg.
 * ``steering_convention`` of the azimuth: ``port_positive`` is the default formula (a positive angle turns the thrust
   force to starboard, so the bow of a boat with the unit aft of the CO to port), ``starboard_positive`` the mirror;
   a thrust point at or ahead of the CO is refused for both (the boat's turn is defined for a unit aft of it).
-* ``leg_normal_force`` (housing): the normal force of the outboard leg of the MATLAB model file ``grethe.m``
+* ``leg_normal_force`` (housing): the normal force of the outboard leg of the MATLAB model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``
   (branch ``grethe-vehicle`` @ 01cd570, lines 265-268 and 394-404). G1: the housing's wrench equals the difference
   of the frozen ``tau_out_leg`` and ``tau_out`` columns of ``grethe_m_derivative.csv`` on its 300 states; G3: the
   model file's two ``leg`` runs (turning circle, steering square wave) stepped with RK4 through the vehicle with the
@@ -34,8 +34,8 @@ import vehicle_contract as vc  # noqa: E402
 
 from more_dynamics.models.outboard.outboard_motor import outboard_leg_normal_force  # noqa: E402
 
-A_LEG, AR_LEG = 0.04, 1.5         # grethe.m 265-266 [estimates]
-DELTA_MAX = np.deg2rad(35.0)      # grethe.m 260
+A_LEG, AR_LEG = 0.04, 1.5         # grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 265-266 [estimates]
+DELTA_MAX = np.deg2rad(35.0)      # grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 260
 RHO = 1025.0                      # MSS constants, the density of the frozen runs
 G1_TOLERANCE = 1e-9
 

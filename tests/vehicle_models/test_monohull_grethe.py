@@ -71,7 +71,7 @@ def _row_floats(row, prefix, count):
 # The U8a parameter set's own sway and yaw derivatives [Y_v, Y_r, N_v, N_r]: Y_v = -M22 / T_sway and N_r = -M66 / T_yaw for
 # the data file's time constants [8, 16] s on its mass matrix, Y_r = N_v = 0 (E-101 Q2 a, unidentified). The named part of
 # that day carried them as numbers; the part now computes them from its own time constants (manoeuvring_damping
-# ``time_constants_coupled``) and follows the model file ``grethe.m``, so this set keeps its own.
+# ``time_constants_coupled``) and follows the model file ``grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)``, so this set keeps its own.
 U8A_SWAY_YAW_DERIVATIVES = [-251.875, 0.0, 0.0, -229.86112500000002]
 
 
@@ -533,7 +533,8 @@ def test_named_part_grethe_with_the_full_g0_target_set_does_not_build_yet(tmp_pa
 
 
 # ---------------------------------------------------------------------------
-# (8) G1 / G3 against the MATLAB model file of the same craft (MSS style, ``data/grethe/generate_grethe_mss.m``)
+# (8) G1 / G3 against the MATLAB model file of the same craft (MSS style; generator ``data/grethe/generate_grethe_mss.m``
+#     retired 2026-10-30, file deleted; its frozen outputs ``grethe_m_*`` are kept as fixed data)
 #
 # A self-made reference, not a validation: the model file was written beside the library's Monohull from the same
 # cited equations, so agreement shows the two implementations compute the same equations; it says nothing about the

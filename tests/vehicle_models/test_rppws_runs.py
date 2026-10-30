@@ -404,7 +404,7 @@ def test_the_frozen_step_rk4_error_of_the_otter_runs_is_the_measured_size(name):
 
 
 # ---------------------------------------------------------------------------------------------------------------
-# Grethe: the commanded plant runs (the model file grethe.m with its defaults and its caller's actuator equations)
+# Grethe: the commanded plant runs (the model file grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) with its defaults and its caller's actuator equations)
 # ---------------------------------------------------------------------------------------------------------------
 GRETHE_CONFIGURATION = "grethe"
 GRETHE_DATA = Path(__file__).resolve().parent / "data" / "grethe"
