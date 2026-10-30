@@ -8,7 +8,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 6.91-6.92, p. 127 (strip integral).
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/crossFlowDrag.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: LIBRARY/modeling/crossFlowDrag.m
     55-70 (strip integral).
 
 Author:    Enio Krizman

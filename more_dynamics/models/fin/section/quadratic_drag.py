@@ -2,7 +2,7 @@
 
 References
 ----------
-[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 239-246 @ ed2ce7b.
+[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 239-246 @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-08

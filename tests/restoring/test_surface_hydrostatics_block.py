@@ -17,10 +17,11 @@ named parameters; geometry in, no vehicle numbers inside):
   waterplane_area, transverse_metacentric_height,
   longitudinal_metacentric_height, longitudinal_center_of_flotation,
   reference_point) -> (G, G_CO, G_CF)`` (CasADi, 6x6 each; numbers in, ``DM``
-  out); MSS ``Gmtrx.m`` 29-37:
+  out); MSS ``Gmtrx.m`` 32-41 at ``6e78e98``:
   ``G_CF = diag(0, 0, rho g A_wp, rho g nabla GMT, rho g nabla GML, 0)``,
   ``G_CO = H(r_bF)^T G_CF H(r_bF)`` with ``r_bF = [LCF 0 0]``,
-  ``G = H(r_bP)^T G_CO H(r_bP)``; ``H`` from ``more_transformations`` ``H_matrix`` (``Hmtrx.m``).
+  ``G = H(-r_bP)^T G_CO H(-r_bP)`` (the inverse shift ``H(r_bP)^-1 = H(-r_bP)``; MSS carried
+  ``H(+r_bP)`` up to ``ed2ce7b``); ``H`` from ``more_transformations`` ``H_matrix`` (``Hmtrx.m``).
 * ``metacentric_heights(displacement_volume, center_of_buoyancy_above_keel,
   transverse_waterplane_inertia, longitudinal_waterplane_inertia,
   center_of_gravity, draft) -> 6x1 [BM_T, BM_L, KM_T, KM_L, GM_T,
@@ -32,7 +33,7 @@ named parameters; geometry in, no vehicle numbers inside):
   ``longitudinal_inertia_factor``, ``longitudinal_center_of_flotation``,
   ``reference_point``, ``water_density`` and ``latitude`` (degrees, gravity
   from ``more_transformations``) or ``gravity`` (``gravity_source="value"``,
-  9.81 for the MSS checks, ``Gmtrx.m`` line 26).
+  9.81 for the MSS checks, ``Gmtrx.m`` line 29).
 * ``surface_hydrostatics_casadi(*, <the same selectors>) -> ca.Function``:
   inputs ``eta`` (6x1, NED, rad) and the declared parameters by name;
   outputs ``g = G eta``, ``G``, ``G_CO``, ``G_CF``, ``waterplane_area``,
@@ -86,6 +87,7 @@ HYDRODYNAMICS_DATA = Path(__file__).resolve().parents[1] / "hydrodynamic_loads" 
 # CSVs in this folder's data/ run everywhere.
 CONTRACT_MODULE = "more_dynamics.models.restoring.surface"
 GMTRX_CSV = "surface_gmtrx_mss_current.csv"
+GMTRX_CSV_ED2CE7B = "surface_gmtrx_mss_ed2ce7b.csv"   # the unmodified output of MSS Gmtrx.m up to ed2ce7b (shift H(+r_bP)), kept as history
 CHAIN_CSV = "surface_chain_mss_current.csv"
 
 G1_TOLERANCE = 1e-9   # G1: block vs MATLAB running MSS, absolute
@@ -106,35 +108,36 @@ MSS_OTTER_KB_AREA = "length_times_beam"  # otter.m line 177 up to MSS 72656d1 (b
 VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
                  "mariner", "torqeedo", "cybership", "prestero", "osv")
 
-OTTER = "CRAFT/USV/models/otter.m"
+OTTER = "CRAFT/USV/models/otter_legacy.m"   # the first-principles Otter; otter.m is the Capytaine-based model since 6e78e98
 EXSHIP = "mssExamples/exShipHydrostatics.m"
 OSV = "CRAFT/SHIP/models/osv.m"
 GMTRX = "LIBRARY/modeling/Gmtrx.m"
 CITED_LINES = {
     (GMTRX, 1): "function G = Gmtrx(nabla,A_wp,GMT,GML,x_F,r_bP)",
-    (GMTRX, 25): "constant = mssConstants();",
-    (GMTRX, 26): "rho = constant.rho_water;",
-    (GMTRX, 27): "g = constant.g;",
-    (GMTRX, 30): "r_bF = [x_F, 0, 0]';",
-    (GMTRX, 33): "G33_CF  = rho * g * A_wp;",
-    (GMTRX, 34): "G44_CF  = rho * g * nabla * GMT;",
-    (GMTRX, 35): "G55_CF  = rho * g * nabla * GML;",
-    (GMTRX, 37): "G_CO = Hmtrx(r_bF)' * G_CF * Hmtrx(r_bF);",
-    (GMTRX, 38): "G = Hmtrx(r_bP)' * G_CO * Hmtrx(r_bP);",
+    (GMTRX, 27): "constant = mssConstants();",
+    (GMTRX, 28): "rho = constant.rho_water;",
+    (GMTRX, 29): "g = constant.g;",
+    (GMTRX, 32): "r_bF = [x_F, 0, 0]';",
+    (GMTRX, 35): "G33_CF  = rho * g * A_wp;",
+    (GMTRX, 36): "G44_CF  = rho * g * nabla * GMT;",
+    (GMTRX, 37): "G55_CF  = rho * g * nabla * GML;",
+    (GMTRX, 39): "G_CO = Hmtrx(r_bF)' * G_CF * Hmtrx(r_bF);",
+    (GMTRX, 40): "% Transform from CO to P using inv(H(r_bP)) = H(-r_bP).",
+    (GMTRX, 41): "G = Hmtrx(-r_bP)' * G_CO * Hmtrx(-r_bP);",
     ("LIBRARY/kinematics/Hmtrx.m", 17): "H = [eye(3)     S'",
-    (OTTER, 95): "constant = mssConstants();",
-    (OTTER, 111): "B_pont  = 0.25;",
-    (OTTER, 112): "y_pont  = 0.395;",
-    (OTTER, 113): "Cw_pont = 0.75;",
-    (OTTER, 183): "Aw_pont = Cw_pont * L * B_pont;",
-    (OTTER, 184): "I_T = 2 * (1/12)*L*B_pont^3 * (6*Cw_pont^3/((1+Cw_pont)*(1+2*Cw_pont)))...",
-    (OTTER, 185): "+ 2 * Aw_pont * y_pont^2;",
-    (OTTER, 186): "I_L = 0.8 * 2 * (1/12) * B_pont * L^3;",
-    (OTTER, 187): "KB = (1/3) * (5*T/2 - 0.5*nabla/Aw_pont);",
-    (OTTER, 192): "KG = T - r_bG(3);",
-    (OTTER, 196): "G33 = rho * g * (2 * Aw_pont);",
-    (OTTER, 201): "LCF = -0.2;",
-    (OTTER, 273): "M \ ( tau + tau_damp + tau_crossflow - C * nu_r - G * eta )",
+    (OTTER, 101): "constant = mssConstants();",
+    (OTTER, 117): "B_pont  = 0.25;",
+    (OTTER, 118): "y_pont  = 0.395;",
+    (OTTER, 119): "Cw_pont = 0.75;",
+    (OTTER, 189): "Aw_pont = Cw_pont * L * B_pont;",
+    (OTTER, 190): "I_T = 2 * (1/12)*L*B_pont^3 * (6*Cw_pont^3/((1+Cw_pont)*(1+2*Cw_pont)))...",
+    (OTTER, 191): "+ 2 * Aw_pont * y_pont^2;",
+    (OTTER, 192): "I_L = 0.8 * 2 * (1/12) * B_pont * L^3;",
+    (OTTER, 193): "KB = (1/3) * (5*T/2 - 0.5*nabla/Aw_pont);",
+    (OTTER, 198): "KG = T - r_bG(3);",
+    (OTTER, 202): "G33 = rho * g * (2 * Aw_pont);",
+    (OTTER, 207): "LCF = -0.2;",
+    (OTTER, 279): "M \ ( tau + tau_damp + tau_crossflow - C * nu_r - G * eta )",
     (EXSHIP, 33): "Awp = Cw * B * L;",
     (EXSHIP, 36): "KB = (1/3) * (5*T/2 - nabla/Awp);",
     (EXSHIP, 39): "k_munro_smith =  (6 * Cw^3) / ((1+Cw) * (1+2*Cw));",
@@ -392,12 +395,29 @@ def test_chain_case_1_equals_the_catamaran_reference_at_cc07579():
 
 
 def test_transcription_of_gmtrx_reproduces_matlab():
-    """Gmtrx.m 29-37 transcribed (test side) equals the MATLAB CSV; checks the
+    """Gmtrx.m 32-41 transcribed (test side) equals the MATLAB CSV; checks the
     transcription before it is used as the MSS reference below."""
     for k, r in enumerate(_load_csv(GMTRX_CSV)):
         g_cf = 1025.0 * 9.81 * np.diag([0, 0, r["A_wp"], r["nabla"] * r["GMT"], r["nabla"] * r["GML"], 0])
-        h_f, h_p = _h([r["x_F"], 0, 0]), _h([r["r_bP_1"], r["r_bP_2"], r["r_bP_3"]])
+        h_f, h_p = _h([r["x_F"], 0, 0]), _h([-r["r_bP_1"], -r["r_bP_2"], -r["r_bP_3"]])
         assert _max_diff(h_p.T @ h_f.T @ g_cf @ h_f @ h_p, _g_matrix(r)) <= G1_TOLERANCE, k
+
+
+def test_history_file_is_the_earlier_shift_and_differs_from_the_current_one_only_off_the_origin():
+    """``surface_gmtrx_mss_ed2ce7b.csv`` is MSS ``Gmtrx.m`` as it was up to ``ed2ce7b``: ``H(+r_bP)``. The
+    transcription with that shift reproduces it; it differs from the current file (``H(-r_bP)``) in
+    the cells the shift moves (most of the 50 random points, whose ``r_bP`` is off the CO)."""
+    history, current = _load_csv(GMTRX_CSV_ED2CE7B), _load_csv(GMTRX_CSV)
+    assert len(history) == len(current) == 50
+    moved = 0
+    for k, (old, new) in enumerate(zip(history, current)):
+        g_cf = 1025.0 * 9.81 * np.diag([0, 0, old["A_wp"], old["nabla"] * old["GMT"], old["nabla"] * old["GML"], 0])
+        h_f = _h([old["x_F"], 0, 0])
+        h_p = _h([old["r_bP_1"], old["r_bP_2"], old["r_bP_3"]])
+        assert _max_diff(h_p.T @ h_f.T @ g_cf @ h_f @ h_p, _g_matrix(old)) <= G1_TOLERANCE, k
+        assert all(old[c] == new[c] for c in old if not c.startswith("G_")), k   # same inputs
+        moved += _max_diff(_g_matrix(old), _g_matrix(new)) > G4_FACTOR * G1_TOLERANCE
+    assert moved > 25, moved   # off the CO the two shifts disagree on most of the 50 random points
 
 
 @pytest.mark.parametrize("csv", [CHAIN_CSV, CHAIN_CSV_CC07579])
@@ -425,7 +445,8 @@ def test_transcription_of_chain_reproduces_matlab(csv):
 # --------------------------------------------------------------------------
 def test_G1_restoring_matrices_match_gmtrx():
     """``surface_restoring_matrices`` vs MATLAB ``Gmtrx.m``, 50 cases with the
-    reference point off the CO; ``G_CO``/``G_CF`` are checked by moving back."""
+    reference point off the CO; ``G_CO``/``G_CF`` are checked by moving back
+    (``G`` is ``G_CO`` seen from P, so ``G_CO = H(r_bP)^T G H(r_bP)``)."""
     block = _contract()
     for k, r in enumerate(_load_csv(GMTRX_CSV)):
         r_bp = np.array([r["r_bP_1"], r["r_bP_2"], r["r_bP_3"]])
@@ -436,7 +457,7 @@ def test_G1_restoring_matrices_match_gmtrx():
             longitudinal_center_of_flotation=r["x_F"], reference_point=r_bp,
         ))
         assert _max_diff(g, _g_matrix(r)) <= G1_TOLERANCE, k
-        assert _max_diff(_h(r_bp).T @ g_co @ _h(r_bp), _g_matrix(r)) <= G1_TOLERANCE, k
+        assert _max_diff(_h(r_bp).T @ _g_matrix(r) @ _h(r_bp), g_co) <= G1_TOLERANCE, k
         h_f = _h([r["x_F"], 0, 0])
         assert _max_diff(h_f.T @ g_cf @ h_f, g_co) <= G1_TOLERANCE, k
         assert _max_diff(g_cf, np.diag(np.diag(g_cf))) == 0.0, k
@@ -676,6 +697,53 @@ def test_physical_wall_sided_hull_has_its_centre_of_buoyancy_at_half_draft():
                 assert mss.center_of_buoyancy_above_keel > p["draft"] / 2 + 1e-3, (n, cw)
 
 
+def _rigid_restoring_wrench_at_point(p, constants, r_p, q):
+    """The restoring wrench about the point P of a small rigid motion ``q = [d_P, theta]``
+    (displacement of P and rotation), from the waterplane physics alone: the body point at
+    ``r`` moves by ``d_P + theta x (r - r_P)``; the heave force acts at the flotation centre
+    ``r_F = [x_F 0 0]`` and is ``-rho g A_wp`` times its vertical displacement (Fossen 2011,
+    eq. 4.13-4.15); the roll and pitch righting moments are ``-rho g nabla GM theta``
+    (eq. 4.24); the moment about P of the heave force is ``(r_F - r_P) x F``."""
+    rho_g = p["water_density"] * constants.gravity
+    r_f = np.array([p["longitudinal_center_of_flotation"], 0.0, 0.0])
+    arm = r_f - r_p
+    d_f = q[:3] + np.cross(q[3:], arm)
+    force = np.array([0.0, 0.0, -rho_g * constants.waterplane_area * d_f[2]])
+    moment = np.array([-rho_g * p["displacement_volume"] * constants.transverse_metacentric_height * q[3],
+                       -rho_g * p["displacement_volume"] * constants.longitudinal_metacentric_height * q[4],
+                       0.0])
+    return np.concatenate([force, np.cross(arm, force) + moment])
+
+
+def test_G5_restoring_at_an_off_origin_point_follows_the_rigid_displacement():
+    """The stiffness about a point P other than the CO, from first principles and not from
+    any MSS file or any 6x6 transformation: ``G_P[:, k] = -wrench_P(unit motion k)`` with the
+    wrench of ``_rigid_restoring_wrench_at_point``. The block's ``G`` at ``reference_point``
+    equals it; the shift ``H(+r_bP)`` that MSS carried up to ``ed2ce7b`` does not (it equals
+    only at ``r_bP = 0``), so the test is sensitive to the direction of the shift."""
+    for x_f, r_p in ((-0.3, [0.4, -0.2, 0.3]), (0.15, [-1.1, 0.5, -0.35]), (0.0, [0.0, 0.0, 0.0])):
+        p = _level_params(longitudinal_center_of_flotation=x_f, reference_point=np.array(r_p))
+        constants, _ = _build(p)
+        expected = np.zeros((6, 6))
+        for k in range(6):
+            unit = np.zeros(6)
+            unit[k] = 1.0
+            expected[:, k] = -_rigid_restoring_wrench_at_point(p, constants, np.array(r_p), unit)
+        scale = float(np.max(np.abs(expected)))
+        assert _max_diff(constants.stiffness_matrix, expected) <= 1e-12 * scale, (x_f, r_p)
+        # the origin-referred matrix is the one with the reference point at the CO
+        p0 = _level_params(longitudinal_center_of_flotation=x_f)
+        origin = np.zeros((6, 6))
+        for k in range(6):
+            unit = np.zeros(6)
+            unit[k] = 1.0
+            origin[:, k] = -_rigid_restoring_wrench_at_point(p0, _build(p0)[0], np.zeros(3), unit)
+        assert _max_diff(constants.stiffness_at_origin, origin) <= 1e-12 * scale, (x_f, r_p)
+        if np.linalg.norm(r_p) > 0.0:
+            wrong = _h(np.array(r_p)).T @ constants.stiffness_at_origin @ _h(np.array(r_p))
+            assert _max_diff(wrong, expected) > G4_FACTOR * G1_TOLERANCE, (x_f, r_p)
+
+
 def test_restoring_matrix_is_symmetric_at_every_reference_point():
     """Fossen 2011 eq. 4.26: G = G^T."""
     for p in _random_parameter_sets()[:10]:
@@ -872,12 +940,16 @@ def _committed_sets():
 def test_G2_block_equals_the_committed_block(tmp_path):
     """Every selector choice: g, G and the coefficients equal the block
     committed at ``COMMITTED_REVISION`` (numpy pre-processing) on 300 seeded
-    states, 1e-10."""
+    states, 1e-10, with the reference point at the CO: the committed block shifted
+    to another point with ``H(+r_bP)``, the earlier form of MSS ``Gmtrx.m``, which the
+    block no longer does (``test_G5_restoring_at_an_off_origin_point_follows_the_rigid_displacement``
+    checks the shift against the physics)."""
     committed = _committed_package(tmp_path)
     rng = np.random.default_rng(COMMITTED_SEED)
     etas = rng.uniform(-0.3, 0.3, size=(N_COMMITTED_STATES, 6))
     seen = set()
     for name, p in _committed_sets().items():
+        p = {**p, "reference_point": np.zeros(3)}
         selectors, _ = _split(p)
         seen.add(tuple(sorted(selectors.items())))
         constants, function = _build(p)

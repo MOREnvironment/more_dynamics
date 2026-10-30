@@ -45,7 +45,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 6.91-6.92, p. 127 (strip integral).
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/Dmtrx.m;
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: LIBRARY/modeling/Dmtrx.m;
     CRAFT/AUV/models/remus100.m 134, 144-145, 193-197, 218-222;
     LIBRARY/modeling/forceLiftDrag.m; coeffLiftDrag.m 54;
     LIBRARY/modeling/crossFlowDrag.m 55-70; cylinderDrag.m 78-110.

@@ -11,12 +11,12 @@ equilibrium of a craft carrying a weight ``W`` at ``r``, ``Z = W``, ``K = y W``,
 ``payload_trim_offset(form)`` builds the block ``(eta, restoring_matrix, payload_mass, payload_position, gravity)
 -> (trim_offset, kinematic_attitude_offset)``::
 
-    f_P  = R(eta)^T [0 0 m_P g]^T                      the payload weight in BODY      (otter.m 259)
-    m_P' = r_P x f_P                                    its moment about the CO         (otter.m 260)
-    g_0  = [f_P(3); m_P'(1); m_P'(2)]                   heave, roll, pitch              (otter.m 261-262)
-    eta_0 = [0; 0; G(3:5, 3:5)^-1 g_0; 0]                                               (otter.m 265)
+    f_P  = R(eta)^T [0 0 m_P g]^T                      the payload weight in BODY      (otter.m 265)
+    m_P' = r_P x f_P                                    its moment about the CO         (otter.m 266)
+    g_0  = [f_P(3); m_P'(1); m_P'(2)]                   heave, roll, pitch              (otter.m 267-268)
+    eta_0 = [0; 0; G(3:5, 3:5)^-1 g_0; 0]                                               (otter.m 271)
 
-with the rotation at the actual attitude (otter.m 259 reads ``eta`` before it is shifted). The two forms differ in
+with the rotation at the actual attitude (otter.m 265 reads ``eta`` before it is shifted). The two forms differ in
 what ``g_0`` holds in heave and in where the kinematics are taken:
 
 * ``"lever_arm_moment"`` (physics form, default): the displacement of the hydrostatic block is the loaded one,
@@ -24,17 +24,17 @@ what ``g_0`` holds in heave and in where the kinematics are taken:
   enters the equilibrium only through the moment of its lever arm. ``g_0 = [0; m_P'(1); m_P'(2)]``; the kinematics are
   evaluated at the actual attitude (``kinematic_attitude_offset`` zero). Raise: the payload weighed and its position
   measured, and the trim read against a measured static roll and pitch.
-* ``"lever_arm_and_heave_shift"`` (MSS ``otter.m`` 259-269, a comparison form): ``g_0`` also holds the payload weight
+* ``"lever_arm_and_heave_shift"`` (MSS ``otter.m`` 265-275, a comparison form): ``g_0`` also holds the payload weight
   in heave, so the same weight enters the heave equation twice (once through ``nabla``, once through ``eta_0``: at
   ``eta = eta_0`` a net vertical force ``m_P g`` is left), and the kinematics are evaluated at the shifted attitude
-  ``eta - eta_0`` (``otter.m`` 266, 269; ``kinematic_attitude_offset = eta_0``). Both are inconsistencies of that
+  ``eta - eta_0`` (``otter.m`` 272, 275; ``kinematic_attitude_offset = eta_0``). Both are inconsistencies of that
   file; the form keeps them so that a craft built on it equals ``otter.m`` with a payload.
 
 References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion Control. Wiley. Eq. 4.25, p. 65
     (the linear restoring); §4.4, eqs. 4.94-4.100, pp. 74-76 (the equilibrium under an added weight).
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/USV/models/otter.m 121-122 (loaded displacement), 259-269 (payload force
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/USV/models/otter.m 127-128 (loaded displacement), 259-269 (payload force
     and moment, trim condition, shifted attitude); LIBRARY/kinematics/Rzyx.m, Smtrx.m.
 
 Author:    Enio Krizman
@@ -63,12 +63,12 @@ def payload_trim_offset(form) -> ca.Function:
     payload_mass = ca.SX.sym("payload_mass")
     payload_position = ca.SX.sym("payload_position", 3)
     gravity = ca.SX.sym("gravity")
-    weight_body = MatrixTransforms.Rzyx(eta[3:6]).T @ ca.vertcat(0.0, 0.0, payload_mass * gravity)  # (otter.m 259)
-    moment = ca.cross(payload_position, weight_body)  # (otter.m 260; Smtrx(r_P) f_P)
-    heave = weight_body[2] if form == "lever_arm_and_heave_shift" else ca.SX(0.0)  # g_0(3) (otter.m 261-262)
+    weight_body = MatrixTransforms.Rzyx(eta[3:6]).T @ ca.vertcat(0.0, 0.0, payload_mass * gravity)  # (otter.m 265)
+    moment = ca.cross(payload_position, weight_body)  # (otter.m 266; Smtrx(r_P) f_P)
+    heave = weight_body[2] if form == "lever_arm_and_heave_shift" else ca.SX(0.0)  # g_0(3) (otter.m 267-268)
     g0 = ca.vertcat(heave, moment[0], moment[1])  # g_0(3:5): heave, roll, pitch
-    trim = ca.vertcat(0.0, 0.0, ca.solve(restoring_matrix[2:5, 2:5], g0), 0.0)  # G(3:5,3:5)^-1 g_0 (otter.m 265)
-    kinematic = trim if form == "lever_arm_and_heave_shift" else ca.SX.zeros(6, 1)  # (otter.m 266, 269)
+    trim = ca.vertcat(0.0, 0.0, ca.solve(restoring_matrix[2:5, 2:5], g0), 0.0)  # G(3:5,3:5)^-1 g_0 (otter.m 271)
+    kinematic = trim if form == "lever_arm_and_heave_shift" else ca.SX.zeros(6, 1)  # (otter.m 272, 275)
     return ca.Function("payload_trim_offset", [eta, restoring_matrix, payload_mass, payload_position, gravity],
                        [trim, kinematic],
                        ["eta", "restoring_matrix", "payload_mass", "payload_position", "gravity"],

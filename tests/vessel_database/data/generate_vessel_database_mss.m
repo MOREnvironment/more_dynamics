@@ -111,9 +111,11 @@ cols{end+1} = 'freq_inf_value';    vals{end+1} = sprintf('%.17g', freqs(idxInf))
 cols{end+1} = 'velocity_zero_idx'; vals{end+1} = sprintf('%d', idxVel0);
 cols{end+1} = 'c_varies_over_freq'; vals{end+1} = sprintf('%d', cVariesOverFreq);
 
-cols{end+1} = 'hydrodynamic_axes';      vals{end+1} = sprintf('"%s"', vessel.hydrodynamic_axes);
-cols{end+1} = 'hydrodynamic_reference'; vals{end+1} = sprintf('"%s"', vessel.hydrodynamic_reference);
-cols{end+1} = 'hydrodynamic_source';    vals{end+1} = sprintf('"%s"', vessel.hydrodynamic_source);
+% MSS 6e78e98 no longer stores hydrodynamic_axes (nor main.Lwl): a field the file does
+% not carry is written as the text <absent> (strings) or NaN (numbers), never invented.
+cols{end+1} = 'hydrodynamic_axes';      vals{end+1} = sprintf('"%s"', text_or_absent(vessel, 'hydrodynamic_axes'));
+cols{end+1} = 'hydrodynamic_reference'; vals{end+1} = sprintf('"%s"', text_or_absent(vessel, 'hydrodynamic_reference'));
+cols{end+1} = 'hydrodynamic_source';    vals{end+1} = sprintf('"%s"', text_or_absent(vessel, 'hydrodynamic_source'));
 cols{end+1} = 'name';                   vals{end+1} = sprintf('"%s"', m.name);
 
 matrices = {A_zero, 'A_zero'; A_inf, 'A_inf'; C_const, 'C'; MRB, 'MRB'};
@@ -135,7 +137,8 @@ scalarFields = {'m','rho','g','nabla','k44','k55','k66','GM_T','GM_L', ...
 for f = 1:numel(scalarFields)
     name = scalarFields{f};
     cols{end+1} = sprintf('main_%s', name); %#ok<AGROW>
-    vals{end+1} = sprintf('%.17g', m.(name)); %#ok<AGROW>
+    if isfield(m, name), value = m.(name); else, value = NaN; end
+    vals{end+1} = sprintf('%.17g', value); %#ok<AGROW>
 end
 
 vectorFields = {'CG','CB'};
@@ -169,3 +172,8 @@ fprintf(fid, '%s\n', strjoin(cols, ','));
 fprintf(fid, '%s\n', strjoin(vals, ','));
 fclose(fid);
 fprintf('Wrote %s\n', outFile);
+
+function t = text_or_absent(vessel, name)
+% The text of a vessel field, or <absent> when the file does not carry it.
+    if isfield(vessel, name), t = vessel.(name); else, t = '<absent>'; end
+end

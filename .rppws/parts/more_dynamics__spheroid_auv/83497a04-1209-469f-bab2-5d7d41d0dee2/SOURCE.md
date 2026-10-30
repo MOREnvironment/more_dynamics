@@ -3,7 +3,7 @@
 A named part of `more_dynamics::SpheroidAuv` (torpedo-shaped AUV, prolate-spheroid hull).
 
 Every number in `params/parameters.py` is Fossen's MSS `CRAFT/AUV/models/remus100.m` (MIT,
-revision `ed2ce7b`) as cited in the comment beside it, plus `LIBRARY/modeling/spheroid.m`
+revision `6e78e98`) as cited in the comment beside it, plus `LIBRARY/modeling/spheroid.m`
 (body density), `imlay61.m` (added mass) and `INS/functions/gravity.m` (latitude site). The
 hull geometry and coefficients trace back to Prestero, T. (2001), *Verification of a
 six-degree of freedom simulation model for the REMUS autonomous underwater vehicle*,

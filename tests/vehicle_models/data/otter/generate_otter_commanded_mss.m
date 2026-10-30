@@ -1,19 +1,19 @@
 %% ================================================================
-%  Otter (MSS otter.m) commanded runs: the two propeller shaft speeds as inputs
+%  Otter (MSS otter_legacy.m) commanded runs: the two propeller shaft speeds as inputs
 %
-%  Open-loop time histories of the unmodified CRAFT/USV/models/otter.m
-%  (T. I. Fossen, MSS, MIT; revision ed2ce7b) with commanded shaft speeds
-%  n = [n_left n_right]' (rad/s, otter.m 24-27), a payload of 25 kg at
+%  Open-loop time histories of the unmodified CRAFT/USV/models/otter_legacy.m
+%  (T. I. Fossen, MSS, MIT; revision 6e78e98) with commanded shaft speeds
+%  n = [n_left n_right]' (rad/s, otter_legacy.m 32-35), a payload of 25 kg at
 %  r_bP = [0.05 0 -0.35]' m (the payload of the Otter reference set) and no
 %  current: rk4.m at the step of SIMotter.m (h = 0.05 s), the command decided
 %  every 5 steps (0.25 s) and held over them, a row per decision. No file of
-%  MSS is changed or copied: otter() is called as written, with the payload
+%  MSS is changed or copied: otter_legacy() is called as written, with the payload
 %  trim it carries (259-269).
 %  Runs: a thrust step from rest, a differential turn, an astern step from
-%  speed, a spin in place, commands beyond the shaft-speed limits (otter.m
+%  speed, a spin in place, commands beyond the shaft-speed limits (otter_legacy.m
 %  230: the saturation acts on both signs) and a zigzag of differential steps.
 %  The two straight runs last 16 s: the Otter's open-loop yaw is unstable (the
-%  Munk moment of m2c.m, otter.m 150-156), so a straight run of 40 s amplifies a
+%  Munk moment of m2c.m, otter_legacy.m 156-162), so a straight run of 40 s amplifies a
 %  derivative difference of 1e-9 to 0.5 rad of heading and 2.8 m of sway, which
 %  leaves no gate; at 16 s the measured sensitivity is below 1e-5 in every state.
 %
@@ -51,7 +51,8 @@ outDir = fullfile(outDir, 'vehicles', 'otter');
 if ~exist(outDir, 'dir'), mkdir(outDir); end
 [~, rev] = system(['git -C "' mssDir '" rev-parse --short HEAD']);
 rev = strtrim(rev);
-fprintf('MATLAB %s\nMSS: %s at %s\n', version, which('otter'), rev);
+% MSS otter_legacy.m is the first-principles Otter (the code of otter.m up to ed2ce7b, same numbers); since 6e78e98 otter.m is the Capytaine-based model.
+fprintf('MATLAB %s\nMSS: %s at %s\n', version, which('otter_legacy'), rev);
 
 h = 0.05;               % SIMotter.m: sampling time
 HOLD = 5;               % the command is decided every 5 steps (0.25 s) and held over them
@@ -59,7 +60,7 @@ OFFSET = 1e-9;          % the G1 tolerance, added to every derivative entry
 mP = 25;                % payload mass (kg)
 rP = [0.05 0 -0.35]';   % payload position from the CO (m)
 Vc = 0; betaC = 0;      % no current
-[~, ~, ~, ~, n_min, n_max] = otter();   % shaft-speed limits (rad/s), otter.m 145-146
+[~, ~, ~, ~, n_min, n_max] = otter_legacy();   % shaft-speed limits (rad/s), otter_legacy.m 151-152
 
 S = struct([]);
 S = add(S, 'straight_from_rest_thrust_step', zeros(12, 1), 16, ...
@@ -88,7 +89,7 @@ for s = 1:numel(S)
         n = sc.law(t, x);
         inputs(r, :) = n;
         for k = 1:HOLD
-            x = rk4(@otter, h, x, n', mP, rP, Vc, betaC);
+            x = rk4(@otter_legacy, h, x, n', mP, rP, Vc, betaC);
         end
     end
     % the measured difference of two integrations of the same run
@@ -104,7 +105,7 @@ for s = 1:numel(S)
                 if ischar(variants{v})
                     xa = rk4_reordered(h, xa, n, mP, rP, Vc, betaC);
                 else
-                    g = @(xx, nn, a1, a2, a3, a4) otter(xx, nn, a1, a2, a3, a4) + variants{v};
+                    g = @(xx, nn, a1, a2, a3, a4) otter_legacy(xx, nn, a1, a2, a3, a4) + variants{v};
                     xa = rk4(g, h, xa, n, mP, rP, Vc, betaC);
                 end
             end
@@ -148,10 +149,10 @@ end
 
 function x = rk4_reordered(h, x, n, mP, rP, Vc, betaC)
 % The same Runge-Kutta 4 as rk4.m, the weighted sum written in another order
-    k1 = otter(x, n, mP, rP, Vc, betaC);
-    k2 = otter(x + 0.5 * h * k1, n, mP, rP, Vc, betaC);
-    k3 = otter(x + 0.5 * h * k2, n, mP, rP, Vc, betaC);
-    k4 = otter(x + h * k3, n, mP, rP, Vc, betaC);
+    k1 = otter_legacy(x, n, mP, rP, Vc, betaC);
+    k2 = otter_legacy(x + 0.5 * h * k1, n, mP, rP, Vc, betaC);
+    k3 = otter_legacy(x + 0.5 * h * k2, n, mP, rP, Vc, betaC);
+    k4 = otter_legacy(x + h * k3, n, mP, rP, Vc, betaC);
     x = x + h * (k1 / 6 + k2 / 3 + k3 / 3 + k4 / 6);
 end
 

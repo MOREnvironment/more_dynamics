@@ -7,7 +7,7 @@ Coupling inputs ``nu_r`` (6, BODY FRD, relative to the water) and
 the velocity of the fin relative to the water.
 
 * ``translational``: ``fin_velocity = nu_r[0:3]`` — the fin sees the
-  vehicle's translation only (MSS ``remus100.m`` 234-235 use ``nu_r(1:3)``
+  vehicle's translation only (MSS ``remus100.m`` 235-236 use ``nu_r(1:3)``
   alone).
 * ``rigid_point``: ``fin_velocity = nu_r[0:3] + omega x r`` with every term
   kept: ``u_fin = u + z_fin q - y_fin r``, ``v_fin = v + x_fin r - z_fin p``,
@@ -19,7 +19,7 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 234-235.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 235-236.
 [Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of
     freedom simulation model for the REMUS autonomous underwater vehicle*.
     MSc thesis, MIT/WHOI. Ch. 4, eq. 4.40, p. 32.

@@ -35,7 +35,7 @@ that couple to a fin deflection or the propeller, read by the actuators).
 References
 ----------
 [MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/npsauv.m 119-122, 242-275
-    @ ed2ce7b.
+    @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-09

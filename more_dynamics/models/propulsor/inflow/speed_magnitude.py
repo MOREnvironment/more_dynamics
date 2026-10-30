@@ -4,7 +4,7 @@ thrust factor ``1 - t``, torque factor 1. The speed has a zero (not NaN) derivat
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 151,
-    250 @ ed2ce7b (``Va = (1 - w) U_r``, thrust ``(1 - t) X``).
+    250 @ 6e78e98 (``Va = (1 - w) U_r``, thrust ``(1 - t) X``).
 
 Author:    Enio Krizman
 Date:      2026-10-23

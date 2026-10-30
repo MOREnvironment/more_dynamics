@@ -14,7 +14,7 @@ Raise: the measured positions of the fin axes.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m
     114-115, 180-190, 229-246 (fin pairs); the equations and their lines
     are cited in ``more_dynamics.models.fin.fins``.
 

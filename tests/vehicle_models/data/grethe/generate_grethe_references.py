@@ -171,7 +171,7 @@ def surface_restoring(*, length, beam, block_coefficient, waterplane_coefficient
     47; otter.m 175-177); ``KB`` (Morrish, exShipHydrostatics.m 35; otter.m
     178); ``GM = KB + BM - KG`` (Fossen 2011, eq. 4.32, p. 65); ``G`` at the
     centre of flotation, the CO and ``reference_point`` (Fossen 2011,
-    eq. 4.24, p. 65, eq. 7.250, p. 181; Gmtrx.m 29-37)."""
+    eq. 4.24, p. 65, eq. 7.250, p. 181; Gmtrx.m 32-41 at 6e78e98)."""
     n = float(hull_count)
     nabla = mass / water_density
     draft = nabla / (n * block_coefficient * beam * length)
@@ -190,7 +190,9 @@ def surface_restoring(*, length, beam, block_coefficient, waterplane_coefficient
     g_cf = np.diag([0.0, 0.0, rho_g * waterplane_area, rho_g * nabla * gm_t, rho_g * nabla * gm_l, 0.0])
     h_f = h_matrix(np.array([longitudinal_center_of_flotation, 0.0, 0.0]))
     g_co = h_f.T @ g_cf @ h_f
-    h_p = h_matrix(np.asarray(reference_point, dtype=float))
+    # the stiffness at P is the CO matrix seen from P: H(r_bP)^-1 = H(-r_bP) (Gmtrx.m 40-41 at 6e78e98;
+    # up to ed2ce7b MSS carried H(+r_bP), wrong for r_bP != 0)
+    h_p = h_matrix(-np.asarray(reference_point, dtype=float))
     g = h_p.T @ g_co @ h_p
     wetted_surface_mumford = n * 1.025 * length * (block_coefficient * beam + 1.7 * draft)  # (XuuITTC.m 38, Mumford)
     return {"draft": draft, "displaced_volume": nabla, "waterplane_area": waterplane_area,

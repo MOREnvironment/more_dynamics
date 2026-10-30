@@ -58,7 +58,7 @@ Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.
     Tables 2.1-2.2, pp. 15-17; eqs. 4.5-4.6, 4.10, 4.30-4.39, pp. 25-31;
     Fig. 7-7, p. 57; Table 8.1, p. 60; Table A.1, p. 102; Table D.1, p. 112.
-Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 208-211,
+Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m 208-211,
     243, 246, 255; CRAFT/AUV/SIMremus100.m 60.
 
 Author:    Enio Krizman

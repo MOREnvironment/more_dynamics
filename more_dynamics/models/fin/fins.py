@@ -35,7 +35,7 @@ References
     eq. 12.225, Table 12.3, p. 398; eq. 12.226, p. 400.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``ed2ce7b``: ``CRAFT/AUV/models/remus100.m`` 114-115,
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 114-115,
     180-190, 235-255.
 
 Author:    Enio Krizman

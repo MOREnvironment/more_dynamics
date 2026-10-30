@@ -8,7 +8,7 @@ References
     and Motion Control. Wiley. Eqs. 6.43, 6.52, p. 120-121, through
     ``more_dynamics.models.rigid_body.kinetics.added_mass_coriolis_casadi``,
     which cites them line by line.
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/m2c.m 33-48;
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: LIBRARY/modeling/m2c.m 33-48;
     CRAFT/AUV/models/remus100.m 208-211 (Munk moment removed).
 
 Author:    Enio Krizman

@@ -29,7 +29,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eqs. 4.1, 4.5, 4.7, pp. 59-61.
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 3, 96-97,
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m 3, 96-97,
     132-133, 139, 215.
 
 Author:    Enio Krizman

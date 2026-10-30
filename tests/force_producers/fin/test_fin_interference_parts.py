@@ -7,7 +7,7 @@ No coupling input; outputs ``deflection_factor`` and ``flow_angle_factor``
 (1 each, dimensionless). The skeleton forms ``alpha = deflection_factor *
 deflection - flow_angle_factor * flow_angle``.
 
-* ``none``: both factors 1 (MSS ``remus100.m`` 238-245 and Prestero 2001
+* ``none``: both factors 1 (MSS ``remus100.m`` 239-246 and Prestero 2001
   eqs. 4.41-4.43, pp. 32-33, apply no factor).
 * ``slender_body``: factors from body radius over fin semispan (Pitts 1957,
   through a citing memo; **unread** by this job). Not gated until the source
@@ -22,7 +22,7 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 238-245.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 239-246.
 [Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of
     freedom simulation model for the REMUS autonomous underwater vehicle*.
     MSc thesis, MIT/WHOI. Ch. 4, eqs. 4.39, 4.41-4.43, pp. 31-33.

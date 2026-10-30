@@ -28,7 +28,7 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics
     and Motion Control. Wiley. Eq. 6.48, p. 120 (M = M_RB + M_A).
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/numericalMethods/rk4.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: LIBRARY/numericalMethods/rk4.m
     26-38 (the step's sub-stepping); CRAFT/AUV/models/SIMremus100.m 60
     (integration step h = 0.05 s).
 [HullVessel] Mandic, L. more_dynamics ``HullVessel`` (hull_vessel.py 132-182):
@@ -250,7 +250,7 @@ class VehicleAssembly:
                     origin[name] = f"slot {label} ({child_plugin})"
 
         # a slot may ask for the kinematics at another attitude than the state's (the payload trim form of MSS's
-        # otter.m 266, 269): ``kinematic_attitude_offset``, taken off the pose; only eta_dot reads the pose there
+        # otter_legacy.m 272, 275): ``kinematic_attitude_offset``, taken off the pose; only eta_dot reads the pose there
         offset = known.get("kinematic_attitude_offset")
         if quaternion and offset is not None:
             raise CompositionError(f"{plugin}: kinematics_form 'unit_quaternion' cannot take the kinematic attitude "

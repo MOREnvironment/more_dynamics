@@ -37,7 +37,7 @@ A vehicle type is one plugin in the form of `HullVessel`: its own `PARAMETERS` (
 | Type | Hull | Reference named part (the plugin itself carries no number) |
 |---|---|---|
 | `SpheroidAuv` | prolate spheroid, mass from the body density, Lamb added mass | REMUS 100 (MSS) (Prestero 2001; MSS `remus100.m`) |
-| `Catamaran` | two pontoons, a hull mass and a point payload, scaled added-mass derivatives | Otter (MSS) (MSS `otter.m`) |
+| `Catamaran` | two pontoons, a hull mass and a point payload, scaled added-mass derivatives | Otter (MSS) (MSS `otter_legacy.m`) |
 | `Monohull` | one hull, the same rigid body and added-mass forms as the catamaran | Grethe: document values, **marked estimates**, fitted values and one marked approved guess (the comment of each value says which) |
 
 A plugin declares every vehicle, device or site number as unset (an empty list, `unset()` of `more_transformations`); the numbers come from a named part of `.rppws/parts/` when the composition is built, and a value its selected forms read that the part leaves out refuses the build, naming the plugin and every such value with unit and meaning. Only text selectors, switches and three numerical settings keep a default. `DEFAULTS.md` gives the provenance of each reference part's values.
@@ -51,10 +51,10 @@ Every option carries its fidelity, source, assumptions and the measurement that 
 | Option | Values | Fidelity | Raised by |
 |---|---|---|---|
 | `coriolis_form` | `kirchhoff_full` (physics, default); `munk_couplings_removed` (MSS shortcut, `remus100.m` 207-210, a comparison form) | physics form above the shortcut | a frequency-dependent added-mass matrix |
-| `current_form` | `none`; `yaw_rate_terms` (MSS `remus100.m` 118-122); `full_rotation_rate` (MSS `otter.m` 113-118) | none < MSS forms | a measured current profile; the form with the full attitude waits on its port |
-| `kinematics_form` (`SpheroidAuv`) | `euler` (default, 12 states: position, ZYX Euler angles, velocity); `unit_quaternion` (13 states: position, unit quaternion, velocity; the output stays position, Euler angles, velocity; the quaternion renormalised after every step of the vehicle's own step; Fossen 2011, eq. 2.69; `remus100.m` 225-227) | Euler < quaternion at a pitch near 90 deg, equal elsewhere | none needed: the form changes the attitude state, not the physics. The `Catamaran` has no such form (`otter.m` 91 is 12-state) |
+| `current_form` | `none`; `yaw_rate_terms` (MSS `remus100.m` 118-122); `full_rotation_rate` (MSS `otter_legacy.m` 119-124) | none < MSS forms | a measured current profile; the form with the full attitude waits on its port |
+| `kinematics_form` (`SpheroidAuv`) | `euler` (default, 12 states: position, ZYX Euler angles, velocity); `unit_quaternion` (13 states: position, unit quaternion, velocity; the output stays position, Euler angles, velocity; the quaternion renormalised after every step of the vehicle's own step; Fossen 2011, eq. 2.69; `remus100.m` 225-227) | Euler < quaternion at a pitch near 90 deg, equal elsewhere | none needed: the form changes the attitude state, not the physics. The `Catamaran` has no such form (`otter_legacy.m` 97 is 12-state) |
 | `added_mass_form` | `lamb_spheroid` (`SpheroidAuv`); `scaled_derivatives` (`Catamaran`, `Monohull`); `scaled_derivatives_loaded_surge` (`Catamaran`: the surge term from the loaded mass, hull plus payload) | ideal fluid / printed coefficients | a Capytaine or identified matrix |
-| `manoeuvring_damping` (`SurfaceHullLoads`) | `time_constants` (surge from the thrust and the top speed); `time_constants_surge_blend` (surge from a time constant, blended with a quadratic term, MSS `otter.m` 206-217, 244-251 at `ed2ce7b`); `linear_coupled`; `linear_coupled_modulus` | MSS calibrations < a coupled law identified from logs | circle and zigzag identification |
+| `manoeuvring_damping` (`SurfaceHullLoads`) | `time_constants` (surge from the thrust and the top speed); `time_constants_surge_blend` (surge from a time constant, blended with a quadratic term, MSS `otter_legacy.m` 212-223, 250-257 at `6e78e98`); `linear_coupled`; `linear_coupled_modulus` | MSS calibrations < a coupled law identified from logs | circle and zigzag identification |
 | `buoyancy_method` (`SubmergedRestoring`) | `neutral` (`B = W`); `from_volume` (`B = rho g nabla`); `given` (`B` as a value) | neutral < volume < measured reserve buoyancy | weigh the vehicle in water at the quay, then a floating trim test |
 | `hull_count` (`SurfaceRestoring`) | `1`, `2` | metacentric restoring at the equilibrium draft | a measured draft and the waterplane from the hull lines |
 | `surge_resistance` (`SurfaceHullLoads`) | `none`; `ittc` (needs a `wetted_surface` the vehicle gives) | physics form with a printed form factor | a measured resistance curve |
@@ -101,7 +101,7 @@ Only the `actuators` children differ between the REMUS fin pairs (`FinPairsDefle
 | Name | Type | Configuration | Sources |
 |---|---|---|---|
 | REMUS 100 | `SpheroidAuv` with `SubmergedRestoring`, `AuvHullLoads`, `FinPairsDeflectionOnly`, `Propeller` | `remus100` | Prestero (2001) and MSS `remus100.m` @ `ed2ce7b`, the line of every value in the comment beside it in `params/parameters.py` |
-| Otter | `Catamaran` with `SurfaceRestoring`, `SurfaceHullLoads` | `otter` | MSS `otter.m` @ `ed2ce7b`, the same |
+| Otter | `Catamaran` with `SurfaceRestoring`, `SurfaceHullLoads` | `otter` | MSS `otter_legacy.m` @ `6e78e98`, the same |
 
 The gates run the same plugins through `tests/vehicle_models/` (REMUS derivative and 17 trajectories against MATLAB running MSS, the Otter block by block). rpp rewrites a parameter file without comments when it is saved from the editor's own writer; "Open Parameter File" opens the text for editing.
 

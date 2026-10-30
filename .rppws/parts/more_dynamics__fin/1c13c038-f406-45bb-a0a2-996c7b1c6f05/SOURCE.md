@@ -2,7 +2,7 @@
 
 A named part of `more_dynamics::Fin` for the REMUS 100 (MSS) vehicle: one of the two fins of the tail rudder (remus100.m 183-185: CL_delta_r 0.5, A_r = 2 S_fin: two fins of S_fin). The vehicle links it
 twice (a tail pair), so the vehicle has four fins, each with its own command; MSS's single command per pair
-is the same value given to both. Every number is `CRAFT/AUV/models/remus100.m` (MIT, revision `ed2ce7b`),
+is the same value given to both. Every number is `CRAFT/AUV/models/remus100.m` (MIT, revision `6e78e98`),
 lines cited beside it in `params/parameters.py`; the forms are the deflection-only form of `remus100.m`
 183-185, 239, 243 (inflow `translational`, flow angle `none`, section `quadratic_drag`, an ideal servo whose only
 effect is the saturation of the command).

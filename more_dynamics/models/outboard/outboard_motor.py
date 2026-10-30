@@ -58,7 +58,7 @@ References
     Table 12.3, p. 398; eq. 12.226, p. 400; eq. 12.265, p. 411.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``ed2ce7b``: ``LIBRARY/modeling/wageningen.m`` 6;
+    licence, revision ``6e78e98``: ``LIBRARY/modeling/wageningen.m`` 6;
     ``CRAFT/AUV/models/remus100.m`` 250.
 [Krizman] Krizman, E. (2026). Model file ``grethe.m``, MSS fork branch ``grethe-vehicle``, revision
     ``679a6e8``: ``CRAFT/USV/models/grethe.m`` 269-271, 400-408 (the leg normal force, ``outboard_leg_normal_force``;

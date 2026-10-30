@@ -3,7 +3,7 @@
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m
     229-246 (fin pairs).
 
 Author:    Enio Krizman

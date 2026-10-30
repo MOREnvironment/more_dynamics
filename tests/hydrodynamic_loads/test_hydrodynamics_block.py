@@ -207,7 +207,7 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
                  "mariner", "torqeedo", "cybership", "prestero")
 
 REMUS = "$MSS_DIR/CRAFT/AUV/models/remus100.m"
-OTTER = "$MSS_DIR/CRAFT/USV/models/otter.m"
+OTTER = "$MSS_DIR/CRAFT/USV/models/otter_legacy.m"   # the first-principles Otter; otter.m is the Capytaine-based model since 6e78e98
 DMTRX = "$MSS_DIR/LIBRARY/modeling/Dmtrx.m"
 FLD = "$MSS_DIR/LIBRARY/modeling/forceLiftDrag.m"
 MSSC = "$MSS_DIR/LIBRARY/mssConstants.m"
@@ -345,19 +345,19 @@ CITED_LINES = {
     (GRAVITY, 12): "sqrt( 1 - 0.006694384442 * sin(mu)^2 );",
     (MSSC, 12): "constant.rho_water = 1025;",
     (MSSC, 14): "constant.g = 9.81;",
-    (OTTER, 95): "constant = mssConstants();",
-    (OTTER, 96): "g = constant.g;",
-    (OTTER, 97): "rho = constant.rho_water;",
-    (OTTER, 98): "L = 2.0;",
-    (OTTER, 100): "m = 55.0;",
-    (OTTER, 105): "T_surge = 5;",
-    (OTTER, 107): "T_yaw = 1;",
-    (OTTER, 108): "Umax = 6 * 0.5144;",
-    (OTTER, 111): "B_pont  = 0.25;",
-    (OTTER, 114): "Cb_pont = 0.4;",
-    (OTTER, 128): "nabla = (m+mP)/rho;",
-    (OTTER, 129): "T = nabla / (2 * Cb_pont * B_pont * L);",
-    (OTTER, 106): "T_sway = 0.5;",
+    (OTTER, 101): "constant = mssConstants();",
+    (OTTER, 102): "g = constant.g;",
+    (OTTER, 103): "rho = constant.rho_water;",
+    (OTTER, 104): "L = 2.0;",
+    (OTTER, 106): "m = 55.0;",
+    (OTTER, 111): "T_surge = 5;",
+    (OTTER, 113): "T_yaw = 1;",
+    (OTTER, 114): "Umax = 6 * 0.5144;",
+    (OTTER, 117): "B_pont  = 0.25;",
+    (OTTER, 120): "Cb_pont = 0.4;",
+    (OTTER, 134): "nabla = (m+mP)/rho;",
+    (OTTER, 135): "T = nabla / (2 * Cb_pont * B_pont * L);",
+    (OTTER, 112): "T_sway = 0.5;",
     (OTTER_OLD, 99): "T_sway = 1;",
     (OTTER_OLD, 100): "T_yaw = 1;",
     (OTTER_OLD, 101): "Umax = 6 * 0.5144;",
@@ -367,25 +367,25 @@ CITED_LINES = {
     (OTTER_OLD, 205): "Kp = -2 * 0.2 * w4 * M(4,4);",
     (OTTER_OLD, 206): "Mq = -2 * 0.4 * w5 * M(5,5);",
     (OTTER_OLD, 240): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-    (OTTER, 201): "LCF = -0.2;",
-    (OTTER, 206): "w3 = sqrt( G33/M(3,3) );",
-    (OTTER, 207): "w4 = sqrt( G44/M(4,4) );",
-    (OTTER, 208): "w5 = sqrt( G55/M(5,5) );",
-    (OTTER, 211): "Xu = -M(1,1) / T_surge;",
-    (OTTER, 212): "Xuu = -24.4 * g / Umax^2;",
-    (OTTER, 213): "Yv = -M(2,2) / T_sway;",
-    (OTTER, 214): "Zw = -2 * 0.3 * w3 * M(3,3);",
-    (OTTER, 215): "Kp = -2 * 0.2 * w4 * M(4,4);",
-    (OTTER, 216): "Mq = -2 * 0.4 * w5 * M(5,5);",
-    (OTTER, 217): "Nr = -M(6,6) / T_yaw;",
-    (OTTER, 245): "Xh = Xu  * exp(-3 * abs(nu_r(1))) * nu_r(1) + ...",
-    (OTTER, 246): "Xuu * abs(nu_r(1)) * nu_r(1);",
-    (OTTER, 247): "Yh = Yv * nu_r(2);",
-    (OTTER, 248): "Zh = Zw * nu_r(3);",
-    (OTTER, 249): "Kh = Kp * nu_r(4);",
-    (OTTER, 250): "Mh = Mq * nu_r(5);",
-    (OTTER, 251): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-    (OTTER, 256): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
+    (OTTER, 207): "LCF = -0.2;",
+    (OTTER, 212): "w3 = sqrt( G33/M(3,3) );",
+    (OTTER, 213): "w4 = sqrt( G44/M(4,4) );",
+    (OTTER, 214): "w5 = sqrt( G55/M(5,5) );",
+    (OTTER, 217): "Xu = -M(1,1) / T_surge;",
+    (OTTER, 218): "Xuu = -24.4 * g / Umax^2;",
+    (OTTER, 219): "Yv = -M(2,2) / T_sway;",
+    (OTTER, 220): "Zw = -2 * 0.3 * w3 * M(3,3);",
+    (OTTER, 221): "Kp = -2 * 0.2 * w4 * M(4,4);",
+    (OTTER, 222): "Mq = -2 * 0.4 * w5 * M(5,5);",
+    (OTTER, 223): "Nr = -M(6,6) / T_yaw;",
+    (OTTER, 251): "Xh = Xu  * exp(-3 * abs(nu_r(1))) * nu_r(1) + ...",
+    (OTTER, 252): "Xuu * abs(nu_r(1)) * nu_r(1);",
+    (OTTER, 253): "Yh = Yv * nu_r(2);",
+    (OTTER, 254): "Zh = Zw * nu_r(3);",
+    (OTTER, 255): "Kh = Kp * nu_r(4);",
+    (OTTER, 256): "Mh = Mq * nu_r(5);",
+    (OTTER, 257): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
+    (OTTER, 262): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
     (GEN_SPH, 234): "rho = 1025;",
     (GEN_SPH, 295): "D(1,1) = D(1,1) * exp(-3*U_r);",
     (GEN_SPH, 296): "D(2,2) = D(2,2) * exp(-3*U_r);",
@@ -601,14 +601,14 @@ def _cross_flow_spheroid(grid):
 
 
 def _catamaran_draft():
-    m, rho, mp = _value(OTTER, 100), _value(MSSC, 12), _value(GEN_CAT, 35)
-    nabla = _value(OTTER, 128, {"m": m, "mP": mp, "rho": rho})
-    return _value(OTTER, 129, {"nabla": nabla, "Cb_pont": _value(OTTER, 114),
-                               "B_pont": _value(OTTER, 111), "L": _value(OTTER, 98)})
+    m, rho, mp = _value(OTTER, 106), _value(MSSC, 12), _value(GEN_CAT, 35)
+    nabla = _value(OTTER, 134, {"m": m, "mP": mp, "rho": rho})
+    return _value(OTTER, 135, {"nabla": nabla, "Cb_pont": _value(OTTER, 120),
+                               "B_pont": _value(OTTER, 117), "L": _value(OTTER, 104)})
 
 
 def _cross_flow_catamaran(grid):
-    return {"length": _value(OTTER, 98), "beam": _value(OTTER, 111),
+    return {"length": _value(OTTER, 104), "beam": _value(OTTER, 117),
             "draft": _catamaran_draft(), "water_density": _value(MSSC, 12),
             "drag_model": "hoerner", "strip_grid": grid}                # otter.m 244
 
@@ -623,28 +623,28 @@ def _lift_drag_spheroid(rho):
 def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
     """Mass and restoring matrices of the catamaran reference; G moved from
     the CO to the CF with H(-r_f), r_f = [LCF 0 0] (otter.m 191-193 at
-    cc07579, 201 at 99fdf4d). The 99fdf4d file takes the blended surge law
+    cc07579, 207 in otter_legacy.m at 6e78e98). The 99fdf4d file takes the blended surge law
     (``surge_time_constant``, ``surge_blend_decay``), the earlier files the
     linear one of the retained ``surface`` form."""
     ref = _catamaran_reference(csv)
     m, g_co = ref["M"][0], ref["G"][0]
     blend = csv == MSS_CATAMARAN_99FDF4D
     o = OTTER if blend else OTTER_OLD
-    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 201 if blend else 192), 0.0, 0.0]))
+    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 207 if blend else 192), 0.0, 0.0]))
     p = {
         "mass_matrix": m,
         "restoring_matrix": h_inv.T @ g_co @ h_inv,
-        "max_speed": _value(OTTER, 108) if blend else _value(OTTER_OLD, 101),
-        "yaw_damping_nonlinearity": _number_in(OTTER if blend else OTTER_OLD, 251 if blend else 240,
+        "max_speed": _value(OTTER, 114) if blend else _value(OTTER_OLD, 101),
+        "yaw_damping_nonlinearity": _number_in(OTTER if blend else OTTER_OLD, 257 if blend else 240,
                                                r"\(1 \+ ([0-9.]+) \* abs"),
     }
     if blend:
         p.update({
-            "max_forward_thrust": _number_in(OTTER, 212, r"Xuu = -([0-9.]+) \*") * gravity,
-            "surge_time_constant": _value(OTTER, 105),
-            "surge_blend_decay": _number_in(OTTER, 245, r"exp\(-([0-9.]+) \*"),
-            "time_constants": [_value(OTTER, 106), _value(OTTER, 107)],
-            "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (214, 215, 216)],
+            "max_forward_thrust": _number_in(OTTER, 218, r"Xuu = -([0-9.]+) \*") * gravity,
+            "surge_time_constant": _value(OTTER, 111),
+            "surge_blend_decay": _number_in(OTTER, 251, r"exp\(-([0-9.]+) \*"),
+            "time_constants": [_value(OTTER, 112), _value(OTTER, 113)],
+            "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (220, 221, 222)],
         })
     else:
         p.update({

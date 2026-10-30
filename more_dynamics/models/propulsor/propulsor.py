@@ -33,7 +33,7 @@ References
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion Control. Wiley.
     Ch. 12, eq. 12.226, p. 400.
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 250-253
-    @ ed2ce7b.
+    @ 6e78e98.
 [Mandic] Mandic, L. rpp_control, ``plugins/controllers/cascade_controller.hpp`` (the form: a skeleton
     with typed slots that holds parts it does not look into).
 

@@ -4,7 +4,7 @@ the ``site`` slot.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: LIBRARY/modeling/cylinderDrag.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: LIBRARY/modeling/cylinderDrag.m
     78-110 (circular section, Reynolds-dependent drag coefficient and
     aspect-ratio correction).
 

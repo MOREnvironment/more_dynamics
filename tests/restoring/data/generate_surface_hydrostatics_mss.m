@@ -3,7 +3,7 @@
 %
 %  MSS line numbers below are those of MSS ac77394 (2026-10-06), where the
 %  CSVs were first made; re-run at 72656d1 (release 2.0.2, 2026-10-07): both
-%  outputs byte-identical (2.0.2 moved otter.m's lines up by one).
+%  outputs byte-identical (2.0.2 moved otter_legacy.m's lines up by one).
 %
 %  Two CSVs beside this file, every number computed by MSS itself:
 %
@@ -14,7 +14,7 @@
 %
 %  2. surface_chain_mss_current.csv -- the hydrostatic coefficient chain
 %     (A_wp, I_T, I_L, KB, BM, GM, G) as MSS computes it for:
-%       kind 1: CRAFT/USV/models/otter.m lines 121-194 (twin hull), 20
+%       kind 1: CRAFT/USV/models/otter_legacy.m lines 121-194 (twin hull), 20
 %               payload cases (mp, rp); case 1 is the payload of the catamaran reference
 %               (mp = 25, rp = [0.05 0 -0.35]).
 %       kind 2: mssExamples/exShipHydrostatics.m (monohull, script).
@@ -24,9 +24,9 @@
 %     generator test_dynamics_consistency_mss_current.m does;
 %     the copy is checked against the unmodified function (xdot, M).
 %
-%  MSS commit cf349d4 (2026-10-07) changed otter.m's KB to the pontoon
+%  MSS commit cf349d4 (2026-10-07) changed otter_legacy.m's KB to the pontoon
 %  waterplane area (otter.m 178 at cc07579). The script reads which form its
-%  otter.m has and names the chain file: surface_chain_mss_current.csv for
+%  otter_legacy.m has and names the chain file: surface_chain_mss_current.csv for
 %  L*B_pont (MSS up to 72656d1), surface_chain_mss_cc07579.csv for Aw_pont.
 %  Only the kind-1 rows can differ; Gmtrx.m is unchanged.
 %
@@ -53,13 +53,14 @@ outDir = getenv('OUT_DIR');
 if isempty(outDir), outDir = fullfile(tempdir, 'more_mss_references'); end
 outDir = fullfile(outDir, 'hydrostatics');
 if ~exist(outDir, 'dir'), mkdir(outDir); end
-otterText = fileread(which('otter'));
+% MSS otter_legacy.m is the first-principles Otter (the code of otter.m up to ed2ce7b, same numbers); since 6e78e98 otter.m is the Capytaine-based model.
+otterText = fileread(which('otter_legacy'));
 if contains(otterText, '0.5*nabla/(L*B_pont)')
     chainFile = 'surface_chain_mss_current.csv';     % KB with L*B_pont
 elseif contains(otterText, '0.5*nabla/Aw_pont')
     chainFile = 'surface_chain_mss_cc07579.csv';     % KB with Aw_pont
 else
-    error('otter.m: KB line not recognised; revisit the chain file name');
+    error('otter_legacy.m: KB line not recognised; revisit the chain file name');
 end
 
 %% 1. Gmtrx.m on random arguments
@@ -91,18 +92,18 @@ chainNames = [{'kind','hull_count','L','B_hull','T','nabla','Cw','r_bg_3', ...
     arrayfun(@(i) sprintf('G_%02d', i), 1:36, 'UniformOutput', false)];
 chain = [];
 
-% kind 1: otter.m, 20 payloads
-otter_ws = mss_instrumented('otter');
+% kind 1: otter_legacy.m, 20 payloads
+otter_ws = mss_instrumented('otter_legacy');
 maxSelfCheck = 0;
 x = zeros(12, 1); n = [0; 0];
 for k = 1:20
     if k == 1
         mp = 25; rp = [0.05; 0; -0.35];
     else
-        mp = 45 * rand;                         % otter.m line 32: 0..45 kg
+        mp = 45 * rand;                         % otter_legacy.m line 32: 0..45 kg
         rp = [-0.4 + 0.8 * rand; -0.2 + 0.4 * rand; -0.5 * rand];
     end
-    [xdot0, ~, M0] = otter(x, n, mp, rp, 0, 0);
+    [xdot0, ~, M0] = otter_legacy(x, n, mp, rp, 0, 0);
     [xdot1, ~, M1, ~, ~, ~, ws] = otter_ws(x, n, mp, rp, 0, 0);
     maxSelfCheck = max([maxSelfCheck; abs(xdot1 - xdot0); abs(M1(:) - M0(:))]);
     Gt = ws.G.';
@@ -111,7 +112,7 @@ for k = 1:20
         2 * ws.Aw_pont, ws.I_T, ws.I_L, ws.KB, ws.BM_T, ws.BM_L, ws.GM_T, ws.GM_L, ...
         Gt(:)']; %#ok<AGROW>
 end
-% I_L_factor 0.8: otter.m line 177 (I_L = 0.8 * 2 * (1/12) * B_pont * L^3)
+% I_L_factor 0.8: otter_legacy.m line 177 (I_L = 0.8 * 2 * (1/12) * B_pont * L^3)
 
 % kind 2: exShipHydrostatics.m (script)
 s = run_script('exShipHydrostatics');

@@ -7,7 +7,7 @@ from the vehicle by name, the shaft speed is the command.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m 116,
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m 116,
     149-177, 250-253 (propeller); the equations and their lines are cited in
     ``more_dynamics.models.propeller.propeller``.
 

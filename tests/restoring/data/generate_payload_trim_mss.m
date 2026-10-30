@@ -1,8 +1,8 @@
 %% ================================================================
-%  Payload trim of a floating craft: references from MSS otter.m
+%  Payload trim of a floating craft: references from MSS otter_legacy.m
 %
-%  The equilibrium shift of the restoring force that otter.m gives a point
-%  payload (CRAFT/USV/models/otter.m 259-269, MSS revision ed2ce7b):
+%  The equilibrium shift of the restoring force that otter_legacy.m gives a point
+%  payload (CRAFT/USV/models/otter_legacy.m 265-275, MSS revision 6e78e98):
 %
 %      f_payload = Rzyx(phi,theta,psi)' * [0 0 mP*g]'        (259)
 %      m_payload = Smtrx(r_bP) * f_payload                    (260)
@@ -12,13 +12,13 @@
 %      xdot      = [... - G*eta ...; J*nu]                    (272-)
 %
 %  Two forms are written out for every case:
-%    mss        : otter.m as it is. Its xdot is the unmodified function's;
+%    mss        : otter_legacy.m as it is. Its xdot is the unmodified function's;
 %                 eta_0, g_0, the restoring vector G*eta (after the shift)
 %                 and the shifted-attitude kinematics are read from a copy of
-%                 otter.m instrumented at run time (in tempdir, never saved).
+%                 otter_legacy.m instrumented at run time (in tempdir, never saved).
 %    corrected  : the payload weight enters the heave equation once. The
 %                 displacement nabla = (m+mP)/rho already carries the weight
-%                 of hull and payload (otter.m 121-122), so g_0 keeps the
+%                 of hull and payload (otter_legacy.m 127-128), so g_0 keeps the
 %                 lever-arm moment only, g_0 = [0 0 0 m_payload']', and the
 %                 kinematics are evaluated at the actual attitude. The
 %                 result is built from the instrumented workspace of the same
@@ -26,8 +26,8 @@
 %                 equation of the unmodified file with those two terms changed.
 %  Cases: payload masses 0, 10, 25 and 50 kg at two payload positions
 %  (one on the centreline, one off it), seeded random states with small
-%  attitudes, propeller speeds inside the limits of otter.m and a current.
-%  The instrumented copy is checked against the unmodified otter.m (xdot) on
+%  attitudes, propeller speeds inside the limits of otter_legacy.m and a current.
+%  The instrumented copy is checked against the unmodified otter_legacy.m (xdot) on
 %  every case.
 %
 %  Output, under <OUT_DIR>/restoring/ (never this folder):
@@ -58,10 +58,11 @@ outDir = fullfile(outDir, 'restoring');
 if ~exist(outDir, 'dir'), mkdir(outDir); end
 [~, rev] = system(['git -C "' mssDir '" rev-parse --short HEAD']);
 rev = strtrim(rev);
-fprintf('MATLAB %s\nMSS: %s at %s\n', version, which('otter'), rev);
+% MSS otter_legacy.m is the first-principles Otter (the code of otter.m up to ed2ce7b, same numbers); since 6e78e98 otter.m is the Capytaine-based model.
+fprintf('MATLAB %s\nMSS: %s at %s\n', version, which('otter_legacy'), rev);
 
-otter_ws = mss_instrumented('otter');
-[~, ~, ~, ~, n_min, n_max] = otter();   % propeller speed limits (rad/s), otter.m 145-146
+otter_ws = mss_instrumented('otter_legacy');
+[~, ~, ~, ~, n_min, n_max] = otter_legacy();   % propeller speed limits (rad/s), otter_legacy.m 151-152
 
 rng(20261026, 'twister');
 masses = [0 10 25 50];
@@ -85,11 +86,11 @@ for mp = masses
             Vc = 0.5 * rand;
             beta_c = 2*pi*rand - pi;
 
-            xdot0 = otter(x, n, mp, rp, Vc, beta_c);
+            xdot0 = otter_legacy(x, n, mp, rp, Vc, beta_c);
             [xdot1, ~, ~, ~, ~, ~, ws] = otter_ws(x, n, mp, rp, Vc, beta_c);
             maxSelfCheck = max([maxSelfCheck; abs(xdot1 - xdot0)]);
 
-            g_mss = ws.G * ws.eta;                            % restoring vector of otter.m (ws.eta is shifted)
+            g_mss = ws.G * ws.eta;                            % restoring vector of otter_legacy.m (ws.eta is shifted)
 
             % corrected form: lever-arm moment only in g_0, kinematics at the actual attitude
             g0c = [0; 0; 0; ws.m_payload];
@@ -108,7 +109,7 @@ for mp = masses
 end
 fprintf('Instrumented vs unmodified otter (xdot), max |diff| = %.3g\n', maxSelfCheck);
 if maxSelfCheck ~= 0
-    error('the instrumented copy differs from otter.m');
+    error('the instrumented copy differs from otter_legacy.m');
 end
 
 names = [{'case_id', 'mp'}, vec_names('rp', 3), vec_names('x', 12), vec_names('n', 2), {'Vc', 'beta_c'}, ...

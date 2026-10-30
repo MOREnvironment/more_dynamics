@@ -36,7 +36,7 @@ combinations are refused, naming the selector.
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT licence,
-    CRAFT/AUV/models/remus100.m 110, 114-115 @ ed2ce7b.
+    CRAFT/AUV/models/remus100.m 110, 114-115 @ 6e78e98.
 [Murray-Smith 2016] Murray-Smith, D. J. (2016). Inverse simulation methods
     applied to investigations of actuator nonlinearities in ship steering.
     Simulation Notes Europe 26(4), 245-254. Fig. 1 and text, p. 246.

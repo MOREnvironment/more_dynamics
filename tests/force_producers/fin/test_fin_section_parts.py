@@ -8,7 +8,7 @@ and ``drag_coefficient`` (1 each). The skeleton turns them into the force
 ``f = 1/2 rho A U^2 (C_L lift_axis - C_D chord_axis)``.
 
 * ``quadratic_drag``: ``C_L = lift_slope * alpha``, ``C_D = lift_slope *
-  alpha^2`` (MSS ``remus100.m`` 238-245: ``X_r = -1/2 rho U_rh^2 A_r
+  alpha^2`` (MSS ``remus100.m`` 239-246: ``X_r = -1/2 rho U_rh^2 A_r
   CL_delta_r delta_r^2``, ``Y_r = -1/2 rho U_rh^2 A_r CL_delta_r delta_r``;
   stern planes alike). G1 against MATLAB: the coefficients MATLAB's forces
   imply, ``C_L = -Y_r / q``, ``C_D = -X_r / q``, ``q = 1/2 rho U_rh^2 A_r``
@@ -31,8 +31,8 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 179-189,
-    238-245.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 180-190,
+    239-246.
 [Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of
     freedom simulation model for the REMUS autonomous underwater vehicle*.
     MSc thesis, MIT/WHOI. Ch. 4, eqs. 4.37-4.39, p. 31; App. A, Table A.5,

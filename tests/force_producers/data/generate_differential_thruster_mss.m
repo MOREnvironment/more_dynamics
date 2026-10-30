@@ -2,13 +2,13 @@
 %  Otter differential thruster sweep, computed by MSS
 %
 %  Every constant and the thrust law come from MSS (T. I. Fossen, MIT):
-%    - B_prop, n_min, n_max from [~,~,~,B_prop,n_min,n_max] = otter()
-%      (CRAFT/USV/models/otter.m, nargin == 0 branch), so g = 9.81.
+%    - B_prop, n_min, n_max from [~,~,~,B_prop,n_min,n_max] = otter_legacy()
+%      (CRAFT/USV/models/otter_legacy.m, nargin == 0 branch), so g = 9.81.
 %    - allocation as CRAFT/USV/SIMotter.m (lines 95, 183-184 at 99bf0b3):
 %      Binv = invQR(B_prop); u = Binv*[tau_X; tau_N]; n_c = sign(u).*sqrt(abs(u))
-%    - saturation and thrust from otter.m itself (lines 220-232 at 99bf0b3),
+%    - saturation and thrust from otter_legacy.m itself (lines 220-232 at 99bf0b3),
 %      read from a copy instrumented at run time (in tempdir, never saved)
-%      that only returns its workspace; checked against the unmodified otter.m.
+%      that only returns its workspace; checked against the unmodified otter_legacy.m.
 %  The sweep (requested tau_X, tau_N over 120 s in 0.1 s steps: ramps, steps
 %  and reversals, ahead and astern) is a test construction.
 %  First made at MSS 99bf0b3 (2026-10-05); byte-identical at 72656d1 and
@@ -40,11 +40,12 @@ if isempty(outDir), outDir = fullfile(tempdir, 'more_mss_references'); end
 for sub = {'force_producers'}
     if ~exist(fullfile(outDir, sub{1}), 'dir'), mkdir(fullfile(outDir, sub{1})); end
 end
-fprintf('MATLAB %s\nMSS: %s\n', version, which('otter'));
+% MSS otter_legacy.m is the first-principles Otter (the code of otter.m up to ed2ce7b, same numbers); since 6e78e98 otter.m is the Capytaine-based model.
+fprintf('MATLAB %s\nMSS: %s\n', version, which('otter_legacy'));
 
-otter_ws = mss_instrumented('otter');
+otter_ws = mss_instrumented('otter_legacy');
 
-[~, ~, ~, B_prop, n_min, n_max] = otter();
+[~, ~, ~, B_prop, n_min, n_max] = otter_legacy();
 Binv = invQR(B_prop);
 fprintf('n_max = %.12f rad/s, n_min = %.12f rad/s\n', n_max, n_min);
 disp('B_prop ='); disp(B_prop);
@@ -90,7 +91,7 @@ for i = 1:nT
     u = Binv * [tau_X(i); tau_N(i)];
     n_c = sign(u) .* sqrt(abs(u));
 
-    xdot0 = otter(x0, n_c, mp, rp, 0, 0);
+    xdot0 = otter_legacy(x0, n_c, mp, rp, 0, 0);
     [xdot1, ~, ~, ~, ~, ~, ws] = otter_ws(x0, n_c, mp, rp, 0, 0);
     maxSelfCheck = max([maxSelfCheck; abs(xdot1 - xdot0)]);
 

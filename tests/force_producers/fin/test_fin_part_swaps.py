@@ -15,7 +15,7 @@ Arrows:
 * section ``quadratic_drag`` <-> ``linear_section`` (no zero-lift drag):
   the same lift; the difference is the drag ``1/2 rho A U^2 lift_slope
   alpha^2`` along ``-chord_axis`` and its moment (MSS ``remus100.m``
-  238-239 vs Prestero eq. 4.37, p. 31).
+  239-240 vs Prestero eq. 4.37, p. 31).
 * servo ``lag_rate_angle`` at rest (deflection = saturated command) ->
   ``ideal``: the same force, zero rate.
 * section ``lifting_line`` -> ``linear_section`` and interference
@@ -26,7 +26,7 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 238-245.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 239-246.
 [Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of
     freedom simulation model for the REMUS autonomous underwater vehicle*.
     MSc thesis, MIT/WHOI. Ch. 4, eqs. 4.37, 4.40-4.43, pp. 31-33.

@@ -4,7 +4,7 @@ Declared numbers and the models are in ``open_water``.
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 149-178
-    @ ed2ce7b.
+    @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-23

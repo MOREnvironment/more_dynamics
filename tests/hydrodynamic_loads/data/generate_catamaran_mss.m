@@ -1,22 +1,22 @@
 %% ================================================================
-%  Otter-based catamaran reference data, computed by MSS otter.m
+%  Otter-based catamaran reference data, computed by MSS otter_legacy.m
 %
 %  MSS line numbers below are those of MSS 99bf0b3 (2026-10-05), where the
 %  CSV was first made; byte-identical at 72656d1 (release 2.0.2). At cc07579
-%  otter.m's KB uses the pontoon waterplane area (commit cf349d4), which
+%  otter_legacy.m's KB uses the pontoon waterplane area (commit cf349d4), which
 %  changes G44, G55 and through them Kp, Mq (see the data folder's SOURCE.md).
 %
-%  Every term comes from CRAFT/USV/models/otter.m (T. I. Fossen, MSS, MIT):
-%    - otter.m is run as written; a copy instrumented at run time (in
+%  Every term comes from CRAFT/USV/models/otter_legacy.m (T. I. Fossen, MSS, MIT):
+%    - otter_legacy.m is run as written; a copy instrumented at run time (in
 %      tempdir, never saved) only returns its workspace so the intermediate
 %      terms (MRB, MA, G, Xu..Nr, tau_damp, ...) can be read.
-%    - the instrumented copy is checked against the unmodified otter.m
+%    - the instrumented copy is checked against the unmodified otter_legacy.m
 %      (xdot and M) on every case.
-%    - otter.m takes propeller speeds, not tau; with n = [0 0] its propeller
-%      tau is zero, so the external tau of the inputs is added in the otter.m
+%    - otter_legacy.m takes propeller speeds, not tau; with n = [0 0] its propeller
+%      tau is zero, so the external tau of the inputs is added in the otter_legacy.m
 %      state equation (lines 261-263).
-%    - D = diag([Xu Yv Zw Kp Mq Nr]) of the terms otter.m forms (lines
-%      202-207); otter.m builds no D matrix.
+%    - D = diag([Xu Yv Zw Kp Mq Nr]) of the terms otter_legacy.m forms (lines
+%      202-207); otter_legacy.m builds no D matrix.
 %  Inputs: inputs.csv beside this file (50 frozen states and wrenches),
 %  payload mp = 25 kg at rp = [0.05 0 -0.35] m, current 0.3 m/s at 30 deg.
 %  Outputs, under <OUT_DIR>:
@@ -51,9 +51,10 @@ if isempty(outDir), outDir = fullfile(tempdir, 'more_mss_references'); end
 for sub = {'full', 'hydrodynamics', 'rigid_body'}
     if ~exist(fullfile(outDir, sub{1}), 'dir'), mkdir(fullfile(outDir, sub{1})); end
 end
-fprintf('MATLAB %s\nMSS: %s\n', version, which('otter'));
+% MSS otter_legacy.m is the first-principles Otter (the code of otter.m up to ed2ce7b, same numbers); since 6e78e98 otter.m is the Capytaine-based model.
+fprintf('MATLAB %s\nMSS: %s\n', version, which('otter_legacy'));
 
-otter_ws = mss_instrumented('otter');
+otter_ws = mss_instrumented('otter_legacy');
 
 % ------------------------------------------------
 % Inputs and constants (payload and current of the frozen reference)
@@ -73,7 +74,7 @@ for k = 1:N
     x   = table2array(inputs(k, 1:12))';
     tau = table2array(inputs(k, 13:18))';
 
-    [xdot0, ~, M0] = otter(x, n, mp, rp, Vc, beta_c);
+    [xdot0, ~, M0] = otter_legacy(x, n, mp, rp, Vc, beta_c);
     [xdot1, ~, M1, ~, ~, ~, ws] = otter_ws(x, n, mp, rp, Vc, beta_c);
     if any(ws.tau ~= 0)
         error('otter propeller tau is not zero with n = 0');
@@ -82,9 +83,9 @@ for k = 1:N
 
     tau_total = tau + ws.tau_damp + ws.tau_crossflow;
     D = diag([ws.Xu, ws.Yv, ws.Zw, ws.Kp, ws.Mq, ws.Nr]);
-    eta_trim = ws.eta;   % otter.m line 255: eta = eta - eta_0
+    eta_trim = ws.eta;   % otter_legacy.m line 255: eta = eta - eta_0
 
-    % otter.m lines 261-263 with the external tau of the inputs
+    % otter_legacy.m lines 261-263 with the external tau of the inputs
     nu_dot  = ws.nu_c_dot + ws.M \ (tau_total - ws.C * ws.nu_r - ws.G * eta_trim);
     eta_dot = ws.J * ws.nu;
 
@@ -123,7 +124,7 @@ fprintf('Ig diag (kg m2): %.6f %.6f %.6f\n', diag(ws.Ig));
 outFile = fullfile(outDir, 'full', 'catamaran_dynamics_full_debug_mss.csv');
 writetable(allRecords, outFile);
 fprintf('Saved %d rows x %d columns to %s\n', height(allRecords), width(allRecords), outFile);
-otterText = fileread(which('otter'));
+otterText = fileread(which('otter_legacy'));
 if contains(otterText, '0.5*nabla/(L*B_pont)')
     catTag = 'current';      % KB with L*B_pont (MSS up to 72656d1)
 elseif contains(otterText, '0.5*nabla/Aw_pont')
@@ -132,7 +133,7 @@ elseif contains(otterText, '0.5*nabla/Aw_pont')
         catTag = '99fdf4d';  % surge damping blended from Xu and Xuu, Xudot on m+mP (be1f126, dd6b85f)
     end
 else
-    error('otter.m: KB line not recognised; revisit the output names');
+    error('otter_legacy.m: KB line not recognised; revisit the output names');
 end
 testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
 extract_like(outFile, fullfile(testsDir, 'hydrodynamic_loads', 'data', 'catamaran_matlab_reference_mss_current.csv'), ...

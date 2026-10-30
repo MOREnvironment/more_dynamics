@@ -13,7 +13,7 @@ Settings and their sources (keys in References):
 
 * ``ideal`` (``dynamics="none"``, ``angle_limit="on_command"``):
   ``delta = sat(command, +-max_deflection)``, no state (MSS ``remus100.m``
-  109, 113-114). G1 against MATLAB running MSS.
+  110, 114-115). G1 against MATLAB running MSS.
 * ``no_limits`` (``dynamics="none"``, ``angle_limit="none"``): the output is
   the command itself, no state, no limit at all.
 * ``lag_rate_angle`` (``dynamics="first_order_lag"``, ``rate_limit=True``,
@@ -60,8 +60,8 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 109,
-    113-114.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 110,
+    114-115.
 [Murray-Smith 2016] Murray-Smith, D. J. (2016). Inverse simulation methods
     applied to investigations of actuator nonlinearities in ship steering.
     *Simulation Notes Europe* 26(4), 245-256. Fig. 1 and text, p. 246;
@@ -169,7 +169,7 @@ def test_invalid_switch_combinations_are_refused(dynamics, rate_limit, angle_lim
 # ideal / no_limits
 # --------------------------------------------------------------------------
 def test_G1_ideal_servo_equals_mss_saturation():
-    """deflection = MATLAB's delta_r, delta_s (remus100.m 113-114) on every
+    """deflection = MATLAB's delta_r, delta_s (remus100.m 114-115) on every
     row, with max_deflection = MATLAB's delta_max (line 109)."""
     ref = mss_fins()
     servo = _servo("ideal", max_deflection=mss_constant(ref, "delta_max"))

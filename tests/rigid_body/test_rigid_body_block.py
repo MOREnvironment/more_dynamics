@@ -311,36 +311,36 @@ def test_contract_has_no_legacy_otter_inertia_flag():
 
 # --------------------------------------------------------------------------
 # G5 — Otter constants, MSS otter.m
-# (<MSS_DIR>/CRAFT/USV/models/otter.m, MSS cc07579, 2026-10-07; every line is
-# one higher than at 72656d1, release 2.0.2)
+# (<MSS_DIR>/CRAFT/USV/models/otter_legacy.m, MSS 6e78e98: the first-principles Otter, the code of
+# otter.m up to ed2ce7b, six lines further down because of a longer header)
 # --------------------------------------------------------------------------
-OTTER_M_RELATIVE = "CRAFT/USV/models/otter.m"  # under MSS_DIR (nothing relative to one machine)
+OTTER_M_RELATIVE = "CRAFT/USV/models/otter_legacy.m"  # under MSS_DIR (nothing relative to one machine)
 OTTER_LINES = {  # line number -> text the constants below were taken from
-    97: "rho = constant.rho_water;",
-    98: "L = 2.0;",
-    99: "B = 1.08;",
-    100: "m = 55.0;",
-    101: "r_bG = [0.2 0 -0.2]';",
-    102: "R44 = 0.4 * B;",
-    103: "R55 = 0.25 * L;",
-    104: "R66 = 0.25 * L;",
-    130: "Ig_CG = m * diag([R44^2, R55^2, R66^2]);",
-    131: "r_bG_hull = r_bG;",
-    132: "r_bG_total = (m*r_bG_hull + mP*r_bP)/(m+mP);",
-    133: "r_hull = r_bG_hull - r_bG_total;",
-    134: "r_payload = r_bP - r_bG_total;",
-    135: "Ig = Ig_CG - m * Smtrx(r_hull)^2 - mP * Smtrx(r_payload)^2;",
-    136: "r_bG = r_bG_total;",
-    152: "MRB_CG = [ (m+mP) * I3  O3",
-    154: "CRB_CG = [ (m+mP) * Smtrx(nu2)         O3",
-    155: "O3               -Smtrx(Ig*nu2)  ];",
-    157: "H = Hmtrx(r_bG);",
-    162: "Xudot = -addedMassSurge(m+mP,L,rho);",
-    163: "Yvdot = -1.5 * m;",
-    164: "Zwdot = -1.0 * m;",
-    165: "Kpdot = -0.2 * Ig(1,1);",
-    166: "Mqdot = -0.8 * Ig(2,2);",
-    167: "Nrdot = -1.7 * Ig(3,3);",
+    103: "rho = constant.rho_water;",
+    104: "L = 2.0;",
+    105: "B = 1.08;",
+    106: "m = 55.0;",
+    107: "r_bG = [0.2 0 -0.2]';",
+    108: "R44 = 0.4 * B;",
+    109: "R55 = 0.25 * L;",
+    110: "R66 = 0.25 * L;",
+    136: "Ig_CG = m * diag([R44^2, R55^2, R66^2]);",
+    137: "r_bG_hull = r_bG;",
+    138: "r_bG_total = (m*r_bG_hull + mP*r_bP)/(m+mP);",
+    139: "r_hull = r_bG_hull - r_bG_total;",
+    140: "r_payload = r_bP - r_bG_total;",
+    141: "Ig = Ig_CG - m * Smtrx(r_hull)^2 - mP * Smtrx(r_payload)^2;",
+    142: "r_bG = r_bG_total;",
+    158: "MRB_CG = [ (m+mP) * I3  O3",
+    160: "CRB_CG = [ (m+mP) * Smtrx(nu2)         O3",
+    161: "O3               -Smtrx(Ig*nu2)  ];",
+    163: "H = Hmtrx(r_bG);",
+    168: "Xudot = -addedMassSurge(m+mP,L,rho);",
+    169: "Yvdot = -1.5 * m;",
+    170: "Zwdot = -1.0 * m;",
+    171: "Kpdot = -0.2 * Ig(1,1);",
+    172: "Mqdot = -0.8 * Ig(2,2);",
+    173: "Nrdot = -1.7 * Ig(3,3);",
 }
 OTTER = {"rho": 1025.0, "L": 2.0, "B": 1.08, "m": 55.0, "rg": [0.2, 0.0, -0.2],
          "R": [0.4, 0.25, 0.25], "added": [1.5, 1.0, 0.2, 0.8, 1.7]}

@@ -153,7 +153,7 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
                  "mariner", "torqeedo", "cybership", "prestero")
 
 REMUS = "source-sim/MSS/CRAFT/AUV/models/remus100.m"
-OTTER = "source-sim/MSS/CRAFT/USV/models/otter.m"
+OTTER = "source-sim/MSS/CRAFT/USV/models/otter_legacy.m"
 SIMOTTER = "source-sim/MSS/CRAFT/USV/SIMotter.m"
 MSSC = "source-sim/MSS/LIBRARY/mssConstants.m"
 GRAVITY = "source-sim/MSS/INS/functions/gravity.m"
@@ -168,20 +168,20 @@ GEN_DIFF = "tests/force_producers/data/generate_differential_thruster_template.m
 CITED_LINES = {
     (MSSC, 12): "constant.rho_water = 1025;",
     (MSSC, 14): "constant.g = 9.81;",
-    (OTTER, 95): "constant = mssConstants();",
-    (OTTER, 96): "g = constant.g;",
-    (OTTER, 112): "y_pont  = 0.395;",
-    (OTTER, 139): "l1 = -y_pont;",
-    (OTTER, 140): "l2 = y_pont;",
-    (OTTER, 143): "k_pos = 0.02216/2;",
-    (OTTER, 144): "k_neg = 0.01289/2;",
-    (OTTER, 145): "n_max =  sqrt((0.5*24.4 * g)/k_pos);",
-    (OTTER, 146): "n_min = -sqrt((0.5*13.6 * g)/k_neg);",
-    (OTTER, 230): "n = satlim(n, n_min, n_max);",
-    (OTTER, 234): "if n(i) > 0",
-    (OTTER, 235): "Thrust(i) = k_pos * n(i) * abs(n(i));",
-    (OTTER, 237): "Thrust(i) = k_neg * n(i) * abs(n(i));",
-    (OTTER, 242): "tau = [Thrust(1) + Thrust(2) 0 0 0 0 -l1 * Thrust(1) - l2 * Thrust(2) ]';",
+    (OTTER, 101): "constant = mssConstants();",
+    (OTTER, 102): "g = constant.g;",
+    (OTTER, 118): "y_pont  = 0.395;",
+    (OTTER, 145): "l1 = -y_pont;",
+    (OTTER, 146): "l2 = y_pont;",
+    (OTTER, 149): "k_pos = 0.02216/2;",
+    (OTTER, 150): "k_neg = 0.01289/2;",
+    (OTTER, 151): "n_max =  sqrt((0.5*24.4 * g)/k_pos);",
+    (OTTER, 152): "n_min = -sqrt((0.5*13.6 * g)/k_neg);",
+    (OTTER, 236): "n = satlim(n, n_min, n_max);",
+    (OTTER, 240): "if n(i) > 0",
+    (OTTER, 241): "Thrust(i) = k_pos * n(i) * abs(n(i));",
+    (OTTER, 243): "Thrust(i) = k_neg * n(i) * abs(n(i));",
+    (OTTER, 248): "tau = [Thrust(1) + Thrust(2) 0 0 0 0 -l1 * Thrust(1) - l2 * Thrust(2) ]';",
     (REMUS, 98): "constant = mssConstants();",
     (REMUS, 99): "rho = constant.rho_water;",
     (REMUS, 110): "delta_max = deg2rad(20);",
@@ -246,13 +246,13 @@ CITED_LINES = {
     (WAG_M, 35): "KT = sum(WagCThrust_stuv.*((Ja).^WagThrust_s).*(PD.^WagThrust_t).*...",
     (WAG_M, 37): "KQ = sum(WagCTorque_stuv.*((Ja).^WagTorque_s).*(PD.^WagTorque_t).*...",
     # added 2026-10-06
-    (OTTER, 222): "B_prop = k_pos * [...",
-    (OTTER, 223): "1 1",
-    (OTTER, 224): "y_pont -y_pont ];",
-    (SIMOTTER, 194): "thrust_c = B_thrust_inv * [tau_X; tau_N];",
-    (SIMOTTER, 197): "if thrust_c(j) >= 0",
-    (SIMOTTER, 198): "n_c(j) = sqrt(thrust_c(j) / k_pos);",
-    (SIMOTTER, 200): "n_c(j) = -sqrt(-thrust_c(j) / k_neg);",
+    (OTTER, 228): "B_prop = k_pos * [...",
+    (OTTER, 229): "1 1",
+    (OTTER, 230): "y_pont -y_pont ];",
+    (SIMOTTER, 231): "thrust_c = B_thrust_inv * [tau_X; tau_N];",
+    (SIMOTTER, 234): "if thrust_c(j) >= 0",
+    (SIMOTTER, 235): "n_c(j) = sqrt(thrust_c(j) / k_pos);",
+    (SIMOTTER, 237): "n_c(j) = -sqrt(-thrust_c(j) / k_neg);",
     (WAG_M, 24): "%   Barnitsas, M.M., Ray, D. and Kinley, P. (1981).",
     (WAG_M, 25): "%   KT, KQ and Efficiency Curves for the Wageningen B-Series Propellers",
     (WAG_M, 26): "%   http://deepblue.lib.umich.edu/handle/2027.42/3557",
@@ -409,16 +409,16 @@ def test_cited_lines_are_unchanged():
 # ==========================================================================
 def _otter_differential(gravity):
     """otter.m 104, 131-136; positions [left, right] = [0, -/+ y_pont, 0]."""
-    y = _value(OTTER, 112)
-    k_pos = _value(OTTER, 143)
-    k_neg = _value(OTTER, 144)
-    f_fwd = _number_in(OTTER, 145, r"\(\(0\.5\*([0-9.]+) \* g\)")
-    f_rev = _number_in(OTTER, 146, r"\(\(0\.5\*([0-9.]+) \* g\)")
+    y = _value(OTTER, 118)
+    k_pos = _value(OTTER, 149)
+    k_neg = _value(OTTER, 150)
+    f_fwd = _number_in(OTTER, 151, r"\(\(0\.5\*([0-9.]+) \* g\)")
+    f_rev = _number_in(OTTER, 152, r"\(\(0\.5\*([0-9.]+) \* g\)")
     return {
         "positive_thrust_coefficients": [k_pos, k_pos],
         "negative_thrust_coefficients": [k_neg, k_neg],
-        "thruster_positions": [[0.0, _value(OTTER, 139, {"y_pont": y}), 0.0],
-                               [0.0, _value(OTTER, 140, {"y_pont": y}), 0.0]],
+        "thruster_positions": [[0.0, _value(OTTER, 145, {"y_pont": y}), 0.0],
+                               [0.0, _value(OTTER, 146, {"y_pont": y}), 0.0]],
         "thruster_directions": [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]],
         "max_forward_thrust": [0.5 * f_fwd * gravity] * 2,
         "max_reverse_thrust": [0.5 * f_rev * gravity] * 2,

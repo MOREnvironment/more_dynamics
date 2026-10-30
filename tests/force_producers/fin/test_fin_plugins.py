@@ -33,7 +33,7 @@ References
 [Sarhadi 2026] Sarhadi, P. (2026). Simple yet effective anti-windup techniques
     for amplitude and rate saturation: an AUV case study. arXiv:2601.01302v2,
     Fig. 4, p. 4.
-[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 229-255 @ ed2ce7b.
+[MSS] Fossen, T. I. MSS, MIT, CRAFT/AUV/models/remus100.m 229-255 @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-08

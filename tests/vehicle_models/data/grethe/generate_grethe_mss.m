@@ -18,6 +18,12 @@
 %    grethe_m_trajectory_<name>.csv  G3 open-loop runs of exGrethe.m (the
 %                                    'gate' set), and with suffixes _leg and
 %                                    _x_ref the two other sets
+%    ..._x_ref.csv, xdot_x_ref_*     the restoring matrix given at x = -2.24 m
+%                                    is computed here by a marked copy of
+%                                    grethe.m (see 'The shift to the point P'
+%                                    below); the output of the unmodified file
+%                                    is kept beside it: xdot_x_ref_as_written_*
+%                                    columns and *_x_ref_as_written.csv files
 %    grethe_m_trajectory_tolerances*.csv  per run and state: the largest
 %                                    difference to the run with every
 %                                    derivative shifted by +-1e-9 and to the
@@ -43,8 +49,19 @@
 %    MSS_DIR=<MSS checkout> OUT_DIR=<folder> "$MATLAB_BIN" -batch "run('<this file>')"
 %  with TMPDIR unset. The seed of the cases is 20261023.
 %
+% The shift to the point P. grethe.m moves the restoring matrix from the CO to the
+% point P with H_ref' G_CO H_ref and H_ref = Hmtrx([opt.x_ref 0 0]) (line 349),
+% the form MSS Gmtrx.m carried up to ed2ce7b. The elastic energy of a small
+% rigid motion is the same at P and at the CO, so the matrix at P is
+% H(-r)' G_CO H(-r), the inverse shift (MSS Gmtrx.m 40-41 since 6e78e98).
+% The x_ref cases are therefore computed by a copy of grethe.m written at run
+% time into a folder that is put first on the path for those cases only, with
+% that one line changed and marked; the unmodified file's output is written
+% beside it as history. The other cases (x_ref = 0) are the unmodified file's.
+%
 % Author:    Enio Krizman
 % Date:      2026-10-23
+% Revisions: none by others
 
 mssDir = getenv('MSS_DIR');
 if isempty(mssDir)
@@ -57,6 +74,18 @@ addpath(genpath(mssDir));
 [status, rev] = system(['git -C "' mssDir '" rev-parse --short HEAD']);
 if status ~= 0, rev = 'unknown'; end
 fprintf('MATLAB %s\nMSS: %s at %s', version, which('grethe'), rev);
+
+% --- grethe.m with the inverse CO -> P shift (marked copy, written at run time) ---
+srcText = fileread(which('grethe'));
+oldLine = 'H_ref = Hmtrx([opt.x_ref 0 0]);';
+assert(contains(srcText, oldLine), 'grethe.m: the H_ref line was not found; revisit the marked copy');
+newLine = ['H_ref = Hmtrx([-opt.x_ref 0 0]);   % MARKED: inverse shift, ' ...
+           'H(r)^-1 = H(-r); the file as written has Hmtrx([opt.x_ref 0 0])'];
+corrDir = fullfile(tempdir, 'grethe_p_corrected');
+if ~exist(corrDir,'dir'), mkdir(corrDir); end
+% the copy keeps the function name grethe so that exGrethe.m calls it; it is the first
+% on the path only while the x_ref cases are computed (grethe_p, the helper at the end)
+fidc = fopen(fullfile(corrDir,'grethe.m'),'w'); fwrite(fidc, strrep(srcText, oldLine, newLine)); fclose(fidc);
 
 % --- mass matrix -------------------------------------------------------------
 [~,~,M] = grethe();
@@ -79,7 +108,7 @@ opt_gate = struct('leg',false,'x_ref',0,'ramp',false);   % ramp = false: residua
 opt_leg  = struct('leg',true,'x_ref',0,'ramp',false);
 opt_xref = struct('leg',false,'x_ref',-2.24,'ramp',false);
 opt_ramp = struct('leg',false,'x_ref',0,'ramp',true);
-rows = zeros(N, 1 + 12 + 2 + 6 + 12 + 6 + 12 + 12 + 12);
+rows = zeros(N, 1 + 12 + 2 + 6 + 12 + 6 + 12 + 12 + 12 + 12);
 for k = 1:N
     if k == 1
         x = zeros(12,1); ui = [0; 0];                            % at rest
@@ -102,9 +131,10 @@ for k = 1:N
     end
     [xd, ~, ~, ~, tau_out]   = grethe(x,ui,0,zeros(3,1),0,0,opt_gate);
     [xd_leg, ~, ~, ~, tau_leg] = grethe(x,ui,0,zeros(3,1),0,0,opt_leg);
-    xd_xref = grethe(x,ui,0,zeros(3,1),0,0,opt_xref);
+    xd_xref_as_written = grethe(x,ui,0,zeros(3,1),0,0,opt_xref);
+    xd_xref = grethe_p(x,ui,0,zeros(3,1),0,0,opt_xref);
     xd_ramp = grethe(x,ui,0,zeros(3,1),0,0,opt_ramp);
-    rows(k,:) = [k x' ui' tau_out' xd' tau_leg' xd_leg' xd_xref' xd_ramp'];
+    rows(k,:) = [k x' ui' tau_out' xd' tau_leg' xd_leg' xd_xref' xd_ramp' xd_xref_as_written'];
 end
 names = ['case_id', arrayfun(@(i) sprintf('x_%02d',i),1:12,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('ui_%02d',i),1:2,'UniformOutput',false), ...
@@ -113,7 +143,8 @@ names = ['case_id', arrayfun(@(i) sprintf('x_%02d',i),1:12,'UniformOutput',false
          arrayfun(@(i) sprintf('tau_out_leg_%02d',i),1:6,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('xdot_leg_%02d',i),1:12,'UniformOutput',false), ...
          arrayfun(@(i) sprintf('xdot_x_ref_%02d',i),1:12,'UniformOutput',false), ...
-         arrayfun(@(i) sprintf('xdot_ramp_%02d',i),1:12,'UniformOutput',false)];
+         arrayfun(@(i) sprintf('xdot_ramp_%02d',i),1:12,'UniformOutput',false), ...
+         arrayfun(@(i) sprintf('xdot_x_ref_as_written_%02d',i),1:12,'UniformOutput',false)];
 fid = fopen(fullfile(outDir,'grethe_m_derivative.csv'),'w');
 fprintf(fid,'%s\n',strjoin(names,','));
 fprintf(fid,[repmat('%.17g,',1,size(rows,2)-1) '%.17g\n'],rows');
@@ -146,8 +177,22 @@ fclose(fid);
 % --- open-loop runs (G3) -----------------------------------------------------
 exGrethe(outDir,'gate');
 exGrethe(outDir,'leg');
-exGrethe(outDir,'x_ref');
 exGrethe(outDir,'ramp');
+% x_ref: the unmodified file first (history, renamed), then the marked copy
+asWrittenDir = fullfile(tempdir, 'grethe_x_ref_as_written');
+if exist(asWrittenDir,'dir'), rmdir(asWrittenDir,'s'); end
+mkdir(asWrittenDir);
+exGrethe(asWrittenDir,'x_ref');
+listing = dir(fullfile(asWrittenDir,'*_x_ref.csv'));
+for q = 1:numel(listing)
+    [~,base] = fileparts(listing(q).name);
+    copyfile(fullfile(asWrittenDir,listing(q).name), fullfile(outDir,[base '_as_written.csv']));
+end
+rmdir(asWrittenDir,'s');
+addpath(corrDir,'-begin'); clear functions;
+assert(strcmp(fileparts(which('grethe')), corrDir), 'the marked copy of grethe.m is not first on the path');
+exGrethe(outDir,'x_ref');
+rmpath(corrDir); clear functions;
 
 % --- the plant: grethe.m with its defaults and its caller's actuators ------------
 % grethe.m takes the actual thrust and steering angle as inputs and leaves their
@@ -260,4 +305,17 @@ function xadot = grethe_plant(xa, uc, lim)
     d_dot = satlim((satlim(uc(2), -lim.delta_max, lim.delta_max) - delta) / lim.T_delta, ...
         -lim.ddelta_max, lim.ddelta_max);
     xadot = [Th_dot; d_dot; xd];
+end
+
+function varargout = grethe_p(varargin)
+% grethe.m with the inverse CO -> P shift (the marked copy of the folder corrDir), called
+% for the x_ref derivative cases; the unmodified file is restored on the path afterwards.
+    corrDir = fullfile(tempdir, 'grethe_p_corrected');
+    addpath(corrDir,'-begin'); clear grethe;
+    cleanup = onCleanup(@() cleanup_path(corrDir));
+    [varargout{1:max(1,nargout)}] = grethe(varargin{:});
+end
+
+function cleanup_path(corrDir)
+    rmpath(corrDir); clear grethe;
 end

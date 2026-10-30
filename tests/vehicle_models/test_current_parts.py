@@ -1,6 +1,6 @@
 """The named parts that take the ocean current in the form MSS's two vehicle models use: "REMUS 100 (MSS, ocean
-current)" (``current_form = "yaw_rate_terms"``, ``remus100.m`` 118-123 @ ed2ce7b) and "Otter (MSS, ocean current)"
-(``current_form = "full_rotation_rate"``, ``otter.m`` 120-125 @ ed2ce7b). Each is a copy of the still-water part with
+current)" (``current_form = "yaw_rate_terms"``, ``remus100.m`` 118-123 @ 6e78e98) and "Otter (MSS, ocean current)"
+(``current_form = "full_rotation_rate"``, ``otter_legacy.m`` 126-131 @ 6e78e98). Each is a copy of the still-water part with
 that one selector changed: every parameter file equal but it, the same linked actuators; built by rpp's own
 ``ComponentContextBuilder`` the vehicle has the three current inputs before its actuator inputs.
 
@@ -158,7 +158,7 @@ def test_the_quaternion_form_follows_the_euler_form_over_a_manoeuvre_and_keeps_t
 
 def test_the_euler_form_is_the_default_of_the_vehicle_type_and_the_other_types_do_not_offer_the_option():
     """The parts that do not set ``kinematics_form`` carry the 12 Euler states; the plugin's default is ``euler``; only
-    ``SpheroidAuv`` declares the option (MSS runs only the REMUS in both forms: ``otter.m`` 91 is 12-state)."""
+    ``SpheroidAuv`` declares the option (MSS runs only the REMUS in both forms: ``otter_legacy.m`` 97 is 12-state)."""
     from more_dynamics.plugins.vehicle_models.spheroid_auv import SpheroidAuv
     from more_dynamics.plugins.vehicle_models.catamaran import Catamaran
     from more_dynamics.plugins.vehicle_models.monohull import Monohull

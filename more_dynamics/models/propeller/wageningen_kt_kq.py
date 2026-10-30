@@ -26,7 +26,7 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``ed2ce7b``: ``LIBRARY/modeling/wageningen.m`` 23-38;
+    licence, revision ``6e78e98``: ``LIBRARY/modeling/wageningen.m`` 23-38;
     ``LIBRARY/modeling/utiles/WageningData.txt`` 6-44, 52-98
     (``WageningData.mat``).
 

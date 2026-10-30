@@ -31,3 +31,5 @@ is below 1e-5 in every state. Re-run: `MSS_DIR=<MSS> OUT_DIR=<scratch> "$MATLAB_
 `cmp` each file with its frozen copy; two runs on this machine gave byte-identical files. Readers:
 `tests/vehicle_models/test_rppws_runs.py` (G3 through rpp's builder from the named part, the schedule of
 `vehicle_simulation.json` sample by sample, CVODES against a finer RK4).
+
+**MSS 6e78e98 (2026-10-30).** In MSS `otter.m` is now the unified Capytaine-based Otter (frequency-dependent added mass and damping from a data file, equivalent matrices, wave loads applied by `SIMotter.m`); the first-principles Otter this reference follows is the file `otter_legacy.m`, whose executable lines equal `otter.m` up to `ed2ce7b` (200 seeded states: xdot, U, M, B_prop, n_min, n_max identical, max difference 0). The generator calls `otter_legacy` (and instruments that file); the output was re-run on MSS 6e78e98 and is byte-identical to the file frozen here, apart from a revision string where the file name or the metadata carries one.

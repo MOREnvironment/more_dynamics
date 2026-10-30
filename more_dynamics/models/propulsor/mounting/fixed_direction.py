@@ -6,8 +6,8 @@ References
 ----------
 [Fossen 2011] Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion
     Control. Wiley. Ch. 12, eq. 12.226, p. 400 (unit thrust direction at a point).
-[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/USV/models/otter.m 242
-    @ ed2ce7b.
+[MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/USV/models/otter_legacy.m 248
+    @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-23
@@ -35,6 +35,6 @@ def fixed_direction_casadi():
     declared = fixed_direction_parameters()
     p = symbols(declared)
     angle = ca.SX.sym("steering_angle")
-    axis = p["direction"] / ca.norm_2(p["direction"])  # (Fossen 2011, eq. 12.226, p. 400; otter.m 242)
+    axis = p["direction"] / ca.norm_2(p["direction"])  # (Fossen 2011, eq. 12.226, p. 400; otter_legacy.m 248)
     return part_function("fixed_direction", {"steering_angle": angle},
                          {"thrust_axis": axis, "thrust_position": p["position"]}, p, declared)

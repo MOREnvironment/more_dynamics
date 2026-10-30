@@ -15,7 +15,7 @@ choose the graph: ``hull_count`` (1: one hull on the centreline, no
 ``hull_lateral_offset``; 2: twin hulls), ``gravity_source`` (``"latitude"``:
 WGS-84 normal gravity at ``latitude`` in degrees from
 ``more_transformations``; ``"value"``: ``gravity`` given, 9.81 to compare
-with MSS, ``Gmtrx.m`` 26) and ``center_of_buoyancy_area`` (below).
+with MSS, ``Gmtrx.m`` 29) and ``center_of_buoyancy_area`` (below).
 
 Equations (keys in References)::
 
@@ -33,11 +33,20 @@ Equations (keys in References)::
                                                       exShip 41, 55-56; otter.m 179-185)
     G_CF   = diag(0, 0, rho g A_wp, rho g nabla GM_T, rho g nabla GM_L, 0)
                                                      (Fossen 2011, eq. 4.24, p. 65;
-                                                      Gmtrx.m 32-35)
+                                                      Gmtrx.m 35-38)
     G_CO   = H(r_bF)^T G_CF H(r_bF),  r_bF = [LCF 0 0]
                                                      (Fossen 2011, eq. 7.250, p. 181;
-                                                      Gmtrx.m 29, 36)
-    G      = H(r_bP)^T G_CO H(r_bP)                  (Gmtrx.m 37)
+                                                      Gmtrx.m 32, 39)
+    G      = H(-r_bP)^T G_CO H(-r_bP)                (Gmtrx.m 40-41)
+
+The shift from the CO to the point P is the inverse of ``H(r_bP)``, which is
+``H(-r_bP)`` (``Hmtrx.m`` 6): the elastic energy ``1/2 d^T G d`` is the same
+in either set of coordinates, and the displacement of the CO follows from that
+of P as ``d_CO = H(-r_bP) d_P`` (small rigid motion, the displacement of a body
+point ``r`` is ``d + theta x r``). MSS ``Gmtrx.m`` carried ``H(+r_bP)`` up to
+revision ``ed2ce7b`` (wrong for any ``r_bP != 0``, equal at ``r_bP = 0``) and
+corrected it in ``6e78e98``; a first-principles test in the library's tests
+checks the form independently of MSS.
 
 MSS attributes the Morrish and Munro-Smith formulas to Fossen (2027), 3rd
 ed., eqs. 4.37-4.38 (``exShipHydrostatics.m`` 35, 38); that edition is not on
@@ -84,8 +93,9 @@ References
     p. 181.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``LIBRARY/modeling/Gmtrx.m`` 25-37;
-    ``LIBRARY/kinematics/Hmtrx.m`` 16-18; ``CRAFT/USV/models/otter.m``
+    licence, revision ``6e78e98``: ``LIBRARY/modeling/Gmtrx.m`` 27-41;
+    ``LIBRARY/kinematics/Hmtrx.m`` 6, 16-18; revision ``cc07579``:
+    ``CRAFT/USV/models/otter.m``
     174-192, 262; ``mssExamples/exShipHydrostatics.m`` 32-56;
     ``CRAFT/SHIP/models/osv.m`` 84, 92; revision ``72656d1``:
     ``CRAFT/USV/models/otter.m`` 177 (the earlier KB).
@@ -175,26 +185,28 @@ def surface_restoring_matrices(water_density, gravity, displacement_volume, wate
                                transverse_metacentric_height, longitudinal_metacentric_height,
                                longitudinal_center_of_flotation, reference_point):
     """``(G, G_CO, G_CF)`` (6x6 each, CasADi; symbols or numbers in):
-    Fossen 2011, eqs. 4.24, p. 65, and 7.250, p. 181; MSS ``Gmtrx.m`` 29-37
-    with ``rho`` and ``g`` as inputs (``Gmtrx.m`` 25-26 fixes them).
+    Fossen 2011, eqs. 4.24, p. 65, and 7.250, p. 181; MSS ``Gmtrx.m`` 32-41
+    with ``rho`` and ``g`` as inputs (``Gmtrx.m`` 28-29 fixes them).
 
     ``G_CF`` is diagonal at the centre of flotation ``[LCF 0 0]``, ``G_CO``
     at the CO and ``G`` at ``reference_point`` (from the CO, BODY).
     """
     rho_g = water_density * gravity
-    # G_CF (Fossen 2011, eq. 4.24, p. 65; Gmtrx.m 32-35)
+    # G_CF (Fossen 2011, eq. 4.24, p. 65; Gmtrx.m 35-38)
     g_cf = ca.diag(ca.vertcat(
         0.0,
         0.0,
-        rho_g * waterplane_area,  # (Gmtrx.m 32)
-        rho_g * displacement_volume * transverse_metacentric_height,  # (Gmtrx.m 33)
-        rho_g * displacement_volume * longitudinal_metacentric_height,  # (Gmtrx.m 34)
+        rho_g * waterplane_area,  # (Gmtrx.m 35)
+        rho_g * displacement_volume * transverse_metacentric_height,  # (Gmtrx.m 36)
+        rho_g * displacement_volume * longitudinal_metacentric_height,  # (Gmtrx.m 37)
         0.0,
     ))
-    h_f = MatrixTransforms.H_matrix(ca.vertcat(longitudinal_center_of_flotation, 0.0, 0.0))  # r_bF (Gmtrx.m 29)
-    g_co = h_f.T @ g_cf @ h_f  # (Fossen 2011, eq. 7.250, p. 181; Gmtrx.m 36)
-    h_p = MatrixTransforms.H_matrix(reference_point)
-    g_p = h_p.T @ g_co @ h_p  # (Gmtrx.m 37)
+    h_f = MatrixTransforms.H_matrix(ca.vertcat(longitudinal_center_of_flotation, 0.0, 0.0))  # r_bF (Gmtrx.m 32)
+    g_co = h_f.T @ g_cf @ h_f  # (Fossen 2011, eq. 7.250, p. 181; Gmtrx.m 39)
+    # CO -> P is the inverse shift, H(r_bP)^-1 = H(-r_bP) (Hmtrx.m 6): the stiffness at P
+    # is the one whose elastic energy equals that of G_CO (Gmtrx.m 40-41)
+    h_p = MatrixTransforms.H_matrix(-reference_point)
+    g_p = h_p.T @ g_co @ h_p  # (Gmtrx.m 41)
     return g_p, g_co, g_cf
 
 

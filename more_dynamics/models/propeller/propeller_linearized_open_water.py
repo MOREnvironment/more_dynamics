@@ -4,7 +4,7 @@ vehicle rather than its own copies.
 
 References
 ----------
-[MSS] Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/models/remus100.m
+[MSS] Fossen, T. I. MSS, MIT, @ 6e78e98: CRAFT/AUV/models/remus100.m
     149-177 (propeller).
 
 Author:    Enio Krizman

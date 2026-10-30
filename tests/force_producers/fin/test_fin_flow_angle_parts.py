@@ -9,7 +9,7 @@ a positive deflection); outputs ``flow_angle`` (1, rad) and
 ``u_n = fin_velocity . lift_axis``:
 
 * ``none``: ``flow_angle = 0``, ``speed_squared = u_c^2 + u_n^2`` — the speed
-  in the fin's section plane (MSS ``remus100.m`` 234-235: ``U_rh^2 = u_r^2 +
+  in the fin's section plane (MSS ``remus100.m`` 235-236: ``U_rh^2 = u_r^2 +
   v_r^2`` for the rudder, ``U_rv^2 = u_r^2 + w_r^2`` for the stern planes).
   G1 against MATLAB.
 * ``small_angle``: ``flow_angle = u_n / u_c``, ``speed_squared = u_c^2``
@@ -29,7 +29,7 @@ References
 ----------
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
-    licence, revision ``cc07579``: ``CRAFT/AUV/models/remus100.m`` 234-235.
+    licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 235-236.
 [Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of
     freedom simulation model for the REMUS autonomous underwater vehicle*.
     MSc thesis, MIT/WHOI. Ch. 4, eqs. 4.40-4.43, pp. 32-33, Figs. 4-1, 4-2.
@@ -74,7 +74,7 @@ def test_flow_angle_declares_no_parameter(form):
 
 def test_G1_no_flow_angle_speed_equals_mss_section_plane_speeds():
     """Rudder (lift -y) -> MATLAB U_rh^2; stern planes (lift -z) -> U_rv^2
-    (remus100.m 234-235), fin velocity = nu_r[0:3]."""
+    (remus100.m 235-236), fin velocity = nu_r[0:3]."""
     ref = mss_fins()
     part_ = part("flow_angle", "none")
     nu_r = mss_columns(ref, "nu_r", 6)

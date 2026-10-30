@@ -4,13 +4,13 @@ per second; no state, no thrust scale, no thrust limit, the load torque ignored.
 ``command_unit`` selects the unit of the command and of its limits: ``"rpm"``
 (``n_p = sat(n, n_max) / 60``, MSS ``remus100.m`` 116) or ``"rad/s"``
 (``n = sat(omega, omega_max) / (2 pi)``, the shaft-speed saturation of MSS
-``otter.m`` 230). The output ``drive_output`` is in rev/s, the unit the shaft-speed
+``otter_legacy.m`` 236). The output ``drive_output`` is in rev/s, the unit the shaft-speed
 laws accept.
 
 References
 ----------
 [MSS] Fossen, T. I. (2026). Marine Systems Simulator, MIT, CRAFT/AUV/models/remus100.m 116
-    and CRAFT/USV/models/otter.m 230 @ ed2ce7b.
+    and CRAFT/USV/models/otter_legacy.m 236 @ 6e78e98.
 
 Author:    Enio Krizman
 Date:      2026-10-23
@@ -43,7 +43,7 @@ def speed_command_casadi(*, command_unit):
     declared = speed_command_parameters(command_unit=command_unit)
     p = symbols(declared)
     command, state, load = ca.SX.sym("command", 1), ca.SX.sym("drive_state", 0), ca.SX.sym("shaft_torque")
-    speed = saturate(command, p["min_command"], p["max_command"]) / COMMAND_UNITS[command_unit]  # (remus100.m 116; otter.m 230)
+    speed = saturate(command, p["min_command"], p["max_command"]) / COMMAND_UNITS[command_unit]  # (remus100.m 116; otter_legacy.m 236)
     return part_function("speed_command", {"command": command, "drive_state": state, "shaft_torque": load},
                          {"drive_output": speed, "drive_state_dot": ca.SX.zeros(0, 1), "thrust_scale": ca.SX(1.0),
                           "thrust_limit": ca.SX(ca.inf)}, p, declared)

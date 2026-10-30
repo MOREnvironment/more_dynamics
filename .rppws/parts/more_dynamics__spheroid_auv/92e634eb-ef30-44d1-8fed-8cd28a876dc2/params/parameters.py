@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# REMUS 100 (Prestero 2001; MSS remus100.m @ ed2ce7b): hull, mass, forms and the site.
+# REMUS 100 (Prestero 2001; MSS remus100.m @ 6e78e98): hull, mass, forms and the site.
 # Source of every value: the comment beside it (the plugin's own default).
 # rpp rewrites this file without comments when parameters are saved from the editor.
 
