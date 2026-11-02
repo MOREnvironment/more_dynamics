@@ -187,7 +187,7 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `longitudinal_inertia_factor` | 0.8 | 1 | otter.m 188 (I_L = 0.8 ...) | document |
 | `longitudinal_center_of_flotation` | -0.2 | m | otter.m 186, 201 | document |
 | `reference_point` | [0.0, 0.0, 0.0] | m | the body-frame origin (CO) | convention |
-| `payload_trim_form` | "lever_arm_and_heave_shift" | - | otter.m:259-269 as MSS has it (the payload weight in heave a second time, F-MSS-31, and the kinematics at the shifted attitude, F-MSS-24); the plugin's default is the corrected `"lever_arm_moment"` | selector |
+| `payload_trim_form` | "lever_arm_and_heave_shift" | - | otter_legacy.m:264-275 as MSS has it (the payload weight as a wrench on the unloaded waterline, textbook, and the kinematics at the shifted attitude, F-MSS-24); the plugin's default is `"weight_wrench"` (the same shift, the kinematics at the actual attitude); F-MSS-31 is not a fault (PT1, E-211) | selector |
 
 ## Grethe (`more_dynamics::Monohull`)
 
@@ -216,7 +216,7 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `longitudinal_inertia_factor` | 1.0 | 1 | A-43 M17 | estimate |
 | `longitudinal_center_of_flotation` | -0.3 | m | A-43 M18 | estimate |
 | `reference_point` | [0.0, 0.0, 0.0] | m | the body origin, the midpoint of the waterline length (E-101 Q4 a; grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):349 `x_ref` 0); the earlier [-2.24, 0, 0] put the restoring matrix at the outboard | owner decision |
-| `payload_trim_form` | "lever_arm_moment" (plugin default, not set) | - | grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):414-419: the payload weight is in the loaded displacement, only its lever arm moves the equilibrium | selector |
+| `payload_trim_form` | "weight_wrench" (plugin default, not set) | - | otter_legacy.m 264-271: the payload weight as a wrench on z = 0 (heave and moment about the origin). `grethe.m` @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle):414-419 dropped the heave term (the E-109 reading, withdrawn by E-211): its trim depends on the body origin; the frozen payload derivative of that file is reproduced with `"lever_arm_moment"` only in `test_G1_payload_derivative_of_the_part_equals_the_model_file` | selector |
 | `wetted_surface_method` | "regression_table" | - | A-64 Section 3.3 R11 | owner decision |
 
 ## Grethe site (`more_dynamics::Site`)

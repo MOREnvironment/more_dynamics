@@ -16,14 +16,18 @@
 %                 eta_0, g_0, the restoring vector G*eta (after the shift)
 %                 and the shifted-attitude kinematics are read from a copy of
 %                 otter_legacy.m instrumented at run time (in tempdir, never saved).
-%    corrected  : the payload weight enters the heave equation once. The
-%                 displacement nabla = (m+mP)/rho already carries the weight
-%                 of hull and payload (otter_legacy.m 127-128), so g_0 keeps the
-%                 lever-arm moment only, g_0 = [0 0 0 m_payload']', and the
-%                 kinematics are evaluated at the actual attitude. The
-%                 result is built from the instrumented workspace of the same
-%                 call (G, M, C, tau, damping, cross-flow), line by line the
-%                 equation of the unmodified file with those two terms changed.
+%    corrected  : the physics form (PT1, E-211). z = 0 is the unloaded waterline
+%                 (otter_legacy.m header: draft 13.4 cm when mP = 0), the payload
+%                 weight is a wrench on that reference, so g_0 is MSS's own g_0
+%                 (heave weight and moment about the CO: a weight over the centre
+%                 of flotation sinks the craft level by mP/(rho Awp)), and the
+%                 kinematics are evaluated at the actual attitude (F-MSS-24, repaired
+%                 upstream in 8667294). The result is built from the instrumented
+%                 workspace of the same call (G, M, C, tau, damping, cross-flow),
+%                 line by line the equation of the unmodified file with the
+%                 kinematics term changed. (Until 2026-11-02 this form dropped the
+%                 heave term of g_0, E-109; GC2 showed that trim then depends on the
+%                 body origin, and E-211 withdrew it.)
 %  Cases: payload masses 0, 10, 25 and 50 kg at two payload positions
 %  (one on the centreline, one off it), seeded random states with small
 %  attitudes, propeller speeds inside the limits of otter_legacy.m and a current.
@@ -92,8 +96,8 @@ for mp = masses
 
             g_mss = ws.G * ws.eta;                            % restoring vector of otter_legacy.m (ws.eta is shifted)
 
-            % corrected form: lever-arm moment only in g_0, kinematics at the actual attitude
-            g0c = [0; 0; 0; ws.m_payload];
+            % corrected form: MSS's g_0 (payload weight as a wrench on z = 0), kinematics at the actual attitude
+            g0c = [0; 0; ws.g_0(3); ws.m_payload];
             eta0c = [0; 0; ws.G(3:5, 3:5) \ g0c(3:5); 0];
             g_corr = ws.G * (x(7:12) - eta0c);
             J_actual = eulerang(x(10), x(11), x(12));

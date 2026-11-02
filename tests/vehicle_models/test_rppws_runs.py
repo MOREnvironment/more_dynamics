@@ -330,8 +330,9 @@ def test_G3_through_rpp_otter_trajectory_equals_matlab_rk4_run(name):
 
 @pytest.mark.parametrize("name", ["differential_turn", "zigzag_differential_steps"])
 def test_G4_swapped_thrusters_or_the_corrected_trim_are_detected(name):
-    """The gate can fail: the two shaft speeds swapped between port and starboard, and the corrected payload trim in
-    place of MSS's (the part's form), each leave the frozen run by far more than its tolerance."""
+    """The gate can fail: the two shaft speeds swapped between port and starboard, and the physics payload trim (the
+    default form, kinematics at the actual attitude) in place of MSS's (the part's form), each leave the frozen run by
+    far more than its tolerance."""
     table = _otter_table(name)
     tolerance = _otter_tolerances()[name]
     swapped = _otter_rk4_run(_vehicle(OTTER_CONFIGURATION), table, {"drive_command": ("ui_02", "ui_01")})
@@ -339,7 +340,7 @@ def test_G4_swapped_thrusters_or_the_corrected_trim_are_detected(name):
     p = vc.plugins()
     thrusters = [(p.Propulsor, vc.pick(p.Propulsor, vc.reference_part(n)))
                  for n in ("Otter port thruster", "Otter starboard thruster")]
-    corrected = vc.otter(actuators=thrusters)  # the default form, lever_arm_moment
+    corrected = vc.otter(actuators=thrusters)  # the default form, weight_wrench
     run = _otter_rk4_run(corrected, table)
     assert (np.abs(run - _otter_reference(table)).max(axis=0) > 10 * tolerance).any()
 

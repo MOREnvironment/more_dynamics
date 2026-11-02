@@ -30,13 +30,17 @@ is the published Radojcic et al. (2014) hydrostatic (zero-speed) wetted-surface
 regression (one hull only; ``models/restoring/restoring_parts.py``). Raise:
 the wetted surface from the hull lines.
 
-``payload_trim_form`` (default ``"lever_arm_moment"``, E-109: a payload is a weight the displaced volume already carries,
-so only the moment of its lever arm moves the equilibrium) chooses the shift of the equilibrium a point payload causes
-(``models/restoring/payload_trim.py``): ``"lever_arm_moment"`` or ``"lever_arm_and_heave_shift"`` (MSS ``otter.m``
-259-269, which also counts the payload weight a second time in heave and takes the kinematics at the shifted attitude).
-The vehicle owns the payload: its ``payload_mass`` and ``payload_position`` are read by name, and the shift
-(``payload_trim_offset``) and the attitude offset the vehicle takes its kinematics at (``kinematic_attitude_offset``)
-are outputs. Raise: the payload weighed, its position measured, and the trim compared with a static roll and pitch.
+``payload_trim_form`` (default ``"weight_wrench"``) chooses the shift of the equilibrium a point payload causes
+(``models/restoring/payload_trim.py``). ``z = 0`` is the unloaded waterline, so the payload weight is a wrench on the
+linear restoring: heave and the moment of the weight about the origin (equal to the force at the centre of flotation
+plus its couple about it); a payload above the centre of flotation sinks the craft level by m_P / (rho A_wp) and the
+equilibrium does not depend on where the body origin is (PT1, E-211; this supersedes E-109). ``"lever_arm_and_heave_shift"``
+is MSS ``otter_legacy.m`` 264-275 (the same ``eta_0``, the kinematics at the shifted attitude); ``"lever_arm_moment"`` drops
+the heave term and takes the moment about the origin, an origin-dependent legacy form kept only to reproduce frozen
+references of retired model files. The vehicle owns the payload: its ``payload_mass`` and ``payload_position`` are read by
+name, and the shift (``payload_trim_offset``) and the attitude offset the vehicle takes its kinematics at
+(``kinematic_attitude_offset``) are outputs. Raise: the payload weighed, its position measured, and the trim compared
+with a measured static draft, roll and pitch.
 
 Every vehicle number is unset in this plugin and given by the composition (a named part of the
 workspace); each reference part's values and their provenance are in ``DEFAULTS.md``. A value the
@@ -52,7 +56,7 @@ References
     and Motion Control. Wiley. Eq. 4.25, p. 65 (through the surface block,
     which cites ch. 4 line by line).
 [MSS] Fossen, T. I. MSS, MIT, CRAFT/USV/models/otter.m 121-122, 172-193 and
-    LIBRARY/modeling/XuuITTC.m 38 @ cc07579; CRAFT/USV/models/otter.m 259-269 @ ed2ce7b (the payload trim).
+    LIBRARY/modeling/XuuITTC.m 38 @ cc07579; CRAFT/USV/models/otter_legacy.m 264-275 @ 6e78e98 (the payload trim).
 
 Author:    Enio Krizman
 Date:      2026-10-09
@@ -83,7 +87,7 @@ class SurfaceRestoring(HydrostaticsModel):
         ParameterDescription("wetted_surface", unset()),  # m^2, given value, read with "given" (DEFAULTS.md: source and named part)
         ParameterDescription("block_coefficient_method", "given"),  # E-104: "given" keeps every existing gate (hull_block_coefficient a vehicle coupling, draft derived)
         ParameterDescription("draft", unset()),  # m, read with "computed" only: document (F003 p2; M001 p7, ~0.3 m)
-        ParameterDescription("payload_trim_form", "lever_arm_moment"),  # otter.m 259-269 corrected (E-109): lever arm only
+        ParameterDescription("payload_trim_form", "weight_wrench"),  # otter_legacy.m 264-271: payload weight as a wrench on z = 0 (PT1, E-211)
     ]
 
     def __init__(self) -> None:

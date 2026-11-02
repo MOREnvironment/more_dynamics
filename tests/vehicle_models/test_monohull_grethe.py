@@ -585,15 +585,17 @@ def _values(plugin, part, **overrides):
     return {**vc.pick(plugin, vc.reference_part(part)), **overrides}
 
 
-def _part_vehicle(set_name="gate", **vehicle_params):
+def _part_vehicle(set_name="gate", *, payload_trim_form=None, **vehicle_params):
     """The part's plugins assembled with ideal actuators (the thrust and steering commands are the actual ones) and
-    the form switches of one set of the model file's options; every number is the part's."""
+    the form switches of one set of the model file's options; every number is the part's. ``payload_trim_form`` is
+    left to the plugin's default unless a gate needs the form the model file was written with."""
     p = vc.plugins()
+    trim = {} if payload_trim_form is None else {"payload_trim_form": payload_trim_form}
     _, _, housing, surge, point, _, _ = SETS[set_name]
     outboard = _values(p.Propulsor, "Grethe outboard", drive="thrust_command", steering="servo_ideal", housing=housing)
     return vc.build_context(
         p.Monohull, _values(p.Monohull, PART, **vehicle_params), site=(p.Site, _values(p.Site, "Grethe site")),
-        hydrostatics=(p.SurfaceRestoring, _values(p.SurfaceRestoring, "Grethe hydrostatics", reference_point=point)),
+        hydrostatics=(p.SurfaceRestoring, _values(p.SurfaceRestoring, "Grethe hydrostatics", reference_point=point, **trim)),
         hydrodynamics=(p.SurfaceHullLoads, _values(p.SurfaceHullLoads, "Grethe hull loads", surge_resistance=surge)),
         actuators=[(p.Propulsor, outboard)])
 
@@ -638,13 +640,17 @@ def test_G1_mass_matrix_of_the_part_equals_the_model_file():
 
 
 def test_G1_payload_derivative_of_the_part_equals_the_model_file():
-    """The payload trim of the part (the lever-arm moment, the payload weight not counted again in heave) against the
-    model file's: 25 kg at a seeded position, the derivative of 12 seeded states."""
+    """The payload trim of the part in the form the retired model file was written with (``lever_arm_moment``: the
+    lever-arm moment about the origin, no heave term) against the model file's: 25 kg at a seeded position, the
+    derivative of 12 seeded states. That form reads z = 0 as the loaded waterline while the file's own header calls it
+    the bare-hull waterline, and its trim depends on the body origin (PT1, E-211); the gate reproduces the file, it does
+    not endorse the form, and the part's default is ``weight_wrench``."""
     table = _table("grethe_m_payload_derivative.csv")
     worst = 0.0
     for i in range(len(table["case_id"])):
         position = [table[f"payload_position_{j:02d}"][i] for j in (1, 2, 3)]
-        vehicle = _part_vehicle(payload_mass=float(table["payload_mass"][i]), payload_position=position)
+        vehicle = _part_vehicle(payload_trim_form="lever_arm_moment", payload_mass=float(table["payload_mass"][i]),
+                                payload_position=position)
         x, ui = _columns(table, "x", 12)[i], _columns(table, "ui", 2)[i]
         xdot = vc.dynamics_map(vehicle, 1)(vc.mss_to_ours(x).reshape(12, 1), ui.reshape(2, 1))
         worst = max(worst, np.abs(vc.ours_to_mss(np.asarray(xdot).T)[0] - _columns(table, "xdot", 12)[i]).max())

@@ -26,7 +26,7 @@ Raise: the wetted surface from the hull lines.
 ``payload_trim_form`` (surface only; ``"none"`` default, the restoring as ``g = G eta``) adds the shift of the
 equilibrium that a point payload off the centre of flotation causes, ``g = G (eta - eta_0)``, with the payload
 mass and position read as the vehicle's quantities ``payload_mass`` and ``payload_position`` and the forms of
-``models/restoring/payload_trim.py`` (``"lever_arm_moment"``, ``"lever_arm_and_heave_shift"``); the shift and the
+``models/restoring/payload_trim.py`` (``"weight_wrench"``, ``"lever_arm_and_heave_shift"``, ``"lever_arm_moment"``); the shift and the
 attitude the kinematics are to be taken at are outputs (``payload_trim_offset``, ``kinematic_attitude_offset``).
 
 References
@@ -200,7 +200,7 @@ def surface_restoring(hull_count, *, wetted_surface_method="computed", block_coe
         trim = payload_trim_offset(payload_trim_form)(
             eta=s["eta"], restoring_matrix=out["G"], payload_mass=s["payload_mass"],
             payload_position=s["payload_position"], gravity=s["gravity"])
-        outputs["g"] = out["G"] @ (s["eta"] - trim["trim_offset"])  # g = G (eta - eta_0) (otter.m 266, 272-)
+        outputs["g"] = out["G"] @ (s["eta"] - trim["trim_offset"])  # g = G (eta - eta_0) (otter_legacy.m 266, 272-)
         outputs["payload_trim_offset"] = trim["trim_offset"]
         outputs["kinematic_attitude_offset"] = trim["kinematic_attitude_offset"]
     return function_from(f"surface_restoring_{hull_count}_hull", s, outputs)
