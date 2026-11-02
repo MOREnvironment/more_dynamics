@@ -160,6 +160,15 @@ def signed_advance_open_water(density, diameter, pitch_diameter_ratio, blade_are
 
 
 def outboard_leg_normal_force(nu_r, delta, position, density, leg_area, leg_aspect_ratio):
+    """The leg normal force of a motor whose axis is ``[cos d, sin d]`` (the port-positive angle of the model file):
+    ``outboard_leg_normal_force_about_normal`` with the normal ``[-sin d, cos d]``. A unit with the starboard-positive
+    convention has the axis ``[cos d, -sin d]``; it takes ``outboard_leg_normal_force_about_normal`` with the normal
+    computed from its own axis (``more_dynamics.models.propulsor.housing.leg_normal_force`` does)."""
+    return outboard_leg_normal_force_about_normal(nu_r, (-ca.sin(delta), ca.cos(delta)), position, density, leg_area,
+                                                  leg_aspect_ratio)
+
+
+def outboard_leg_normal_force_about_normal(nu_r, normal, position, density, leg_area, leg_aspect_ratio):
     """Wrench ``tau`` (6x1, BODY, about the CO) of the normal force of the outboard leg: flat-plate-like, the
     force on the leg proportional to the flow component normal to the motor axis and to the flow speed at the leg.
 
@@ -173,7 +182,7 @@ def outboard_leg_normal_force(nu_r, delta, position, density, leg_area, leg_aspe
     slope = 6.13 * leg_aspect_ratio / (leg_aspect_ratio + 2.25)  # normal-force slope per rad (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 271)
     flow_x = nu_r[0] - position[1] * nu_r[5]  # flow at the leg (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 401)
     flow_y = nu_r[1] + position[0] * nu_r[5]  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 402)
-    normal_x, normal_y = -ca.sin(delta), ca.cos(delta)  # normal to the motor axis (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 403)
+    normal_x, normal_y = normal[0], normal[1]  # normal to the motor axis (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 403)
     normal_speed = flow_x * normal_x + flow_y * normal_y  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 404)
     speed = ca.sqrt(flow_x**2 + flow_y**2 + LEG_SPEED_GUARD)  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 405)
     normal_force = -0.5 * density * leg_area * slope * speed * normal_speed  # (grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle) 406)

@@ -144,9 +144,14 @@ def _leg_part():
     return part("housing", "leg_normal_force", LEG)
 
 
-def _leg_wrench(nu, delta):
-    """The housing part's wrench at the outboard point (axis not read by this form)."""
-    return call(_leg_part(), nu_r=nu, thrust_axis=[1.0, 0.0, 0.0], thrust_position=POSITION,
+def _axis(delta, convention="port_positive"):
+    """The thrust axis of the azimuth mounting for the angle ``delta`` (the leg takes its normal from it)."""
+    return call(_azimuth(convention), steering_angle=[delta])["thrust_axis"]
+
+
+def _leg_wrench(nu, delta, convention="port_positive"):
+    """The housing part's wrench at the outboard point, the axis the azimuth mounting gives for the angle."""
+    return call(_leg_part(), nu_r=nu, thrust_axis=_axis(delta, convention), thrust_position=POSITION,
                 steering_angle=[delta], water_density=[RHO])["tau"]
 
 
@@ -170,7 +175,8 @@ def test_the_leg_wrench_is_the_library_function_applied_to_the_same_numbers():
     for _ in range(50):
         nu, delta = g.uniform(-3, 3, 6), g.uniform(-0.6, 0.6)
         direct = outboard_leg_normal_force(nu, delta, POSITION, RHO, A_LEG, AR_LEG)
-        assert max_diff(_leg_wrench(nu, delta), np.array(direct, dtype=float).reshape(-1)) <= 1e-12
+        reference = np.array(direct, dtype=float).reshape(-1)
+        assert max_diff(_leg_wrench(nu, delta), reference) <= 1e-12 * max(1.0, np.max(np.abs(reference)))  # the axis is normalised: 1 ulp
 
 
 def test_the_leg_opposes_the_flow_across_the_motor_axis_and_vanishes_for_flow_along_it():
@@ -185,18 +191,70 @@ def test_the_leg_opposes_the_flow_across_the_motor_axis_and_vanishes_for_flow_al
 
 def test_the_leg_force_scales_with_density_and_area_and_the_lift_slope_of_the_aspect_ratio():
     nu = [1.5, 0.8, 0, 0, 0, 0.1]
-    base = call(_leg_part(), nu_r=nu, thrust_axis=[1, 0, 0], thrust_position=POSITION, steering_angle=[0.2],
+    base = call(_leg_part(), nu_r=nu, thrust_axis=_axis(0.2), thrust_position=POSITION, steering_angle=[0.2],
                 water_density=[RHO])["tau"]
-    dense = call(_leg_part(), nu_r=nu, thrust_axis=[1, 0, 0], thrust_position=POSITION, steering_angle=[0.2],
+    dense = call(_leg_part(), nu_r=nu, thrust_axis=_axis(0.2), thrust_position=POSITION, steering_angle=[0.2],
                  water_density=[1.1 * RHO])["tau"]
     assert max_diff(dense, 1.1 * base) <= 1e-12
     big = part("housing", "leg_normal_force", {"leg_area": 2 * A_LEG, "leg_aspect_ratio": AR_LEG})
-    twice = call(big, nu_r=nu, thrust_axis=[1, 0, 0], thrust_position=POSITION, steering_angle=[0.2], water_density=[RHO])["tau"]
+    twice = call(big, nu_r=nu, thrust_axis=_axis(0.2), thrust_position=POSITION, steering_angle=[0.2], water_density=[RHO])["tau"]
     assert max_diff(twice, 2 * base) <= 1e-12
     slender = part("housing", "leg_normal_force", {"leg_area": A_LEG, "leg_aspect_ratio": 3.0})
     ratio = (6.13 * 3.0 / (3.0 + 2.25)) / (6.13 * AR_LEG / (AR_LEG + 2.25))
-    longer = call(slender, nu_r=nu, thrust_axis=[1, 0, 0], thrust_position=POSITION, steering_angle=[0.2], water_density=[RHO])["tau"]
+    longer = call(slender, nu_r=nu, thrust_axis=_axis(0.2), thrust_position=POSITION, steering_angle=[0.2], water_density=[RHO])["tau"]
     assert max_diff(longer, ratio * base) <= 1e-12
+
+
+@pytest.mark.parametrize("convention, sign", [("port_positive", 1.0), ("starboard_positive", -1.0)])
+def test_the_leg_normal_is_perpendicular_to_the_thrust_axis_in_both_steering_conventions(convention, sign):
+    """The force of the leg is along its normal, the horizontal axis turned by +90 deg: with a flow across the leg the
+    force has no component along the thrust axis, and it is the axis turned (``[cos d, s sin d]`` -> ``[-s sin d,
+    cos d]``) with ``s = +1`` for ``port_positive`` and ``-1`` for ``starboard_positive``."""
+    g = rng()
+    for _ in range(N_RANDOM):
+        nu, delta = g.uniform(-3, 3, 6), g.uniform(-0.6, 0.6)
+        axis = _axis(delta, convention)
+        assert max_diff(axis, [np.cos(delta), sign * np.sin(delta), 0.0]) <= 1e-15
+        force = _leg_wrench(nu, delta, convention)[:2]
+        assert abs(force @ axis[:2]) <= 1e-12 * max(1.0, np.linalg.norm(force))
+        turned = np.array([-axis[1], axis[0]])
+        assert abs(force @ turned - np.linalg.norm(force) * np.sign(force @ turned)) <= 1e-12 * max(1.0, np.linalg.norm(force))
+
+
+def test_the_starboard_positive_leg_is_the_port_positive_leg_with_the_angle_mirrored():
+    """``starboard_positive`` with ``d`` has the axis of ``port_positive`` with ``-d``, so the leg wrench is the same
+    (the old code took the raw angle and gave the force of the port-positive leg at ``+d`` instead)."""
+    g = rng()
+    for _ in range(N_RANDOM):
+        nu, delta = g.uniform(-3, 3, 6), g.uniform(-0.6, 0.6)
+        mirrored = _leg_wrench(nu, -delta, "port_positive")
+        assert max_diff(_leg_wrench(nu, delta, "starboard_positive"), mirrored) <= 1e-12 * max(1.0, np.max(np.abs(mirrored)))
+    nu = np.array([1.5, 0.8, 0, 0, 0, 0.1])
+    assert max_diff(_leg_wrench(nu, 0.3, "starboard_positive"), _leg_wrench(nu, 0.3, "port_positive")) > 1e-3  # they differ
+
+
+@pytest.mark.parametrize("convention", ["port_positive", "starboard_positive"])
+def test_the_leg_has_no_force_for_a_flow_along_the_thrust_axis_in_both_conventions(convention):
+    """Flow along the thrust axis at the leg point (a surge flow at ``r = 0`` rotated to the axis) gives no normal flow."""
+    for delta in (0.0, 0.2, -0.45):
+        axis = _axis(delta, convention)
+        flow = 2.0 * axis
+        tau = _leg_wrench([flow[0], flow[1], 0, 0, 0, 0], delta, convention)
+        assert max_diff(tau, np.zeros(6)) <= 1e-9, (convention, delta, tau)
+
+
+def test_the_leg_wrench_is_unchanged_for_the_port_positive_convention_and_a_vertical_axis_gives_no_force():
+    """Grethe (``port_positive``): the housing equals the library function of the raw angle (the frozen gate G1 and
+    the vehicle runs of test_monohull_grethe are the references); a vertical axis has no horizontal part: zero."""
+    g = rng()
+    for _ in range(N_RANDOM):
+        nu, delta = g.uniform(-3, 3, 6), g.uniform(-0.6, 0.6)
+        direct = outboard_leg_normal_force(nu, delta, POSITION, RHO, A_LEG, AR_LEG)
+        reference = np.array(direct, dtype=float).reshape(-1)
+        assert max_diff(_leg_wrench(nu, delta), reference) <= 1e-12 * max(1.0, np.max(np.abs(reference)))  # the axis is normalised: 1 ulp
+    tau = call(_leg_part(), nu_r=[1.0, 1.0, 0, 0, 0, 0], thrust_axis=[0.0, 0.0, 1.0], thrust_position=POSITION,
+               steering_angle=[0.3], water_density=[RHO])["tau"]
+    assert max_diff(tau, np.zeros(6)) == 0.0
 
 
 # (the model file's leg runs are gated on the part itself: tests/vehicle_models/test_monohull_grethe.py, set ``leg``)
