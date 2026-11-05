@@ -60,6 +60,64 @@ def test_saturate_is_elementwise():
     assert np.allclose(out, [-1.0, 0.5, 1.0])
 
 
+NAN = float("nan")
+REFUSAL = "saturate refuses a NaN command"
+
+
+def test_saturate_mx_refuses_a_nan_scalar_at_evaluation():
+    x = ca.MX.sym("x")
+    f = ca.Function("f", [x], [saturate(x, -1.0, 1.0)])
+    with pytest.raises(RuntimeError, match=REFUSAL):
+        f(NAN)
+
+
+def test_saturate_mx_refuses_a_nan_in_a_vector_at_evaluation():
+    v = ca.MX.sym("v", 3)
+    f = ca.Function("f", [v], [saturate(v, -1.0, 1.0)])
+    for bad in ([NAN, 0.0, 0.0], [0.0, 2.0, NAN], [NAN, NAN, NAN]):
+        with pytest.raises(RuntimeError, match=REFUSAL):
+            f(bad)
+
+
+def test_saturate_mx_finite_values_and_infinities_are_unchanged():
+    v = ca.MX.sym("v", 4)
+    f = ca.Function("f", [v], [saturate(v, [-1.0, -2.0, 0.0, -3.0], [1.0, 2.0, 0.5, 3.0])])
+    x = [-2.0, 1.5, 0.25, np.inf]
+    out = np.asarray(f(x)).ravel()
+    assert np.allclose(out, np.clip(x, [-1.0, -2.0, 0.0, -3.0], [1.0, 2.0, 0.5, 3.0]))
+    out = np.asarray(f([-np.inf, 0.0, 0.1, -np.inf])).ravel()
+    assert np.allclose(out, [-1.0, 0.0, 0.1, -3.0])
+
+
+def test_saturate_mx_derivative_is_unchanged_where_defined():
+    x = ca.MX.sym("x", 3)
+    jac = ca.Function("j", [x], [ca.jacobian(saturate(x, -1.0, 1.0), x)])
+    assert np.allclose(np.asarray(jac([0.3, -2.0, 5.0])), np.diag([1.0, 0.0, 0.0]))
+    assert np.allclose(np.asarray(jac([-0.5, 0.0, 0.99])), np.eye(3))
+
+
+def test_saturate_sx_gives_nan_for_a_nan_command_and_is_unchanged_when_finite():
+    v = ca.SX.sym("v", 3)
+    f = ca.Function("f", [v], [saturate(v, -1.0, 1.0)])
+    assert np.allclose(np.asarray(f([-2.0, 0.5, 2.0])).ravel(), [-1.0, 0.5, 1.0])
+    out = np.asarray(f([NAN, 0.5, 2.0])).ravel()
+    assert np.isnan(out[0]) and np.allclose(out[1:], [0.5, 1.0])
+
+
+def test_saturate_of_a_number_refuses_nan_with_the_message():
+    with pytest.raises(ValueError, match=REFUSAL):
+        saturate(NAN, -1.0, 1.0)
+    with pytest.raises(ValueError, match=REFUSAL):
+        saturate([0.0, NAN], -1.0, 1.0)
+    with pytest.raises(ValueError, match=REFUSAL):
+        saturate(ca.DM([NAN]), -1.0, 1.0)
+
+
+def test_saturate_of_a_finite_number_returns_the_clip():
+    assert float(saturate(3.0, -1.0, 1.0)) == 1.0
+    assert np.allclose(np.asarray(saturate([-2.0, 0.5], -1.0, 1.0)).ravel(), [-1.0, 0.5])
+
+
 def test_safe_norm_is_the_euclidean_norm():
     v = ca.SX.sym("v", 3)
     assert _eval(safe_norm(v), (v, [3.0, 4.0, 12.0]))[0] == pytest.approx(13.0)

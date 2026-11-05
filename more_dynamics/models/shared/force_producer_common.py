@@ -25,9 +25,30 @@ import casadi as ca
 from more_transformations.more_casadi_transformations import MatrixTransforms
 
 
+NAN_COMMAND_REFUSED = "saturate refuses a NaN command: the input is not a number (a NaN would be clipped to a limit)"
+
+
 def saturate(value, lower, upper):
     """Elementwise ``min(max(x, lower), upper)`` (the order of
-    ``numpy.clip``). Unit: that of ``value``."""
+    ``numpy.clip``). Unit: that of ``value``.
+
+    A NaN command is refused, never clipped (``fmin``/``fmax`` would turn it
+    into a limit). By type of ``value``:
+
+    * ``MX``: an assertion in the graph; evaluating the Function with a NaN
+      input raises ``RuntimeError`` carrying ``NAN_COMMAND_REFUSED``.
+    * ``SX``: an SX graph cannot assert, so a NaN input gives a NaN output
+      that the caller sees; finite values are unchanged.
+    * numbers (``float``, ``list``, ``DM``): raises ``ValueError``.
+    """
+    if isinstance(value, ca.MX):
+        clipped = ca.fmin(ca.fmax(value, lower), upper)
+        return ca.MX.attachAssert(clipped, ca.mmin(value >= -ca.inf), NAN_COMMAND_REFUSED)  # x >= -inf is false only for NaN
+    if isinstance(value, ca.SX):
+        clipped = ca.fmin(ca.fmax(value, lower), upper)
+        return ca.if_else(value >= -ca.inf, clipped, float("nan"))
+    if any(v != v for v in ca.DM(value).nonzeros()):  # v != v holds only for NaN
+        raise ValueError(NAN_COMMAND_REFUSED)
     return ca.fmin(ca.fmax(value, lower), upper)
 
 
