@@ -76,3 +76,20 @@ def single_hull():
     names = ("length", "beam", "hull_block_coefficient", "hull_waterplane_coefficient")
     s = {n: ca.SX.sym(n) for n in names}
     return function_from("single_hull", s, {**s, "hull_beam": s["beam"], "section_beam": s["beam"]})
+
+
+SUBMERGED_SECTION_MAIN_DIMENSIONS_PARAMETERS = (
+    Parameter("length", (1, 1), "m", "hull length L (the cross-flow strips span it)", 0.0, minimum_exclusive=True),
+    Parameter("beam", (1, 1), "m", "breadth B of the hull section", 0.0, minimum_exclusive=True),
+    Parameter("height", (1, 1), "m", "height H of the hull section", 0.0, minimum_exclusive=True),
+)
+
+
+def submerged_section_main_dimensions():
+    """``(length, beam, height) -> (length, beam, height, draft, span, section_beam)`` of a submerged hull whose
+    section is ``beam`` wide and ``height`` high: the sway and yaw strips meet the flow with the height (``draft``),
+    the heave and pitch strips with the breadth (``section_beam``), and the hull's lift and drag take the height as
+    the span (the diameter of the slender-body wing). No equation: the names of one geometry."""
+    s = {n: ca.SX.sym(n) for n in ("length", "beam", "height")}
+    return function_from("submerged_section_main_dimensions", s,
+                         {**s, "draft": s["height"], "span": s["height"], "section_beam": s["beam"]})

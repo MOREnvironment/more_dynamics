@@ -100,6 +100,16 @@
             "Name": "Propulsor",
             "Path": "more_dynamics/plugins/force_producers/propulsor.py",
             "Type": "file"
+        },
+        {
+            "Name": "SubmergedBemAuv",
+            "Path": "more_dynamics/plugins/vehicle_models/submerged_bem_auv.py",
+            "Type": "file"
+        },
+        {
+            "Name": "BemHullLoads",
+            "Path": "more_dynamics/plugins/hydrodynamics/bem_hull_loads.py",
+            "Type": "file"
         }
     ],
     "PluginTypes": [

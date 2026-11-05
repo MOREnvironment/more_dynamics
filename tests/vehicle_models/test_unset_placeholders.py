@@ -19,12 +19,13 @@ import pytest
 import vehicle_contract as vc
 from more_transformations.more_casadi_transformations import is_unset
 
-NUMERICAL_SETTINGS = {"integration_max_step", "smooth_speed_epsilon", "ittc_reynolds_floor"}
+NUMERICAL_SETTINGS = {"integration_max_step", "smooth_speed_epsilon", "ittc_reynolds_floor", "hull_profile_slices"}
 LEAVES = ["SubmergedRestoring", "SurfaceRestoring", "AuvHullLoads", "SurfaceHullLoads", "CoefficientHullLoads",
-          "Site", "Fin", "FinPairsDeflectionOnly", "Propeller"]
+          "BemHullLoads", "Site", "Fin", "FinPairsDeflectionOnly", "Propeller"]
 VEHICLES = {"SpheroidAuv": ("SubmergedRestoring", "AuvHullLoads"), "Catamaran": ("SurfaceRestoring", "SurfaceHullLoads"),
             "Monohull": ("SurfaceRestoring", "SurfaceHullLoads"),
-            "DerivativeAuv": ("SubmergedRestoring", "CoefficientHullLoads")}
+            "DerivativeAuv": ("SubmergedRestoring", "CoefficientHullLoads"),
+            "SubmergedBemAuv": ("SubmergedRestoring", "BemHullLoads")}
 PLUGIN_NAMES = LEAVES + list(VEHICLES)
 
 

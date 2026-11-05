@@ -115,13 +115,17 @@ def full_tensor_rigid_body():
          "inertia_diagonal": inertia_diagonal, "inertia_products": inertia_products})
 
 
-def full_tensor_rigid_body_coriolis():
+def full_tensor_rigid_body_coriolis(coriolis="co"):
     """``(nu, mass, center_of_gravity, inertia_diagonal, inertia_products) -> C_RB`` of a body whose full inertia tensor
     about the CO is given, the quantities ``full_tensor_rigid_body`` hands on by name. The tensor about the CG is
     ``I_g = I_o + m S(r_g)^2`` (the parallel-axis theorem solved for ``I_g``, Fossen 2011, eq. 3.34, p. 50, with
     ``I_o = I_g - m S(r_g)^2``) and ``C_RB = H^T diag(m S(w), -S(I_g w)) H`` (Fossen 2011, eqs. 3.21, p. 49, and 3.27,
     p. 50), ``w = nu[3:6]``, the form of the homogeneous spheroid, so a given tensor equal to a spheroid's own gives the
-    same matrix. Frame BODY, about the CO."""
+    same matrix. ``coriolis="book"`` is the parametrisation by the angular velocity alone of Fossen 2011, eqs. 3.29,
+    p. 50, and 3.57, p. 55 (``[[m S(w), -m S(w) S(r_g)], [m S(r_g) S(w), -S(I_o w)]]``), the one for which ``M_RB
+    nu_c_dot + C_RB(nu) nu_c = 0`` in an irrotational current. Frame BODY, about the CO."""
+    if coriolis not in ("co", "book"):
+        raise ValueError(f"coriolis must be 'co' or 'book', got {coriolis!r}")
     nu = ca.SX.sym("nu", 6)
     body_mass = ca.SX.sym("mass")
     r_g = ca.SX.sym("center_of_gravity", 3)
@@ -137,7 +141,7 @@ def full_tensor_rigid_body_coriolis():
     return function_from("full_tensor_rigid_body_coriolis",
                          {"nu": nu, "mass": body_mass, "center_of_gravity": r_g, "inertia_diagonal": inertia_diagonal,
                           "inertia_products": inertia_products},
-                         {"C_RB": rigid_body_coriolis_casadi(body_mass, inertia_g, r_g, nu, "co")})
+                         {"C_RB": rigid_body_coriolis_casadi(body_mass, inertia_g, r_g, nu, coriolis)})
 
 
 def hull_with_point_payload():

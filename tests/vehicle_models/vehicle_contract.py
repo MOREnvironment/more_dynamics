@@ -48,6 +48,9 @@ REFERENCE_PARTS = {
 }
 REFERENCE_FILES = {"DerivativeAuv": "npsauv/nps_auv_ii_parameters.json",
                    "CoefficientHullLoads": "npsauv/nps_auv_ii_parameters.json"}
+# a plugin whose reference values are one group of a grouped parameter file
+REFERENCE_GROUPS = {"SubmergedBemAuv": ("marie/marie_parameters.json", "vehicle"),
+                    "BemHullLoads": ("marie/marie_parameters.json", "hydrodynamics")}
 
 
 def reference_part(name):
@@ -69,6 +72,10 @@ def reference_values(cls):
     elif cls.__name__ in REFERENCE_FILES:
         entries = json.loads((DATA / REFERENCE_FILES[cls.__name__]).read_text())["parameters"]
         source = {name: entry["value"] for name, entry in entries.items()}
+    elif cls.__name__ in REFERENCE_GROUPS:
+        path, group = REFERENCE_GROUPS[cls.__name__]
+        entries = json.loads((DATA / path).read_text())["parameters"][group]
+        source = {name: entry["value"] for name, entry in entries.items()}
     else:
         return {}
     return {d.name: source[d.name] for d in cls.PARAMETERS if is_unset(d.default_value) and d.name in source}
@@ -84,12 +91,14 @@ def plugins():
             from more_dynamics.plugins.vehicle_models.monohull import Monohull
             from more_dynamics.plugins.vehicle_models.catamaran import Catamaran
             from more_dynamics.plugins.vehicle_models.derivative_auv import DerivativeAuv
+            from more_dynamics.plugins.vehicle_models.submerged_bem_auv import SubmergedBemAuv
             from more_dynamics.plugins.site.site import Site
             from more_dynamics.plugins.hydrostatics.submerged_restoring import SubmergedRestoring
             from more_dynamics.plugins.hydrostatics.surface_restoring import SurfaceRestoring
             from more_dynamics.plugins.hydrodynamics.auv_hull_loads import AuvHullLoads
             from more_dynamics.plugins.hydrodynamics.surface_hull_loads import SurfaceHullLoads
             from more_dynamics.plugins.hydrodynamics.coefficient_hull_loads import CoefficientHullLoads
+            from more_dynamics.plugins.hydrodynamics.bem_hull_loads import BemHullLoads
             from more_dynamics.plugins.force_producers.fin import Fin
             from more_dynamics.plugins.force_producers.fin_pairs_deflection_only import FinPairsDeflectionOnly
             from more_dynamics.plugins.force_producers.propeller import Propeller
