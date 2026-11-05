@@ -5,7 +5,7 @@ linearisation there (Fossen 2011, eqs. 12.17-12.21, p. 351; criterion C > 0,
 Theorem 12.2, eq. 12.24) and the largest real part over all motion states,
 and the steady yaw rate of a 4-degree rudder step (positive command, the
 part's convention) held from the start of a 60 s run from 1.54 m/s
-(RK4, h = 0.05 s, SIMremus100.m 60), averaged over the last 10 s.
+(fourth-order Runge-Kutta, h = 0.05 s), averaged over the last 10 s.
 
 Writes under ``OUT_DIR`` (default ``<tempdir>/more_references/vehicles/remus100_fidelity/``),
 never into this folder; a re-run is checked against the frozen file with ``cmp``.
@@ -16,8 +16,6 @@ References
 ----------
 Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion
     Control. Wiley. Ch. 12, eqs. 12.17-12.24, p. 351.
-Fossen, T. I. MSS, MIT, @ ed2ce7b: CRAFT/AUV/SIMremus100.m 60;
-    LIBRARY/numericalMethods/rk4.m 26-38.
 Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.
     Table 8.1, p. 60 (u = 1.54 m/s); p. 53 (a rudder of about 4 degrees).
@@ -38,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import fidelity_parts as fp  # noqa: E402
 from reference_torpedo_auv import TorpedoAuv, jacobian, rk4_step, straight_running, sway_yaw_roots  # noqa: E402
 
-STEP = 0.05                       # SIMremus100.m 60
+STEP = 0.05                       # s, fourth-order Runge-Kutta step
 DURATION = 60.0
 AVERAGE = 10.0
 SPEED = 1.54                      # Prestero 2001, Table 8.1, p. 60

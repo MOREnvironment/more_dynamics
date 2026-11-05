@@ -1,0 +1,14 @@
+{
+    "Id": "c6096c58-7bd4-57c5-86fb-594817f9dc7b",
+    "Name": "Rudder fin 1",
+    "LinkedComponentId": "2784bf3e-3b8b-551f-b182-f9c3193e6d36",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "f2babdd9-1904-53cb-8684-6ab6ca18fa62",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

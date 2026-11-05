@@ -29,7 +29,11 @@ Forms, each with its fidelity (the next level needs the measurement named):
   (``u_n / u_c``, Prestero 2001, eqs. 4.42-4.43, pp. 32-33).
 * ``interference``: ``"none"`` (both factors one, Prestero 2001, eq. 4.41,
   p. 32); ``"slender_body"`` (Pitts 1957) waits on its source and refuses.
-* ``section``: ``"quadratic_drag"`` (lift slope, drag proportional to the
+* ``lift_law``: ``"lift_slope"`` (default: ``lift_slope`` is given) or ``"finite_wing"`` (the slope from the fin's geometry by
+  ``lift_slope_form``; the names are those of the generic fin laws). ``lift_slope_form``: ``"low_aspect_ratio"`` reads
+  ``fin_span``, ``fin_area``, ``aspect_ratio_factor`` and ``section_efficiency`` (Prestero 2001, eqs. 4.38-4.39, p. 31);
+  ``"helmbold"`` and ``"lifting_line"`` wait on their sources and refuse. Raise: the slope measured on the fin.
+* ``section``: ``"lift_times_angle"`` (lift slope, drag proportional to the
   squared angle, ``remus100.m`` 239-246) or ``"linear_section"`` (lift slope,
   constant zero-lift drag, Prestero 2001, eq. 4.37, p. 31); ``"lifting_line"``
   waits on its source and refuses.
@@ -68,13 +72,14 @@ from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_transformations.more_casadi_transformations import freeze, unset
+from more_transformations.more_casadi_transformations import check_values, freeze, unset
 from more_dynamics.models.fin.flow_angle import none as flow_angle_none, small_angle
 from more_dynamics.models.fin.inflow import rigid_point, translational
 from more_dynamics.models.fin.interference import none as interference_none
+from more_dynamics.models.fin.lift_slope import LOW_ASPECT_RATIO_LIFT_SLOPE_PARAMETERS, low_aspect_ratio_lift_slope
 from more_dynamics.models.fin.lifting_fin import (check_lifting_fin_values, lifting_fin_casadi,
                                                   lifting_fin_parameters)
-from more_dynamics.models.fin.section import linear_section, quadratic_drag
+from more_dynamics.models.fin.section import linear_section, lift_times_angle
 from more_dynamics.models.servo.servo import servo_casadi, servo_parameters
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, read_declared, refuses_unset
 
@@ -84,10 +89,14 @@ INFLOWS = {"translational": (translational.translational_casadi, translational.t
 FLOW_ANGLES = {"none": (flow_angle_none.none_casadi, flow_angle_none.none_parameters),
                "small_angle": (small_angle.small_angle_casadi, small_angle.small_angle_parameters)}
 INTERFERENCES = {"none": (interference_none.none_casadi, interference_none.none_parameters)}
-SECTIONS = {"quadratic_drag": (quadratic_drag.quadratic_drag_casadi, quadratic_drag.quadratic_drag_parameters),
+SECTIONS = {"lift_times_angle": (lift_times_angle.lift_times_angle_casadi, lift_times_angle.lift_times_angle_parameters),
             "linear_section": (linear_section.linear_section_casadi, linear_section.linear_section_parameters)}
+LIFT_LAWS = ("lift_slope", "finite_wing")
+LIFT_SLOPE_FORMS = {"low_aspect_ratio": low_aspect_ratio_lift_slope}
 WAITING = {("interference", "slender_body"): "Pitts 1957 slender-body interference factors",
-           ("section", "lifting_line"): "lifting-line induced drag"}
+           ("section", "lifting_line"): "lifting-line induced drag",
+           ("lift_slope_form", "helmbold"): "Helmbold's finite-wing lift slope",
+           ("lift_slope_form", "lifting_line"): "Prandtl's lifting-line lift slope"}
 
 
 def _form(slot, name, forms):
@@ -114,8 +123,13 @@ class Fin(ForceProducer):
         ParameterDescription("inflow", "rigid_point"),  # Prestero 2001, eq. 4.40, p. 32
         ParameterDescription("flow_angle", "small_angle"),  # Prestero 2001, eqs. 4.42-4.43, pp. 32-33
         ParameterDescription("interference", "none"),  # Prestero 2001, eq. 4.41, p. 32 (both factors one)
-        ParameterDescription("section", "quadratic_drag"),  # remus100.m 239-246
-        ParameterDescription("lift_slope", unset()),  # 1/rad, Prestero 2001, Table A.5, p. 103 (c_L_alpha)
+        ParameterDescription("section", "lift_times_angle"),  # remus100.m 239-246
+        ParameterDescription("lift_law", "lift_slope"),  # the slope given, or from the geometry (finite_wing)
+        ParameterDescription("lift_slope", unset()),  # 1/rad, Prestero 2001, Table A.5, p. 103 (c_L_alpha), read with lift_law "lift_slope"
+        ParameterDescription("lift_slope_form", "low_aspect_ratio"),  # Prestero 2001, eqs. 4.38-4.39, p. 31, read with lift_law "finite_wing"
+        ParameterDescription("fin_span", unset()),  # m, Prestero 2001, Table 2.2, p. 17 (b_fin), read with lift_law "finite_wing"
+        ParameterDescription("aspect_ratio_factor", unset()),  # 2 for a fin on a body (reflection plane), Prestero 2001, eq. 4.39, p. 31
+        ParameterDescription("section_efficiency", unset()),  # a~ about 0.9, Prestero 2001, eq. 4.38, p. 31
         ParameterDescription("zero_lift_drag", unset()),  # Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by "linear_section")
     ]
 
@@ -129,10 +143,19 @@ class Fin(ForceProducer):
         servo = {"dynamics": selectors["servo_dynamics"], "rate_limit": selectors["servo_rate_limit"],
                  "angle_limit": selectors["servo_angle_limit"]}
         parts = {"servo": frozen_block(context, servo_casadi(**servo), servo_parameters(**servo))}
+        lift_law = context.get_parameter("lift_law")
+        if lift_law not in LIFT_LAWS:
+            raise ValueError(f"Fin: lift_law must be one of {LIFT_LAWS}, got {lift_law!r}")
+        geometric_slope = self._lift_slope_from_geometry(context) if lift_law == "finite_wing" else None
         for slot, forms in (("inflow", INFLOWS), ("flow_angle", FLOW_ANGLES), ("interference", INTERFERENCES),
                             ("section", SECTIONS)):
             casadi_function, parameters = _form(slot, context.get_parameter(slot), forms)
-            parts[slot] = frozen_block(context, casadi_function(), parameters())
+            if slot == "section" and geometric_slope is not None:  # every other number as given, the slope computed
+                own = tuple(d for d in parameters() if d.name != "lift_slope")
+                parts[slot] = freeze(casadi_function(), parameters(),
+                                     {**read_declared(context, own), "lift_slope": geometric_slope})
+            else:
+                parts[slot] = frozen_block(context, casadi_function(), parameters())
         declared = lifting_fin_parameters()
         values = check_lifting_fin_values(read_declared(context, declared))
         model = freeze(lifting_fin_casadi(parts), declared, values)
@@ -141,6 +164,16 @@ class Fin(ForceProducer):
             raise ValueError(f"Fin: parameters {left_open} of its parts are open; "
                              "a fin takes every number from its parameters")
         self._model = model
+
+    @staticmethod
+    def _lift_slope_from_geometry(context) -> float:
+        """``lift_slope`` (1/rad) of the fin from its geometry by ``lift_slope_form`` (Prestero 2001, eqs. 4.38-4.39,
+        p. 31): a number, since every input is a parameter of the fin."""
+        form = context.get_parameter("lift_slope_form")
+        slope_function = _form("lift_slope_form", form, LIFT_SLOPE_FORMS)
+        declared = LOW_ASPECT_RATIO_LIFT_SLOPE_PARAMETERS
+        values = check_values(declared, read_declared(context, declared))
+        return float(freeze(slope_function(), declared, values)()["lift_slope"])
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:

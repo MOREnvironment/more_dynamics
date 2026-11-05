@@ -1,6 +1,6 @@
 {
     "Id": "0894facd-2fd1-45bf-ba09-71c4a2e91f91",
-    "Name": "REMUS 100 (MSS, ocean current)",
+    "Name": "REMUS 100 (published reference, ocean current)",
     "PluginType": "more_dynamics::VehicleModel3D",
     "PluginName": "more_dynamics::SpheroidAuv",
     "Library": "more_dynamics",

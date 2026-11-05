@@ -1,6 +1,6 @@
-"""The named vehicles of the library's own ``.rppws`` (REMUS 100 (MSS), Otter
+"""The named vehicles of the library's own ``.rppws`` (REMUS 100 (published reference), Otter
 (MSS) and Grethe), built by rpp's own ``ComponentContextBuilder`` from
-``.rppws/script_descriptions/vehicle_simulation.json``. REMUS 100 (MSS) and
+``.rppws/script_descriptions/vehicle_simulation.json``. REMUS 100 (published reference) and
 Otter (MSS) equal the plugins' declared defaults, whose gates are in
 ``test_spheroid_auv.py`` and ``test_catamaran.py``; Grethe's own physics gates
 are in ``test_monohull_grethe.py`` (U8a/U8b) -- here only the part itself is
@@ -25,7 +25,7 @@ import vehicle_contract as vc
 LIBRARY = Path(__file__).resolve().parents[2]
 RPPWS = LIBRARY / ".rppws"
 DESCRIPTION = RPPWS / "script_descriptions" / "vehicle_simulation.json"
-NAMED = {"remus100": "REMUS 100 (MSS)", "otter": "Otter (MSS)", "grethe": "Grethe", "npsauv": "NPS AUV II",
+NAMED = {"remus100_published_reference": "REMUS 100 (published reference)", "remus100_estimated": "REMUS 100 (estimated)", "otter": "Otter (MSS)", "grethe": "Grethe", "npsauv": "NPS AUV II",
          "grethe_stress_test": "Grethe (yaw-unstable stress test)"}
 
 
@@ -77,14 +77,14 @@ def test_remus_100_from_the_workspace_equals_the_plugins_on_the_part_values():
     (still water; the part's own site: gravity from the latitude, 1026 kg/m^3; MSS's Munk-removed Coriolis), its
     actuators being four fins (rudder pair, stern-plane pair) and the propulsor, linked from named parts."""
     p = vc.plugins()
-    built = _build("remus100")
-    site = vc.reference_part("REMUS 100 (MSS) site")
+    built = _build("remus100_published_reference")
+    site = vc.reference_part("REMUS 100 (published reference) site")
     reference = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
                                  site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
                                                 "water_density": site["water_density"]}),
                                  hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
-                                 actuators=[_part_child(p.Fin, "REMUS 100 (MSS) rudder fin")] * 2
-                                 + [_part_child(p.Fin, "REMUS 100 (MSS) stern plane fin")] * 2
+                                 actuators=[_part_child(p.Fin, "REMUS 100 (published reference) rudder fin")] * 2
+                                 + [_part_child(p.Fin, "REMUS 100 (published reference) stern plane fin")] * 2
                                  + [_part_child(p.Propulsor, "REMUS 100 propulsor")])
     assert type(built).__name__ == "SpheroidAuv"
     names = ["fin_angle_command"] * 4 + ["drive_command"]
@@ -101,8 +101,8 @@ def test_remus_100_with_four_fins_and_the_propulsor_equals_the_fin_pairs_and_the
     ``Propulsor``) and the earlier one (the deflection-only fin pairs and the ``Propeller``, their own named parts):
     the same derivative on random states and commands, the two fins of a pair given the same deflection."""
     p = vc.plugins()
-    built = _build("remus100")
-    site = vc.reference_part("REMUS 100 (MSS) site")
+    built = _build("remus100_published_reference")
+    site = vc.reference_part("REMUS 100 (published reference) site")
     earlier = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
                                site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
                                               "water_density": site["water_density"]}),

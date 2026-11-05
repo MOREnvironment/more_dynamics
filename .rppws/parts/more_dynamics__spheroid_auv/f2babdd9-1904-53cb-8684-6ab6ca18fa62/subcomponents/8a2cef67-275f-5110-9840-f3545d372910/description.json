@@ -1,0 +1,17 @@
+{
+    "Id": "8a2cef67-275f-5110-9840-f3545d372910",
+    "Name": "REMUS 100 (estimated) site",
+    "PluginType": "more_dynamics::SiteModel",
+    "PluginName": "more_dynamics::Site",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f2babdd9-1904-53cb-8684-6ab6ca18fa62",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "site",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

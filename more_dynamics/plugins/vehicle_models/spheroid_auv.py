@@ -27,6 +27,12 @@ the ``site`` slot (``plugins/site/site.py``).
 
 Options, each with its fidelity and what raises it:
 
+* ``rigid_body_form``: ``"homogeneous_spheroid"`` (default: mass and inertia of
+  the homogeneous spheroid, ``spheroid.m`` 35-42) or ``"given_inertia"`` (the full
+  inertia tensor about the CO ``inertia_diagonal`` and ``inertia_products``, with
+  ``body_mass`` and ``body_center_of_gravity``: ``M_RB = [[m I3, -m S(r_g)],
+  [m S(r_g), I_o]]``, Fossen 2011, eq. 3.34, p. 50; the same part as
+  ``DerivativeAuv``). Raise: the tensor from a weighing or a CAD model.
 * ``added_mass_form``: ``"lamb_spheroid"`` (the ideal fluid around a prolate
   spheroid, Fossen 2011 ch. 6, imlay61.m). Raise: a Capytaine or identified
   matrix.
@@ -81,22 +87,37 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
 
-from more_transformations.more_casadi_transformations import unset
+from more_transformations.more_casadi_transformations import check_symmetric_positive_definite, unset
 
 from more_dynamics.models.added_mass.added_mass_parts import lamb_spheroid, lamb_spheroid_parameters
 from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
 from more_dynamics.models.hull_form.hull_form import (
     PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS, prolate_spheroid_main_dimensions)
 from more_dynamics.models.rigid_body.rigid_body_parts import (
-    SPHEROID_BODY_MASS_PARAMETERS, homogeneous_spheroid, homogeneous_spheroid_parameters, spheroid_body_density)
-from more_dynamics.plugins.shared.payload_io import refuses_unset
+    FULL_TENSOR_RIGID_BODY_PARAMETERS, SPHEROID_BODY_MASS_PARAMETERS, full_tensor_rigid_body,
+    full_tensor_rigid_body_coriolis, homogeneous_spheroid, homogeneous_spheroid_parameters, spheroid_body_density)
+from more_dynamics.plugins.shared.payload_io import read_value, refuses_unset
 from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, kinematics_form
 
 ADDED_MASS_FORMS = {"lamb_spheroid": (lamb_spheroid, lamb_spheroid_parameters)}
 BODY_DENSITY_METHODS = ("computed", "given")
+RIGID_BODY_FORMS = ("homogeneous_spheroid", "given_inertia")
 CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
+
+
+def _check_given_inertia(context):
+    """Refuse a given inertia tensor about the CO that is not symmetric positive definite (a wrong sign of the products of
+    inertia gives an impossible body)."""
+    diagonal = [float(v) for v in read_value(context, "inertia_diagonal", "kg*m^2",
+                                             "principal moments of inertia [Ix, Iy, Iz] about the CO",
+                                             placeholder=[1.0, 1.0, 1.0])]
+    ixy, iyz, ixz = (float(v) for v in read_value(context, "inertia_products", "kg*m^2",
+                                                  "products of inertia [Ixy, Iyz, Ixz] about the CO",
+                                                  placeholder=[0.0, 0.0, 0.0]))
+    check_symmetric_positive_definite(
+        {"inertia": [[diagonal[0], -ixy, -ixz], [-ixy, diagonal[1], -iyz], [-ixz, -iyz, diagonal[2]]]}, "inertia")
 
 
 class SpheroidAuv(VehicleModel3D):
@@ -117,6 +138,9 @@ class SpheroidAuv(VehicleModel3D):
         ParameterDescription("body_density", unset()),  # given value, read with "given": mass 31.9 kg (remus100.m:3, given) / (4/3 pi a b^2); MSS: 1025 at spheroid.m:35
         ParameterDescription("body_center_of_gravity", unset()),  # remus100.m:137 r_bG
         ParameterDescription("roll_added_inertia_ratio", unset()),  # remus100.m:136 r44
+        ParameterDescription("rigid_body_form", "homogeneous_spheroid"),  # spheroid.m 35-42, or the full tensor about the CO (Fossen 2011, eq. 3.34, p. 50)
+        ParameterDescription("inertia_diagonal", unset()),  # kg*m^2, [Ix, Iy, Iz] about the CO, read with "given_inertia"
+        ParameterDescription("inertia_products", unset()),  # kg*m^2, [Ixy, Iyz, Ixz] about the CO, read with "given_inertia"
         ParameterDescription("added_mass_form", "lamb_spheroid"),  # imlay61.m 31-59
         ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("kinematics_form", "euler"),  # Fossen 2011, eq. 2.40, p. 26 (Euler) or eq. 2.69, p. 30 (unit quaternion)
@@ -133,16 +157,26 @@ class SpheroidAuv(VehicleModel3D):
         if density_method not in BODY_DENSITY_METHODS:
             raise CompositionError(f"SpheroidAuv: body_density_method must be one of {BODY_DENSITY_METHODS}, "
                                    f"got {density_method!r}")
+        rigid_body_form = context.get_parameter("rigid_body_form")
+        if rigid_body_form not in RIGID_BODY_FORMS:
+            raise CompositionError(f"SpheroidAuv: rigid_body_form must be one of {RIGID_BODY_FORMS}, got {rigid_body_form!r}")
+        if rigid_body_form == "given_inertia":
+            _check_given_inertia(context)
         own_inputs = current_inputs(context, "SpheroidAuv", CompositionError)
 
         def compute(pose, velocity, current, site):
             known = {"pose": pose, "velocity": velocity, **current, **site}
             parts = Parts(context, "SpheroidAuv", known)
             parts.run("hull form", prolate_spheroid_main_dimensions(), PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS)
-            if density_method == "computed":
-                parts.run("body density", spheroid_body_density(), SPHEROID_BODY_MASS_PARAMETERS)  # (spheroid.m 36)
-            parts.run("rigid body", homogeneous_spheroid(),
-                      homogeneous_spheroid_parameters(density_given=density_method == "given"))  # (spheroid.m 35-42)
+            if rigid_body_form == "given_inertia":
+                # the tensor about the CO as given (Fossen 2011, eq. 3.34, p. 50), the Coriolis matrix from it
+                parts.run("rigid body", full_tensor_rigid_body(), FULL_TENSOR_RIGID_BODY_PARAMETERS)
+                parts.run("rigid-body Coriolis", full_tensor_rigid_body_coriolis())
+            else:
+                if density_method == "computed":
+                    parts.run("body density", spheroid_body_density(), SPHEROID_BODY_MASS_PARAMETERS)  # (spheroid.m 36)
+                parts.run("rigid body", homogeneous_spheroid(),
+                          homogeneous_spheroid_parameters(density_given=density_method == "given"))  # (spheroid.m 35-42)
             added_mass, added_mass_parameters = parts.select("added_mass_form", ADDED_MASS_FORMS)
             parts.run("added mass", added_mass(), added_mass_parameters())
             parts.run("current", CURRENT_FORMS[form]())

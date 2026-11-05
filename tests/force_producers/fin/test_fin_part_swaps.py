@@ -9,10 +9,10 @@ Arrows:
 
 * inflow ``translational`` -> ``rigid_point`` together with flow angle
   ``none`` -> ``small_angle`` (deflection-only -> effective angle, section
-  ``quadratic_drag`` in both): equal in straight motion, ``nu_r = (u, 0, 0,
+  ``lift_times_angle`` in both): equal in straight motion, ``nu_r = (u, 0, 0,
   0, 0, 0)`` of either sign (Prestero 2001, eq. 4.42, p. 32: the flow angle
   vanishes with ``v``, ``w``, ``p``, ``q``, ``r``); different otherwise.
-* section ``quadratic_drag`` <-> ``linear_section`` (no zero-lift drag):
+* section ``lift_times_angle`` <-> ``linear_section`` (no zero-lift drag):
   the same lift; the difference is the drag ``1/2 rho A U^2 lift_slope
   alpha^2`` along ``-chord_axis`` and its moment (MSS ``remus100.m``
   239-240 vs Prestero eq. 4.37, p. 31).
@@ -63,7 +63,7 @@ MAX_DEFLECTION = 0.35
 GEOMETRY = [([-0.8, 0.0, 0.0], NEG_Y, 0.0133, 0.5), ([-0.78, 0.0, 0.0], NEG_Z, 0.0127, 0.7)]
 
 
-def _set(inflow, flow_angle, section="quadratic_drag", zero_lift_drag=0.0):
+def _set(inflow, flow_angle, section="lift_times_angle", zero_lift_drag=0.0):
     fins = []
     for position, lift, area, slope in GEOMETRY:
         values = {"lift_slope": slope}
@@ -96,11 +96,11 @@ def test_effective_angle_differs_from_deflection_only_in_general_motion():
 
 @pytest.mark.parametrize("inflow, flow_angle", [("translational", "none"), ("rigid_point", "small_angle")])
 def test_section_swap_changes_the_drag_term_only(inflow, flow_angle):
-    """tau(quadratic_drag) - tau(linear_section, no drag) = the wrench of
+    """tau(lift_times_angle) - tau(linear_section, no drag) = the wrench of
     -1/2 rho A U^2 lift_slope alpha^2 chord_axis at the fin."""
     quadratic, linear = _set(inflow, flow_angle), _set(inflow, flow_angle, "linear_section")
     singles = [fin_from_forms({"servo": "ideal", "inflow": inflow, "flow_angle": flow_angle,
-                               "interference": "none", "section": "quadratic_drag"},
+                               "interference": "none", "section": "lift_times_angle"},
                               {"servo": {"max_deflection": MAX_DEFLECTION}, "section": {"lift_slope": slope}},
                               geometry(position, lift, area, E_X))
                for position, lift, area, slope in GEOMETRY]
@@ -124,7 +124,7 @@ def test_section_swap_changes_the_drag_term_only(inflow, flow_angle):
 def test_lag_rate_angle_at_rest_equals_ideal():
     def one(servo, values):
         return fin_from_forms({"servo": servo, "inflow": "rigid_point", "flow_angle": "small_angle",
-                               "interference": "none", "section": "quadratic_drag"},
+                               "interference": "none", "section": "lift_times_angle"},
                               {"servo": values, "section": {"lift_slope": 0.5}},
                               geometry([-0.8, 0, 0], NEG_Y, 0.0133, E_X))
     lagged = one("lag_rate_angle", {"max_deflection": MAX_DEFLECTION, "max_rate": 0.5, "time_constant": 0.1})

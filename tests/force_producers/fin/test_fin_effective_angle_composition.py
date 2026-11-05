@@ -1,7 +1,7 @@
 """Gate tests of the effective-angle fin composition: ``LiftingFin`` with
 servo ``ideal``, inflow ``rigid_point``, flow angle ``small_angle``,
 interference ``none`` and section ``linear_section`` (lift only) or
-``quadratic_drag``.
+``lift_times_angle``.
 
 Written 2026-10-08, before the parts exist (contract: ``fin_parts_contract``).
 
@@ -174,7 +174,7 @@ def test_composition_scale_is_eq_4_44_and_table_C10_scale_is_not():
 # --------------------------------------------------------------------------
 # One parameter open: gradient in one call
 # --------------------------------------------------------------------------
-@pytest.mark.parametrize("section", ["linear_section", "quadratic_drag"])
+@pytest.mark.parametrize("section", ["linear_section", "lift_times_angle"])
 def test_gradient_with_respect_to_an_open_section_parameter(section):
     s = skeleton()
     from more_transformations.more_casadi_transformations import freeze

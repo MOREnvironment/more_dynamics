@@ -3,7 +3,7 @@ those parts, built by rpp's own ``ComponentContextBuilder`` (not assembled by ha
 
 * Every named part of ``more_dynamics::Propulsor`` loads with rpp's parameter store, names only parameters the plugin
   declares, and builds the plugin.
-* The committed REMUS 100 (MSS) vehicle links the named part ``REMUS 100 propulsor`` as its propulsor; its equality
+* The committed REMUS 100 (published reference) vehicle links the named part ``REMUS 100 propulsor`` as its propulsor; its equality
   with the earlier composition (the propeller plugin and the deflection-only fin pairs) and its frozen runs are in
   ``tests/vehicle_models/test_named_vehicles.py`` and ``test_rppws_runs.py``.
 * An Otter whose two thrusters are the named parts ``Otter port thruster`` and ``Otter starboard thruster``, linked

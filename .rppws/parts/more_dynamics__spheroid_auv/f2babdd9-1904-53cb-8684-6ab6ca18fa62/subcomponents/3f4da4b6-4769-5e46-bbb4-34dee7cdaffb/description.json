@@ -1,0 +1,17 @@
+{
+    "Id": "3f4da4b6-4769-5e46-bbb4-34dee7cdaffb",
+    "Name": "REMUS 100 (estimated) hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::AuvHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f2babdd9-1904-53cb-8684-6ab6ca18fa62",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

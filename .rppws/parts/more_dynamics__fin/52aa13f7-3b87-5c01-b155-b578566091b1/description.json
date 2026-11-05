@@ -1,0 +1,10 @@
+{
+    "Id": "52aa13f7-3b87-5c01-b155-b578566091b1",
+    "Name": "REMUS 100 (estimated) stern plane fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

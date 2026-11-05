@@ -2,8 +2,8 @@
     "ScriptPath": "scripts/vehicles/vehicle_simulation.py",
     "Language": "python",
     "Configurations": {
-        "remus100": {
-            "Description": "REMUS 100 (MSS) AUV, spheroid class (Prestero 2001 and MSS remus100.m values)",
+        "remus100_published_reference": {
+            "Description": "REMUS 100 (published reference) AUV, spheroid class: the reference-model forms (Munk couplings removed, wing lift and drag, linear roll damping) with the values of the published one-value set",
             "Components": {
                 "vessels": [
                     {
@@ -393,6 +393,17 @@
                         }
                     ]
                 }
+            }
+        },
+        "remus100_estimated": {
+            "Description": "REMUS 100 (estimated) AUV, spheroid class: every added-mass Coriolis term, body lift as a point force in both planes (Prestero 2001, eqs. 4.27-4.36), fin lift slope from the fin geometry (eqs. 4.38-4.39)",
+            "Components": {
+                "vessels": [
+                    {
+                        "Id": "f2babdd9-1904-53cb-8684-6ab6ca18fa62",
+                        "PluginName": "more_dynamics::SpheroidAuv"
+                    }
+                ]
             }
         },
         "otter": {

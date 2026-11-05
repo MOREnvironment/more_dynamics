@@ -83,7 +83,7 @@ PART_MODULES = {
     ("flow_angle", "none"): "fin.flow_angle.none",
     ("flow_angle", "small_angle"): "fin.flow_angle.small_angle",
     ("interference", "none"): "fin.interference.none",
-    ("section", "quadratic_drag"): "fin.section.quadratic_drag",
+    ("section", "lift_times_angle"): "fin.section.lift_times_angle",
     ("section", "linear_section"): "fin.section.linear_section",
 }
 # Second-fidelity forms whose sources are not yet read in full (Pitts 1957,
@@ -126,7 +126,7 @@ DECLARED = {
     ("flow_angle", "none"): {},
     ("flow_angle", "small_angle"): {},
     ("interference", "none"): {},
-    ("section", "quadratic_drag"): {"lift_slope": ((1, 1), "1/rad", 0.0, True)},
+    ("section", "lift_times_angle"): {"lift_slope": ((1, 1), "1/rad", 0.0, True)},
     ("section", "linear_section"): {"lift_slope": ((1, 1), "1/rad", 0.0, True),
                                     "zero_lift_drag": ((1, 1), "1", 0.0, False)},
 }

@@ -40,7 +40,7 @@ RPPWS = Path(__file__).resolve().parents[2] / ".rppws"
 # the named part whose values a plugin is built from when a test gives none (the plugins carry no vehicle
 # numbers: every vehicle, device and site value comes from a part); a plugin with no part reads its frozen data file
 REFERENCE_PARTS = {
-    "SpheroidAuv": "REMUS 100 (MSS)", "Monohull": "Grethe", "Catamaran": "Otter (MSS)",
+    "SpheroidAuv": "REMUS 100 (published reference)", "Monohull": "Grethe", "Catamaran": "Otter (MSS)",
     "SubmergedRestoring": "REMUS 100 hydrostatics", "SurfaceRestoring": "Otter hydrostatics",
     "AuvHullLoads": "REMUS 100 hull loads", "SurfaceHullLoads": "Otter hull loads",
     "FinPairsDeflectionOnly": "REMUS 100 fin pairs", "Propeller": "REMUS 100 propeller",

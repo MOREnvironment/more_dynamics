@@ -207,6 +207,10 @@ class VehicleAssembly:
         known = {"pose": pose, "velocity": velocity, **craft.known}
         known.setdefault("relative_velocity", velocity - craft.current_velocity)  # nu_r = nu - nu_c
         known["mass_matrix"] = craft.mass_matrix  # M = M_RB + M_A (Fossen 2011, eq. 6.48, p. 120)
+        for child in (hydrostatics, hydrodynamics):  # a child may refuse a vehicle whose quantities its forms do not cover
+            refuse = getattr(child, "check_vehicle", None)
+            if refuse is not None:
+                refuse(known)
         origin = {name: f"{plugin}" for name in known}
         origin.update({name: f"slot site ({site_plugin})" for name in site_values})
         visible = {f"site.{name}": value for name, value in site_values.items()}

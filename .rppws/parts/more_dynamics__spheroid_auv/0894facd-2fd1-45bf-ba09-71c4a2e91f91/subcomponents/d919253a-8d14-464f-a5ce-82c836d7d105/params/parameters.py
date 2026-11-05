@@ -13,3 +13,6 @@ class ComponentParameters:
     oswald_efficiency = 0.3  # coeffLiftDrag.m:54 e = 0.3
     planform_fraction = 0.7  # document: remus100.m:134 (S = 70% of the rectangle L_auv * D_auv)
     hull_frontal_drag_coefficient = 0.42  # document: remus100.m:143 (Cd), Allen et al. (2000) as MSS cites it, not read
+    body_lift_form = "vertical_plane_wing"  # the lift half of the wing block, on the vertical-plane angle of attack only
+    hull_drag_form = "wing_drag"  # the drag half of the wing block
+    roll_damping_form = "linear"  # time-constant damping alone

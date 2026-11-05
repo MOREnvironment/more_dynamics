@@ -1,0 +1,17 @@
+{
+    "Id": "fa804380-b498-529f-9ff6-f535637dd2e1",
+    "Name": "REMUS 100 (estimated) hydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SubmergedRestoring",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "f2babdd9-1904-53cb-8684-6ab6ca18fa62",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SpheroidAuv",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

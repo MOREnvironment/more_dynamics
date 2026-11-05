@@ -26,7 +26,8 @@ from more_transformations.more_casadi_transformations import Parameter
 
 from more_dynamics.models.shared.wiring import function_from
 from more_dynamics.models.damping.linear_damping import linear_damping_casadi, linear_damping_parameters
-from more_dynamics.models.lift_drag.lift_drag import lift_drag_casadi, lift_drag_parameters
+from more_dynamics.models.lift_drag.lift_drag import (
+    lift_drag_casadi, lift_drag_parameters, wing_loads_casadi, wing_loads_parameters)
 from more_dynamics.models.surge_resistance.surge_damping import surge_damping_casadi, surge_damping_parameters
 
 # Declared (own) names, by hand against each block's actual remaining
@@ -95,6 +96,20 @@ def hull_lift_drag(*, smooth_speed=False):
 def hull_lift_drag_parameters(*, smooth_speed=False):
     own = _LIFT_DRAG_OWN + (_SMOOTH_SPEED_EPSILON,) if smooth_speed else _LIFT_DRAG_OWN
     return _subset(lift_drag_parameters(smooth_speed=smooth_speed), own)
+
+
+def hull_wing_loads(*, smooth_speed=False, loads=("lift", "drag")):
+    """The slender-body wing block with its halves as outputs (``lift_tau``, ``drag_tau``; ``tau`` their sum): the
+    lift half alone when the body lift is another form, the drag half alone when the hull drag is another form."""
+    return wing_loads_casadi(smooth_speed=smooth_speed, loads=loads)
+
+
+def hull_wing_loads_parameters(*, smooth_speed=False, loads=("lift", "drag")):
+    """Own declared parameters of ``hull_wing_loads``: ``planform_area`` (and, with the drag half,
+    ``parasitic_drag_coefficient`` and ``oswald_efficiency``) and the guard's epsilon."""
+    own = tuple(n for n in _LIFT_DRAG_OWN if "drag" in loads or n == "planform_area")
+    own = own + (_SMOOTH_SPEED_EPSILON,) if smooth_speed else own
+    return _subset(wing_loads_parameters(smooth_speed=smooth_speed, loads=loads), own)
 
 
 def surge_resistance_ittc():

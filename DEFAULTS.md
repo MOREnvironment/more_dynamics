@@ -18,7 +18,7 @@ on a code line (`remus100.m:208`) is not a vehicle name under the everything-gen
 The value tables below are generated from the parts' own `params/parameters.py` (the values) and from the earlier per-plugin
 tables and the comment beside each value (source and kind); a part's `SOURCE.md` says more.
 
-## REMUS 100 (MSS) (`more_dynamics::SpheroidAuv`)
+## REMUS 100 (published reference) (`more_dynamics::SpheroidAuv`)
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|
@@ -33,7 +33,7 @@ tables and the comment beside each value (source and kind); a part's `SOURCE.md`
 | `current_form` | "none" | - | still water | selector |
 | `body_mass` | 31.9 | kg | remus100.m:3 | document |
 
-The parts "REMUS 100 (MSS, ocean current)" and "REMUS 100 (MSS, quaternion)" hold these values, every one equal, except `current_form` = "yaw_rate_terms" (remus100.m 118-123) in both and, in the second, `kinematics_form` = "unit_quaternion" (Fossen 2011, eq. 2.69, p. 30; selector). "Otter (MSS, ocean current)" holds the values of Otter (MSS) except `current_form` = "full_rotation_rate" (otter.m 120-125).
+The parts "REMUS 100 (published reference, ocean current)" and "REMUS 100 (published reference, quaternion)" hold these values, every one equal, except `current_form` = "yaw_rate_terms" (remus100.m 118-123) in both and, in the second, `kinematics_form` = "unit_quaternion" (Fossen 2011, eq. 2.69, p. 30; selector). "Otter (MSS, ocean current)" holds the values of Otter (MSS) except `current_form` = "full_rotation_rate" (otter.m 120-125).
 
 ## REMUS 100 hydrostatics (`more_dynamics::SubmergedRestoring`)
 
@@ -85,7 +85,7 @@ The parts "REMUS 100 (MSS, ocean current)" and "REMUS 100 (MSS, quaternion)" hol
 | `orientation` | [0, 0, 0] | rad | remus100.m:250, 253 shaft along x_b (thrust in tau(1), torque in tau(4)) | document |
 | `thrust_torque_coefficients` | [0.4566, 0.07, 0.1798, 0.0312] | 1 | remus100.m:158, 159, 161, 162 [KT_0 KQ_0 KT_max KQ_max] | document |
 
-## REMUS 100 (MSS) site (`more_dynamics::Site`)
+## REMUS 100 (published reference) site (`more_dynamics::Site`)
 
 | Parameter | Value | Unit | Source | Kind |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@ The parts "REMUS 100 (MSS, ocean current)" and "REMUS 100 (MSS, quaternion)" hol
 | `lift_slope` | 3.12 | 1/rad | Prestero 2001, Table A.5, p. 103 (c_L_alpha) | document |
 | `zero_lift_drag` | 0.0 | 1 | zero with its reason: Prestero 2001, eq. 4.37, p. 31 carries no fin drag (read by linear_section only) | document |
 
-## REMUS 100 (MSS) rudder fin and stern plane fin (`more_dynamics::Fin`)
+## REMUS 100 (published reference) rudder fin and stern plane fin (`more_dynamics::Fin`)
 
 The vehicle links each of them twice (four fins, each with its own command). Ideal servo (only the saturation of the
 command), translational inflow, no flow angle, no interference, quadratic-drag section: the deflection-only form of
@@ -124,7 +124,7 @@ command), translational inflow, no flow angle, no interference, quadratic-drag s
 | `lift_slope` | 0.5 | 0.7 | 1/rad | remus100.m:183 CL_delta_r, 188 CL_delta_s | document |
 | `max_deflection` | 0.3490658503988659 | 0.3490658503988659 | rad | remus100.m:110 delta_max = deg2rad(20) | document |
 | `servo_dynamics`, `servo_rate_limit`, `servo_angle_limit` | 'none', False, 'on_command' | same | - | remus100.m:114-115 (the command saturated, nothing else) | selector |
-| `inflow`, `flow_angle`, `interference`, `section` | 'translational', 'none', 'none', 'quadratic_drag' | same | - | remus100.m:235-246 | selector |
+| `inflow`, `flow_angle`, `interference`, `section` | 'translational', 'none', 'none', 'lift_times_angle' | same | - | remus100.m:235-246 | selector |
 
 ## Otter (MSS) (`more_dynamics::Catamaran`)
 
@@ -411,19 +411,20 @@ the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 
 
 | Named part | `.rppws` location | `SOURCE.md` |
 |---|---|---|
-| REMUS 100 (MSS) | `.rppws/parts/more_dynamics__spheroid_auv/83497a04-1209-469f-bab2-5d7d41d0dee2/` | yes |
+| REMUS 100 (published reference) | `.rppws/parts/more_dynamics__spheroid_auv/83497a04-1209-469f-bab2-5d7d41d0dee2/` | yes |
+| REMUS 100 (estimated) | `.rppws/parts/more_dynamics__spheroid_auv/f2babdd9-1904-53cb-8684-6ab6ca18fa62/` (a sibling of REMUS 100 (published reference): every added-mass Coriolis term, the body lift as one point force, fins whose lift slope comes from their geometry, the propeller roll reaction at the estimated scale 0.35; its own fins `...__fin/2784bf3e-...`, `...__fin/52aa13f7-...` and propulsor `...__propulsor/d9abbb5a-...`) | yes, each |
 | REMUS 100 fin | `.rppws/parts/more_dynamics__fin/bca4fba6-...` (one `Fin` with Prestero's values, not wired into a vehicle) | yes |
-| REMUS 100 (MSS) rudder fin, REMUS 100 (MSS) stern plane fin | `.rppws/parts/more_dynamics__fin/` (each linked twice into REMUS 100 (MSS)) | yes, each |
+| REMUS 100 (published reference) rudder fin, REMUS 100 (published reference) stern plane fin | `.rppws/parts/more_dynamics__fin/` (each linked twice into REMUS 100 (published reference)) | yes, each |
 | REMUS 100 fin pairs, REMUS 100 propeller | `.rppws/parts/more_dynamics__fin_pairs_deflection_only/`, `...__propeller/` (the earlier REMUS 100 composition, kept as parts of their own for the plugins' tests and as a cross-check of the committed vehicle) | no |
 | Otter (MSS) | `.rppws/parts/more_dynamics__catamaran/0705552d-7974-4939-b2d0-e9c666424aae/` | yes |
-| REMUS 100 (MSS, ocean current) | `.rppws/parts/more_dynamics__spheroid_auv/0894facd-2fd1-45bf-ba09-71c4a2e91f91/` (a copy of REMUS 100 (MSS) with `current_form = "yaw_rate_terms"`, `remus100.m` 118-123; same linked actuators; a test asserts that nothing else differs) | yes |
-| REMUS 100 (MSS, quaternion) | `.rppws/parts/more_dynamics__spheroid_auv/92e634eb-ef30-44d1-8fed-8cd28a876dc2/` (a copy of REMUS 100 (MSS, ocean current) with `kinematics_form = "unit_quaternion"`: 13 states; a test asserts that nothing else differs) | yes |
+| REMUS 100 (published reference, ocean current) | `.rppws/parts/more_dynamics__spheroid_auv/0894facd-2fd1-45bf-ba09-71c4a2e91f91/` (a copy of REMUS 100 (published reference) with `current_form = "yaw_rate_terms"`, `remus100.m` 118-123; same linked actuators; a test asserts that nothing else differs) | yes |
+| REMUS 100 (published reference, quaternion) | `.rppws/parts/more_dynamics__spheroid_auv/92e634eb-ef30-44d1-8fed-8cd28a876dc2/` (a copy of REMUS 100 (published reference, ocean current) with `kinematics_form = "unit_quaternion"`: 13 states; a test asserts that nothing else differs) | yes |
 | Otter (MSS, ocean current) | `.rppws/parts/more_dynamics__catamaran/d046ae58-8a9f-40ac-a806-10578eb0fd09/` (a copy of Otter (MSS) with `current_form = "full_rotation_rate"`, `otter.m` 120-125; same linked actuators; a test asserts that nothing else differs) | yes |
 | Grethe | `.rppws/parts/more_dynamics__monohull/83646192-e837-45e4-b1c3-c36ae72940ab/` | the part's own (the values of the model file grethe.m @ 679a6e8 (retired 2026-10-30; file deleted, kept as tag archive/grethe-vehicle)) |
 | Grethe (yaw-unstable stress test) | `.rppws/parts/more_dynamics__monohull/b378c519-2d5f-4161-a8d0-a11a4f44a072/` (configuration `grethe_stress_test`) | no (a copy of Grethe with one change, see its section) |
 | Grethe outboard | `.rppws/parts/more_dynamics__propulsor/` (linked into both Grethe parts) | yes |
 | NPS AUV II (MSS) | not yet landed | n/a |
-| REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, each linked into its vehicle: REMUS 100 (MSS) once, Otter (MSS) one each) | yes, each |
+| REMUS 100 propulsor, Otter port thruster, Otter starboard thruster | `.rppws/parts/more_dynamics__propulsor/` (three standalone `Propulsor` parts, each linked into its vehicle: REMUS 100 (published reference) once, Otter (MSS) one each) | yes, each |
 | Scenario site, Scenario boat A / B | `.rppws/parts/more_dynamics__site/`, `...__catamaran/09d55b0c-...`, `...__catamaran/287972df-...` (two boats of the Otter's numbers linking one `Site`; configuration `shared_site`) | no (a scenario example, not a vehicle) |
 
 

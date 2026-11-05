@@ -323,7 +323,7 @@ def test_every_value_of_the_remus_parts_equals_the_frozen_value_and_the_plugins_
     p = plugins()
     v = vc.remus_values()
     checked = 0
-    for cls, part in ((p.SpheroidAuv, "REMUS 100 (MSS)"), (p.SubmergedRestoring, "REMUS 100 hydrostatics"),
+    for cls, part in ((p.SpheroidAuv, "REMUS 100 (published reference)"), (p.SubmergedRestoring, "REMUS 100 hydrostatics"),
                       (p.AuvHullLoads, "REMUS 100 hull loads"), (p.FinPairsDeflectionOnly, "REMUS 100 fin pairs"),
                       (p.Propeller, "REMUS 100 propeller")):
         values = vc.reference_part(part)

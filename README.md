@@ -36,7 +36,8 @@ A vehicle type is one plugin in the form of `HullVessel`: its own `PARAMETERS` (
 
 | Type | Hull | Reference named part (the plugin itself carries no number) |
 |---|---|---|
-| `SpheroidAuv` | prolate spheroid, mass from the body density, Lamb added mass | REMUS 100 (MSS) (Prestero 2001; MSS `remus100.m`) |
+| `SpheroidAuv` | prolate spheroid, mass from the body density, Lamb added mass | REMUS 100 (published reference) (Prestero 2001; MSS `remus100.m`) |
+| `SpheroidAuv` (estimated) | the same type with `coriolis_form = kirchhoff_full`, the point-force body lift and fins with a geometric lift slope (the gate: every part that keeps the Munk moment is straight-line stable) | REMUS 100 (estimated) (Prestero 2001, eqs. 4.27-4.39; roll reaction scale an estimate) |
 | `Catamaran` | two pontoons, a hull mass and a point payload, scaled added-mass derivatives | Otter (MSS) (MSS `otter_legacy.m`) |
 | `Monohull` | one hull, the same rigid body and added-mass forms as the catamaran | Grethe: document values, **marked estimates**, fitted values and one marked approved guess (the comment of each value says which) |
 
@@ -131,10 +132,24 @@ Marie's fins and Grethe's steering: `first_order_lag` / `True` / `on_command`, n
 | `flow_angle` | `none` | MSS form | published simulator model | the flow along the chord | `small_angle` |
 | `flow_angle` | `small_angle` | default | published vehicle model | linear ratio, valid away from hover | an `exact` large-angle form once hover-speed manoeuvres are simulated |
 | `interference` | `none` | default (no interference modelled) | — | one fin's flow does not affect another's | the slender-body factor once its source is read (`slender_body` refuses until then) |
-| `section` | `quadratic_drag` | MSS shortcut — flagged, not the default when a physics form exists | published simulator model | no zero-lift drag, no induced drag; registered as a shortcut | `linear_section` with an identified zero-lift drag |
+| `section` | `lift_times_angle` | MSS shortcut — flagged, not the default when a physics form exists | published simulator model | no zero-lift drag, no induced drag; registered as a shortcut | `linear_section` with an identified zero-lift drag |
 | `section` | `linear_section` | physics form | published vehicle model | small-angle lift and a fixed zero-lift drag | a lifting-line induced-drag form once its source is read (`lifting_line` refuses until then) |
 
 Sources behind the two tables: the servo settings follow MSS `remus100.m` 110, 114-115 (Fossen, MSS, MIT, `ed2ce7b`; angle limit on the command), Murray-Smith, D. J. (2016), *Inverse simulation methods applied to investigations of actuator nonlinearities in ship steering*, Simulation Notes Europe 26(4), 245-256, pp. 246-247 (steering machine: time constant 3 s, ±35°, ±7 and ±10 °/s) and Sarhadi, P. (2026), *Simple yet effective anti-windup techniques for amplitude and rate saturation: an AUV case study*, arXiv:2601.01302v2, Fig. 4, p. 4 (time constant 0.1 s, ±20°, ±30 °/s; the amplitude limit on the output); the fin forms follow Prestero, T. (2001), *Verification of a six-degree of freedom simulation model for the REMUS autonomous underwater vehicle*, MIT/WHOI MSc thesis, eqs. 4.37 (linear section), 4.40 (rigid-point inflow), 4.41-4.43 (small flow angle), pp. 31-33, and MSS `remus100.m` 234-245 (translational inflow, quadratic-drag section). Each plugin's module docstring carries the full citation and the line of every value.
+
+### Hull-load and rigid-body forms of the slender AUV (`AuvHullLoads`, `Fin`, `SpheroidAuv`)
+
+| Selector | Forms (default first) | Source | Assumptions | Raised to the next level by |
+|---|---|---|---|---|
+| `body_lift_form` | `vertical_plane_wing`; `point_force_both_planes` | the wing block's lift half; Prestero 2001, eqs. 4.27-4.36, pp. 30-31 | the point force acts at one pressure centre on the axis; the moment has the sign of the cross product (the printed eq. 4.36 has the opposite sign) | lift measured in a tow or on a rotating arm |
+| `body_lift_slope_method` | `slender_body_hoerner`; `given` | Prestero 2001, eqs. 4.30-4.32, p. 30 | refused outside 6.7 <= l/d <= 10, naming the ratio | a given slope for a hull outside the range |
+| `pressure_centre_method` | `fraction_of_length_from_nose`; `given` | Prestero 2001, eq. 4.35, p. 31 | nose at +L/2, hull centred on the origin | the measured centre |
+| `hull_drag_form` | `wing_drag`; `quadratic_axial` | the wing block's drag half; Prestero 2001, eqs. 4.5-4.6, p. 25 | `wing_drag` keeps the induced part on the vertical-plane lift coefficient | a measured axial drag |
+| `roll_damping_form` | `linear`; `linear_plus_quadratic` | time-constant damping; Prestero 2001, eqs. 4.10-4.11, p. 27 | the quadratic coefficient is given (the source calls its own estimate a rough approximation) | an identified coefficient |
+| `rigid_body_form` (`SpheroidAuv`) | `homogeneous_spheroid`; `given_inertia` | spheroid; Fossen 2011, eqs. 3.19, 3.34, pp. 48-50 | the tensor is about the CO, products as in `DerivativeAuv` | a weighing or CAD tensor |
+| `lift_law` (`Fin`) | `lift_slope`; `finite_wing` with `lift_slope_form` `low_aspect_ratio` | Prestero 2001, eqs. 4.38-4.39, p. 31 | `helmbold` and `lifting_line` wait on their sources and refuse | a slope measured on the fin |
+
+`FinPairsDeflectionOnly` declares the one `convention` its model has (`starboard_down_positive`) and refuses another; a `Fin` takes the sign of its deflection from its `lift_axis` and has no label.
 
 ## Choosing propulsor options
 

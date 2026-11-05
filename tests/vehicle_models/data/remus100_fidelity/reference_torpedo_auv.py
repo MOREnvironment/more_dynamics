@@ -7,23 +7,22 @@ stability references beside this file.
 Every function takes a parameter set (geometry and coefficients in, forces
 or derivatives out); every number comes from the caller's set (a named
 part's parameter file), none is written here. The parameter names are the
-plugins' own. The MSS forms reproduce the one-value REMUS 100 reference of
-``../remus100/`` (``remus100_consistent.m``); the higher-fidelity forms are
-the published equations cited beside each line.
+plugins' own. Frames: BODY FRD about the body origin CO (x forward, y
+starboard, z down); ``nu_r = [u, v, w, p, q, r]`` the velocity relative to
+the water, SI units.
 
-Forms (named by their physics; the MSS choice of each mechanism is one form):
+Forms (named by their physics; the published reference model's choice of each
+mechanism is one form):
 
 * body lift: ``vertical_plane_wing`` -- lift on the vertical-plane angle of
-  attack only, no sway force, no moment (forceLiftDrag.m 28-40);
-  ``point_force_both_planes`` -- the slender-body lift
-  ``F_y = -1/2 rho d^2 c_ydb u v``, ``F_z = -1/2 rho d^2 c_ydb u w``
-  (Prestero 2001, eqs. 4.27-4.29, 4.33-4.34, pp. 30-31; the sway half by
-  the hull's symmetry of revolution) applied as one point force at the
-  pressure centre ``r_cp = (x_cp, 0, 0)``: ``tau = [F; r_cp x F]``
-  (Fossen 2011, eq. 12.226, p. 400). Hence ``M_uwl = +1/2 rho d^2 c_ydb
-  x_cp = -N_uvl``; Prestero's eq. 4.36 prints ``M_uwl`` with the opposite
-  sign, his own linearised Table D.1 (p. 112) uses ``M_wl / Z_wl = -x_cp``,
-  the sign used here.
+  attack only, no sway force, no moment; ``point_force_both_planes`` -- the
+  slender-body lift ``F_y = -1/2 rho d^2 c_ydb u v``, ``F_z = -1/2 rho d^2 c_ydb
+  u w`` (Prestero 2001, eqs. 4.27-4.29, 4.33-4.34, pp. 30-31; the sway half by
+  the hull's symmetry of revolution) applied as one point force at the pressure
+  centre ``r_cp = (x_cp, 0, 0)``: ``tau = [F; r_cp x F]`` (Fossen 2011,
+  eq. 12.226, p. 400). Hence ``M_uwl = +1/2 rho d^2 c_ydb x_cp = -N_uvl``;
+  Prestero's eq. 4.36 prints ``M_uwl`` with the opposite sign, his own
+  linearised Table D.1 (p. 112) uses ``M_wl / Z_wl = -x_cp``, the sign used here.
 * body-lift slope: ``slender_body_hoerner`` ``c_ydb = (l/d) c_yb 180/pi``
   with ``c_yb`` per degree (Prestero 2001, eqs. 4.30-4.32, p. 30, after
   Hoerner 1965, p. 13-3, not read; stated valid for 6.7 <= l/d <= 10);
@@ -31,40 +30,44 @@ Forms (named by their physics; the MSS choice of each mechanism is one form):
 * pressure centre: ``fraction_of_length_from_nose`` ``x_cp = x_nose - f l``
   (Prestero 2001, eq. 4.35, p. 31, f = 0.65; Hoerner's range 0.6-0.7 l as
   Prestero p. 31 gives it), ``x_nose = l/2`` for a hull centred on the
-  body origin (remus100.m 131, 134); ``given``.
-* hull drag: ``wing_drag`` -- the drag half of forceLiftDrag.m 28-40
-  (parasitic plus induced on the vertical-plane angle); ``quadratic_axial``
+  body origin; ``given``.
+* hull drag: ``wing_drag`` -- parasitic plus induced drag of a wing on the
+  vertical-plane angle of attack (the drag half of the wing block, Fossen 2025
+  after Beard and McLain 2012, not read); ``quadratic_axial``
   ``X = -1/2 rho c_d A_f u|u|``, ``A_f = pi d^2 / 4`` (Prestero 2001,
   eqs. 4.5-4.6, p. 25).
-* roll damping: ``linear`` (Dmtrx.m 39-55); ``linear_plus_quadratic`` adds
-  ``K = K_p|p| p|p|`` (Prestero 2001, eqs. 4.10-4.11, p. 27), the
-  coefficient given only (his eq. 4.11 estimate is not reproduced from his
-  own inputs).
-* added-mass Coriolis: ``kirchhoff_full`` (m2c.m 33-48; Fossen 2011,
-  eq. 6.43, p. 120) or ``munk_couplings_removed`` (remus100.m 207-210).
+* roll damping: ``linear`` (the time-constant damping alone);
+  ``linear_plus_quadratic`` adds ``K = K_p|p| p|p|`` (Prestero 2001,
+  eqs. 4.10-4.11, p. 27), the coefficient given only (his eq. 4.11 estimate
+  is not reproduced from his own inputs).
+* added-mass Coriolis: ``kirchhoff_full`` (every term, Fossen 2011,
+  eq. 6.43, p. 120) or ``munk_couplings_removed`` (the couplings that carry the
+  Munk moment of a slender body, Fossen 2011, eq. 6.52, p. 121, set to zero:
+  a shortcut of the published reference model).
 * fin lift slope: ``given``; ``low_aspect_ratio``
-  ``c_La = [1/(2 a pi) + 1/(pi AR_e)]^-1``, ``AR_e = 2 b^2 / S`` (Prestero
+  ``c_La = [1/(2 a pi) + 1/(pi AR_e)]^-1``, ``AR_e = k_AR b^2 / S`` (Prestero
   2001, eqs. 4.38-4.39, p. 31; Hoerner 1965 p. 3-2 and Whicker and
-  Fehlner 1958 behind it, not read), per fin, ``S`` the fin's own area.
+  Fehlner 1958 behind it, not read), per fin, ``S`` the fin's own area, ``k_AR`` the
+  ``aspect_ratio_factor`` (2).
 * fins: inflow ``translational`` or ``rigid_point`` (Prestero 2001,
-  eq. 4.40, p. 32), flow angle ``none`` (remus100.m 234-235) or
-  ``small_angle`` (Prestero 2001, eqs. 4.41-4.43, pp. 32-33), section
-  ``quadratic_drag`` (remus100.m 238-239); a positive deflection lifts
-  along the fin's ``lift_axis``.
+  eq. 4.40, p. 32), flow angle ``none`` (beta = 0, the speed in the section
+  plane) or ``small_angle`` (Prestero 2001, eqs. 4.41-4.43, pp. 32-33), section
+  ``lift_times_angle`` (``C_L = a alpha``, ``C_D = C_L alpha``); a positive
+  deflection lifts along the fin's ``lift_axis``.
 
 References
 ----------
 Fossen, T. I. (2011). Handbook of Marine Craft Hydrodynamics and Motion
-    Control. Wiley. Ch. 2, eq. 2.18, p. 22; ch. 3, eq. 3.24, p. 49; ch. 4,
-    eq. 4.6, p. 60; ch. 6, eq. 6.43, p. 120; ch. 12, eq. 12.226, p. 400.
+    Control. Wiley. Ch. 2, eq. 2.18, p. 22; ch. 3, eq. 3.24, p. 49 and
+    eq. 3.34, p. 50; ch. 4, eq. 4.6, p. 60; ch. 6, eq. 6.43, p. 120,
+    eq. 6.52, p. 121, eqs. 6.76-6.81, p. 125; ch. 12, eq. 12.226, p. 400.
 Prestero, T. (2001). Verification of a six-degree of freedom simulation
     model for the REMUS autonomous underwater vehicle. MSc thesis, MIT/WHOI.
     Ch. 4, eqs. 4.5-4.6, 4.10-4.11, 4.27-4.43, pp. 25-33.
-Fossen, T. I. MSS, MIT, @ cc07579: CRAFT/AUV/models/remus100.m 113-114,
-    118-127, 131-137, 146-177, 202-259; LIBRARY/modeling/spheroid.m 33-48,
-    imlay61.m 31-59, m2c.m 33-48, Dmtrx.m 39-55, gRvect.m 30-37,
-    forceLiftDrag.m 28-40, coeffLiftDrag.m 54-65, crossFlowDrag.m 54-69;
-    HYDRO/cylinderDrag.m 50-110; LIBRARY/numericalMethods/rk4.m 26-38.
+Lamb, H. (1932). Hydrodynamics. Cambridge University Press (the ideal-fluid
+    inertia coefficients of a prolate spheroid; page not located).
+DNV (2010). Recommended Practice DNV-RP-C205, Fig. 6-6 (the drag coefficient
+    of a circular cylinder against Reynolds number; the table is typed below).
 
 Author:    Enio Krizman
 Date:      2026-10-13
@@ -98,9 +101,9 @@ def pressure_centre_from_nose(nose_x, length, fraction):
     return nose_x - fraction * length
 
 
-def low_aspect_ratio_lift_slope(span, area, efficiency):
-    """c_La per fin from its span, area and empirical factor (Prestero 2001, eqs. 4.38-4.39, p. 31)."""
-    effective_aspect_ratio = 2.0 * span ** 2 / area                       # (Prestero 2001, eq. 4.39, p. 31)
+def low_aspect_ratio_lift_slope(span, area, efficiency, factor):
+    """c_La per fin from its span, area, empirical factor and ``aspect_ratio_factor`` (Prestero 2001, eqs. 4.38-4.39, p. 31)."""
+    effective_aspect_ratio = factor * span ** 2 / area                       # (Prestero 2001, eq. 4.39, p. 31)
     return 1.0 / (1.0 / (2.0 * efficiency * np.pi) + 1.0 / (np.pi * effective_aspect_ratio))   # (eq. 4.38)
 
 
@@ -108,21 +111,21 @@ def low_aspect_ratio_lift_slope(span, area, efficiency):
 # Rigid body, added mass, Coriolis
 # ---------------------------------------------------------------------------------------------
 def spheroid_inertia_about_cg(mass, a, b):
-    """Principal inertia of a homogeneous prolate spheroid about its centre (spheroid.m 37-38)."""
+    """Principal inertia of a homogeneous prolate spheroid about its centre, ``diag(2/5 m b^2, 1/5 m (a^2 + b^2), 1/5 m (a^2 + b^2))``."""
     return np.diag([2.0 / 5.0 * mass * b ** 2, 1.0 / 5.0 * mass * (a ** 2 + b ** 2), 1.0 / 5.0 * mass * (a ** 2 + b ** 2)])
 
 
 def rigid_body(mass, inertia_cg, r_bg, omega):
-    """M_RB, C_RB about the CO from the mass and the inertia about the CG (spheroid.m 41-47;
-    H matrix Fossen 2011, eq. 3.24, p. 49)."""
+    """M_RB, C_RB about the CO from the mass and the inertia about the CG
+    (``H^T diag(m I3, I_g) H``, ``H^T diag(m S(w), -S(I_g w)) H``; H matrix Fossen 2011, eq. 3.24, p. 49)."""
     m_cg = np.zeros((6, 6))
     m_cg[:3, :3] = mass * np.eye(3)
     m_cg[3:, 3:] = inertia_cg
     c_cg = np.zeros((6, 6))
-    c_cg[:3, :3] = mass * skew(omega)                                      # spheroid.m 43
-    c_cg[3:, 3:] = -skew(inertia_cg @ omega)                               # spheroid.m 44
+    c_cg[:3, :3] = mass * skew(omega)
+    c_cg[3:, 3:] = -skew(inertia_cg @ omega)
     h = MatrixTransforms.H_matrix(np.asarray(r_bg, float))                 # (Fossen 2011, eq. 3.24, p. 49)
-    return h.T @ m_cg @ h, h.T @ c_cg @ h                                   # spheroid.m 46-47
+    return h.T @ m_cg @ h, h.T @ c_cg @ h
 
 
 def inertia_about_co(mass, inertia_cg, r_bg):
@@ -132,8 +135,8 @@ def inertia_about_co(mass, inertia_cg, r_bg):
 
 
 def lamb_spheroid_added_mass(a, b, rho, r44):
-    """Lamb's added mass of a prolate spheroid (imlay61.m 31-59)."""
-    m = 4.0 / 3.0 * np.pi * rho * a * b ** 2                               # imlay61.m 32
+    """Lamb's added mass of a prolate spheroid (Lamb 1932: the coefficients k1, k2 and k' of the ideal fluid), with the roll added inertia ``r44`` times that of the displaced fluid."""
+    m = 4.0 / 3.0 * np.pi * rho * a * b ** 2
     ix = 2.0 / 5.0 * m * b ** 2
     iy = 1.0 / 5.0 * m * (a ** 2 + b ** 2)
     e = np.sqrt(1.0 - (b / a) ** 2)
@@ -142,15 +145,15 @@ def lamb_spheroid_added_mass(a, b, rho, r44):
     k1 = alpha0 / (2.0 - alpha0)
     k2 = beta0 / (2.0 - beta0)
     kp = e ** 4 * (beta0 - alpha0) / ((2.0 - e ** 2) * (2.0 * e ** 2 - (2.0 - e ** 2) * (beta0 - alpha0)))
-    return np.diag([m * k1, m * k2, m * k2, r44 * ix, kp * iy, kp * iy])   # imlay61.m 54
+    return np.diag([m * k1, m * k2, m * k2, r44 * ix, kp * iy, kp * iy])
 
 
-MUNK_ENTRIES = ((4, 2), (2, 4), (4, 0), (0, 4), (5, 0), (0, 5), (5, 1), (1, 5))   # remus100.m 207-210, 0-based
+MUNK_ENTRIES = ((4, 2), (2, 4), (4, 0), (0, 4), (5, 0), (0, 5), (5, 1), (1, 5))   # 0-based: pitch-heave, pitch-surge, yaw-surge, yaw-sway and transposes
 
 
 def added_mass_coriolis(form, m_a, nu_r):
-    """C_A(nu_r) with every term kept (m2c.m 33-48; Fossen 2011, eq. 6.43, p. 120), or with the
-    Munk-moment couplings removed (remus100.m 207-210)."""
+    """C_A(nu_r) with every term kept (Fossen 2011, eq. 6.43, p. 120), or with the
+    Munk-moment couplings removed (the pitch-heave, pitch-surge, yaw-surge and yaw-sway entries and their transposes)."""
     m = 0.5 * (m_a + m_a.T)
     p1 = m[:3, :3] @ nu_r[:3] + m[:3, 3:] @ nu_r[3:]
     p2 = m[3:, :3] @ nu_r[:3] + m[3:, 3:] @ nu_r[3:]
@@ -171,14 +174,14 @@ def added_mass_coriolis(form, m_a, nu_r):
 # Hull loads
 # ---------------------------------------------------------------------------------------------
 def time_constant_damping(m_total, weight, r_bg, r_bb, time_constants, damping_ratios, speed):
-    """Dmtrx.m 39-55 (submerged), with the surge fade of remus100.m 218."""
+    """Time-constant damping, submerged form (Fossen 2011, eqs. 6.76-6.80, p. 125), with the surge term faded by ``exp(-3 U_r)``."""
     t1, t2, t6 = time_constants
     z4, z5 = damping_ratios
-    w4 = np.sqrt(weight * (r_bg[2] - r_bb[2]) / m_total[3, 3])            # Dmtrx.m 47
-    w5 = np.sqrt(weight * (r_bg[2] - r_bb[2]) / m_total[4, 4])            # Dmtrx.m 48
+    w4 = np.sqrt(weight * (r_bg[2] - r_bb[2]) / m_total[3, 3])
+    w5 = np.sqrt(weight * (r_bg[2] - r_bb[2]) / m_total[4, 4])
     d = np.diag([m_total[0, 0] / t1, m_total[1, 1] / t2, m_total[2, 2] / t2,
                  m_total[3, 3] * 2 * z4 * w4, m_total[4, 4] * 2 * z5 * w5, m_total[5, 5] / t6])
-    d[0, 0] *= np.exp(-3.0 * speed)                                        # remus100.m 218
+    d[0, 0] *= np.exp(-3.0 * speed)
     return d
 
 
@@ -190,28 +193,28 @@ def quadratic_roll_damping(k_pp, p):
 
 
 def _wing_coefficients(span, area, cd0, oswald, alpha):
-    aspect_ratio = span ** 2 / area                                        # coeffLiftDrag.m 55
-    cl_alpha = np.pi * aspect_ratio / (1 + np.sqrt(1 + (aspect_ratio / 2) ** 2))   # coeffLiftDrag.m 58
-    cl = cl_alpha * alpha                                                  # coeffLiftDrag.m 59-62
-    cd = cd0 + cl ** 2 / (np.pi * oswald * aspect_ratio)                   # coeffLiftDrag.m 65
+    aspect_ratio = span ** 2 / area
+    cl_alpha = np.pi * aspect_ratio / (1 + np.sqrt(1 + (aspect_ratio / 2) ** 2))
+    cl = cl_alpha * alpha
+    cd = cd0 + cl ** 2 / (np.pi * oswald * aspect_ratio)
     return cl, cd
 
 
 def vertical_plane_wing_lift(nu_r, rho, span, area, cd0, oswald):
-    """The lift half of forceLiftDrag.m 28-40: on alpha = atan2(w, u) only; no sway, no moment."""
-    alpha = np.arctan2(nu_r[2], nu_r[0])                                   # remus100.m 126
-    speed2 = nu_r[0] ** 2 + nu_r[1] ** 2 + nu_r[2] ** 2                     # remus100.m 127
+    """The lift half of the wing block: on alpha = atan2(w, u) only; no sway, no moment."""
+    alpha = np.arctan2(nu_r[2], nu_r[0])
+    speed2 = nu_r[0] ** 2 + nu_r[1] ** 2 + nu_r[2] ** 2
     cl, _ = _wing_coefficients(span, area, cd0, oswald, alpha)
-    lift = 0.5 * rho * speed2 * area * cl                                  # forceLiftDrag.m 31
-    return np.array([np.sin(alpha) * lift, 0, -np.cos(alpha) * lift, 0, 0, 0])   # forceLiftDrag.m 34-40
+    lift = 0.5 * rho * speed2 * area * cl
+    return np.array([np.sin(alpha) * lift, 0, -np.cos(alpha) * lift, 0, 0, 0])
 
 
 def wing_drag(nu_r, rho, span, area, cd0, oswald):
-    """The drag half of forceLiftDrag.m 28-40 (parasitic plus induced on the vertical-plane alpha)."""
+    """The drag half of the wing block (parasitic plus induced on the vertical-plane alpha)."""
     alpha = np.arctan2(nu_r[2], nu_r[0])
     speed2 = nu_r[0] ** 2 + nu_r[1] ** 2 + nu_r[2] ** 2
     _, cd = _wing_coefficients(span, area, cd0, oswald, alpha)
-    drag = 0.5 * rho * speed2 * area * cd                                  # forceLiftDrag.m 30
+    drag = 0.5 * rho * speed2 * area * cd
     return np.array([-np.cos(alpha) * drag, 0, -np.sin(alpha) * drag, 0, 0, 0])
 
 
@@ -229,7 +232,7 @@ def point_force_body_lift(nu_r, rho, diameter, lift_slope, pressure_centre):
     return wrench([0.0, -k * u * v, -k * u * w], [pressure_centre, 0.0, 0.0])
 
 
-_CD_DATA = np.array([   # cylinderDrag.m 50-77 (DNV-RP-C205 Fig. 6-6, as MSS tabulates it)
+_CD_DATA = np.array([
     [10211.0405297256, 1.20769], [15543.5423211490, 1.20369], [24434.8681540938, 1.20823],
     [35719.8807222993, 1.21060], [60880.7508493947, 1.21093], [86174.7436190610, 1.20901],
     [118086.431856986, 1.21134], [149262.255516420, 1.21148], [214708.876786124, 1.21171],
@@ -240,20 +243,20 @@ _CD_DATA = np.array([   # cylinderDrag.m 50-77 (DNV-RP-C205 Fig. 6-6, as MSS tab
     [1068685.70450627, 0.38909], [1393381.37138896, 0.47033], [1831850.38455424, 0.53878],
     [2258395.50114555, 0.58372], [2899011.91287642, 0.62868], [3663279.03082383, 0.64803],
     [4937305.49552761, 0.67808]])
-_KAPPA_SUB = np.array([[2, 0.58], [5, 0.62], [10, 0.68], [20, 0.74], [40, 0.82], [50, 0.87], [100, 0.98]])   # cylinderDrag.m 92-99
-_KAPPA_SUP = np.array([[2, 0.80], [5, 0.80], [10, 0.82], [20, 0.90], [40, 0.98], [50, 0.99], [100, 1.00]])   # cylinderDrag.m 100-108
+_KAPPA_SUB = np.array([[2, 0.58], [5, 0.62], [10, 0.68], [20, 0.74], [40, 0.82], [50, 0.87], [100, 0.98]])
+_KAPPA_SUP = np.array([[2, 0.80], [5, 0.80], [10, 0.82], [20, 0.90], [40, 0.98], [50, 0.99], [100, 1.00]])
 
 
 def cylinder_strip_cross_flow(nu_r, rho, length, beam, draft, viscosity, n_strips=20):
-    """crossFlowDrag.m 54-69 with the 'cylinder' section (cylinderDrag.m 78-110)."""
-    re = np.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2) * beam / viscosity            # cylinderDrag.m 80-82
+    """Strip-theory cross-flow drag (Fossen 2011, eqs. 6.91-6.92, p. 127) with the circular-cylinder section drag against Reynolds number and the slenderness factor kappa."""
+    re = np.sqrt(nu_r[1] ** 2 + nu_r[2] ** 2) * beam / viscosity
     cd = np.interp(re, _CD_DATA[:, 0], _CD_DATA[:, 1])                      # clamped at both ends, 84-90
     table = _KAPPA_SUB if re < 2e5 else _KAPPA_SUP
     cd2 = cd * np.interp(length / beam, table[:, 0], table[:, 1])
     dx = length / n_strips
     yh = zh = mh = nh = 0.0
     for i in range(n_strips):
-        x = -length / 2 + (i + 0.5) * dx                                    # crossFlowDrag.m 56
+        x = -length / 2 + (i + 0.5) * dx
         uh = abs(nu_r[1] + x * nu_r[5]) * (nu_r[1] + x * nu_r[5])
         uv = abs(nu_r[2] + x * nu_r[4]) * (nu_r[2] + x * nu_r[4])
         yh -= 0.5 * rho * draft * cd2 * uh * dx
@@ -272,8 +275,8 @@ def lifting_fin(nu_r, rho, deflection, fin):
 
     v_fin = nu_r[:3] (translational) or nu_r[:3] + omega x r (rigid_point; Prestero 2001, eq. 4.40,
     p. 32); u_c = v_fin . chord, u_n = v_fin . lift_axis; flow angle none: beta = 0, s^2 = u_c^2 + u_n^2
-    (remus100.m 234-235); small_angle: beta = u_n / u_c, s^2 = u_c^2 (Prestero 2001, eqs. 4.41-4.43,
-    pp. 32-33); alpha = delta - beta; C_L = c_La alpha, C_D = c_La alpha^2 (remus100.m 238-239);
+    (the speed in the section plane); small_angle: beta = u_n / u_c, s^2 = u_c^2 (Prestero 2001, eqs. 4.41-4.43,
+    pp. 32-33); alpha = delta - beta; C_L = c_La alpha, C_D = c_La alpha^2;
     F = 1/2 rho S s^2 (C_L lift_axis - C_D chord_axis), tau = [F; r x F]."""
     r = np.asarray(fin["fin_position"], float)
     n = np.asarray(fin["lift_axis"], float)
@@ -283,22 +286,22 @@ def lifting_fin(nu_r, rho, deflection, fin):
     if fin["flow_angle"] == "small_angle":
         beta, s2 = u_n / u_c, u_c ** 2                                       # (Prestero 2001, eqs. 4.41-4.43)
     elif fin["flow_angle"] == "none":
-        beta, s2 = 0.0, u_c ** 2 + u_n ** 2                                  # remus100.m 234-235
+        beta, s2 = 0.0, u_c ** 2 + u_n ** 2
     else:
         raise ValueError(f"flow_angle {fin['flow_angle']!r}")
     alpha = deflection - beta
     cl = fin["lift_slope"] * alpha
-    cd = fin["lift_slope"] * alpha ** 2                                      # remus100.m 238-239
+    cd = fin["lift_slope"] * alpha ** 2
     return wrench(0.5 * rho * fin["fin_area"] * s2 * (cl * n - cd * c), r)
 
 
 def thrust_torque_propeller(speed, shaft_speed_rpm, rho, p):
-    """remus100.m 146-177, 249 with the printed open-water coefficients; the hull feels the reaction -scale K to the shaft torque."""
+    """Thrust and torque from the printed open-water coefficients (linearised in the advance speed); the hull feels the reaction -scale K to the shaft torque."""
     n_p = np.clip(shaft_speed_rpm, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0
     d = p["propeller_diameter"]
     kt0, kq0, ktm, kqm = p["thrust_torque_coefficients"]
     ja_max = p["max_advance_number"]
-    va = (1 - p["wake_fraction"]) * speed                                   # remus100.m 150
+    va = (1 - p["wake_fraction"]) * speed
     if n_p > 0:
         thrust = rho * d ** 4 * (kt0 * abs(n_p) * n_p + (ktm - kt0) / ja_max * (va / d) * abs(n_p))
         torque = rho * d ** 5 * (kq0 * abs(n_p) * n_p + (kqm - kq0) / ja_max * (va / d) * abs(n_p))
@@ -306,13 +309,13 @@ def thrust_torque_propeller(speed, shaft_speed_rpm, rho, p):
         thrust = rho * d ** 4 * kt0 * abs(n_p) * n_p
         torque = rho * d ** 5 * kq0 * abs(n_p) * n_p
     tau = np.zeros(6)
-    tau[0] = (1 - p["thrust_deduction"]) * thrust                           # remus100.m 249
+    tau[0] = (1 - p["thrust_deduction"]) * thrust
     tau[3] = -p["roll_moment_scale"] * torque                               # reaction to the shaft torque (Prestero 2001, Sec. 4.6.2)
     return tau
 
 
 def restoring(weight, buoyancy, r, r_bg, r_bb):
-    """g(eta) (gRvect.m 30-37; Fossen 2011, eq. 4.6, p. 60)."""
+    """g(eta) of a submerged body (Fossen 2011, eq. 4.6, p. 60)."""
     w, b = weight, buoyancy
     return np.array([
         -(w - b) * r[2, 0], -(w - b) * r[2, 1], -(w - b) * r[2, 2],
@@ -342,9 +345,9 @@ class TorpedoAuv:
         a, b = part["length"] / 2.0, part["diameter"] / 2.0
         self.mass = part["body_mass"]
         self.inertia_cg = spheroid_inertia_about_cg(self.mass, a, b)
-        self.g = ECEFNEDtransform.gravity(part["latitude"], unit="rad")   # remus100.m 96-97 (gravity.m)
+        self.g = ECEFNEDtransform.gravity(part["latitude"], unit="rad")
         self.weight = self.mass * self.g
-        self.buoyancy = self.weight                                        # remus100.m 214 (B = W)
+        self.buoyancy = self.weight
         self.m_a = lamb_spheroid_added_mass(a, b, part["water_density"], part["roll_added_inertia_ratio"])
         if part["body_lift_form"] == "point_force_both_planes":
             self.lift_slope = (slender_body_lift_slope(part["length"], part["diameter"], part["body_lift_slope_per_degree"])
@@ -376,19 +379,19 @@ class TorpedoAuv:
         cross = cylinder_strip_cross_flow(nu_r, rho, p["length"], p["diameter"], p["diameter"], p["kinematic_viscosity"])
         fins = np.zeros(6)
         for k, fin in enumerate(p["fins"]):
-            delta = float(np.clip(u[k], -fin["max_deflection"], fin["max_deflection"]))   # remus100.m 113-114
+            delta = float(np.clip(u[k], -fin["max_deflection"], fin["max_deflection"]))
             fins += lifting_fin(nu_r, rho, delta, fin)
         propeller = thrust_torque_propeller(speed, u[len(p["fins"])], rho, p["propeller"])
         rot = EulerNEDBodyTransforms.R_fossen(*x[3:6])                     # (Fossen 2011, eq. 2.18, p. 22)
         tau = (fins + propeller + lift + drag + cross + roll - (c_rb + c_a) @ nu_r - d @ nu_r
                - restoring(self.weight, self.buoyancy, rot, r_bg, r_bb))
-        nu_dot = np.linalg.solve(m_total, tau)                             # remus100.m 257-258
-        eta_dot = np.concatenate([rot @ x[6:9], EulerNEDBodyTransforms.T_euler_fossen(*x[3:5]) @ x[9:12]])   # remus100.m 259
+        nu_dot = np.linalg.solve(m_total, tau)
+        eta_dot = np.concatenate([rot @ x[6:9], EulerNEDBodyTransforms.T_euler_fossen(*x[3:5]) @ x[9:12]])
         return np.concatenate([eta_dot, nu_dot])
 
 
 def rk4_step(f, x, u, h):
-    """rk4.m 26-38, the input held over the step."""
+    """One fourth-order Runge-Kutta step, the input held over the step."""
     k1 = f(x, u)
     k2 = f(x + h / 2 * k1, u)
     k3 = f(x + h / 2 * k2, u)
@@ -426,3 +429,27 @@ def sway_yaw_roots(a):
     """Roots of the sway-yaw block of the linearisation (Fossen 2011, eqs. 12.17-12.21, p. 351)."""
     i = [MOTION.index(k) for k in SWAY_YAW]
     return np.linalg.eigvals(a[np.ix_(i, i)])
+
+
+def shaft_speed_holding(part, speed, bracket=(300.0, 1500.0), iterations=80):
+    """The shaft speed (rpm) at which the straight-running equilibrium of ``part`` at zero fin angles has the surge speed
+    ``speed``: bisection on the equilibrium surge speed, which increases with the shaft speed (the part's fins are
+    ``part["fins"]``, the shaft speed the last command)."""
+    model = TorpedoAuv(part)
+    zero = np.zeros(len(part["fins"]) + 1)
+    start = np.zeros(12)
+    start[6] = speed
+
+    def surge(n):
+        command = zero.copy()
+        command[-1] = n
+        x, _ = straight_running(model.xdot, command, start)
+        return x[6] - speed
+
+    low, high = bracket
+    if surge(low) > 0 or surge(high) < 0:
+        raise ValueError(f"no shaft speed in {bracket} rpm holds {speed} m/s")
+    for _ in range(iterations):
+        middle = 0.5 * (low + high)
+        low, high = (middle, high) if surge(middle) < 0 else (low, middle)
+    return 0.5 * (low + high)

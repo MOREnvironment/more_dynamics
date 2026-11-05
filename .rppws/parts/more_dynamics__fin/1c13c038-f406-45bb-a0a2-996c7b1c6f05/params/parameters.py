@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# REMUS 100 (MSS) rudder fin: one of the two fins of the tail rudder (remus100.m 183-185: CL_delta_r 0.5, A_r = 2 S_fin: two fins of S_fin).
+# REMUS 100 (published reference) rudder fin: one of the two fins of the tail rudder (remus100.m 183-185: CL_delta_r 0.5, A_r = 2 S_fin: two fins of S_fin).
 # Source of every value: the comment beside it, SOURCE.md gives its kind.
 # rpp rewrites this file without comments when parameters are saved from the editor.
 
@@ -17,5 +17,5 @@ class ComponentParameters:
     inflow = 'translational'  # the fin sees the vehicle's relative translation (remus100.m:235-236)
     flow_angle = 'none'  # no flow-angle correction (remus100.m:235-246)
     interference = 'none'  # no interference factors
-    section = 'quadratic_drag'  # lift slope * delta, drag = lift slope * delta^2 (remus100.m:239-240, 243, 246)
+    section = 'lift_times_angle'  # lift slope * delta, drag = lift slope * delta^2 (remus100.m:239-240, 243, 246)
     lift_slope = 0.5  # 1/rad, remus100.m:183 CL_delta_r

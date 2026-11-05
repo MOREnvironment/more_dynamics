@@ -1,10 +1,10 @@
-# REMUS 100 (MSS) stern plane fin
+# REMUS 100 (published reference) stern plane fin
 
-A named part of `more_dynamics::Fin` for the REMUS 100 (MSS) vehicle: one of the two fins of the stern plane (remus100.m 188-190: CL_delta_s 0.7, A_s = 2 S_fin: two fins of S_fin). The vehicle links it
+A named part of `more_dynamics::Fin` for the REMUS 100 (published reference) vehicle: one of the two fins of the stern plane (remus100.m 188-190: CL_delta_s 0.7, A_s = 2 S_fin: two fins of S_fin). The vehicle links it
 twice (a tail pair), so the vehicle has four fins, each with its own command; MSS's single command per pair
 is the same value given to both. Every number is `CRAFT/AUV/models/remus100.m` (MIT, revision `6e78e98`),
 lines cited beside it in `params/parameters.py`; the forms are the deflection-only form of `remus100.m`
-188-190, 240, 246 (inflow `translational`, flow angle `none`, section `quadratic_drag`, an ideal servo whose only
+188-190, 240, 246 (inflow `translational`, flow angle `none`, section `lift_times_angle`, an ideal servo whose only
 effect is the saturation of the command).
 
 | Parameter | Value | Unit | Source | Kind |
@@ -19,4 +19,4 @@ effect is the saturation of the command).
 
 The MSS pair equations (`remus100.m` 239-246) are matched to rounding by two fins of area S_fin each with
 the same deflection (`tests/vehicle_models/test_rppws_runs.py`). Note: the MSS reference used here is the
-consistent one (`a = L_auv / 2`, one geometry) of the frozen runs, as in the REMUS 100 (MSS) vehicle.
+consistent one (`a = L_auv / 2`, one geometry) of the frozen runs, as in the REMUS 100 (published reference) vehicle.

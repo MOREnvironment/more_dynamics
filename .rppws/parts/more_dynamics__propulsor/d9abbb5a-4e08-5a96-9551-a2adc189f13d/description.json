@@ -1,0 +1,10 @@
+{
+    "Id": "d9abbb5a-4e08-5a96-9551-a2adc189f13d",
+    "Name": "REMUS 100 (estimated) propulsor",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Propulsor",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

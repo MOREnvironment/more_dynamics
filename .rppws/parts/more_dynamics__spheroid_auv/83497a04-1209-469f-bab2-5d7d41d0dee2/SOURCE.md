@@ -1,4 +1,4 @@
-# REMUS 100 (MSS)
+# REMUS 100 (published reference)
 
 A named part of `more_dynamics::SpheroidAuv` (torpedo-shaped AUV, prolate-spheroid hull).
 
@@ -23,7 +23,7 @@ instrumented workspace, not retyped from the thesis (rule 4).
 Every other value (geometry, mass, roll added-inertia ratio, and the hull-loads, hydrostatics
 and site values of the subcomponents) is set in the part itself, with its
 source line in the comment beside it. The actuators are linked named parts: the tail rudder pair
-(`REMUS 100 (MSS) rudder fin`, linked twice), the stern-plane pair (`REMUS 100 (MSS) stern plane fin`, linked
+(`REMUS 100 (published reference) rudder fin`, linked twice), the stern-plane pair (`REMUS 100 (published reference) stern plane fin`, linked
 twice) and the propeller (`REMUS 100 propulsor`): five inputs in this order, four fin deflections (rad,
 `fin_angle_command`: rudder, rudder, stern plane, stern plane) and the shaft speed (rpm, `drive_command`).
 The two fins of a pair take the same value to give `remus100.m`'s single rudder and stern-plane command.

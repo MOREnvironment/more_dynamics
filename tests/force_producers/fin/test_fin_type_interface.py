@@ -70,12 +70,12 @@ def _good_parts():
             "inflow": part("inflow", "translational"),
             "flow_angle": part("flow_angle", "none"),
             "interference": part("interference", "none"),
-            "section": part("section", "quadratic_drag", {"lift_slope": 0.5})}
+            "section": part("section", "lift_times_angle", {"lift_slope": 0.5})}
 
 
 def _deflection_only_fin(position=(-0.8, 0, 0), lift=NEG_Y, servo="ideal", servo_values=None):
     return fin_from_forms({"servo": servo, "inflow": "translational", "flow_angle": "none",
-                           "interference": "none", "section": "quadratic_drag"},
+                           "interference": "none", "section": "lift_times_angle"},
                           {"servo": servo_values or {"max_deflection": 0.35}, "section": {"lift_slope": 0.5}},
                           geometry(list(position), lift, 0.0133, E_X))
 

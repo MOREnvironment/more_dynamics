@@ -1,0 +1,10 @@
+{
+    "Id": "2784bf3e-3b8b-551f-b182-f9c3193e6d36",
+    "Name": "REMUS 100 (estimated) rudder fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

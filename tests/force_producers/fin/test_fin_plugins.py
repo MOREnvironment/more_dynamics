@@ -175,7 +175,7 @@ def _reference_fin(servo="lag_rate_angle"):
     declared = {"max_deflection", "max_rate", "time_constant"}
     return fin_from_forms(
         {"servo": servo, "inflow": "rigid_point", "flow_angle": "small_angle", "interference": "none",
-         "section": "quadratic_drag"},
+         "section": "lift_times_angle"},
         {"servo": {k: v for k, v in SERVO_NUMBERS.items() if k in declared},
          "section": {"lift_slope": prestero_value("lift_slope")}},
         geometry([prestero_value("fin_position_x"), 0.0, 0.0], E_Y, prestero_value("fin_area"), E_X))
@@ -266,7 +266,7 @@ def _two_ideal_fins(values):
                 "lift_axis": lift_axis, "fin_area": values[f"{prefix}_area"], "servo_dynamics": "none",
                 "servo_rate_limit": False, "servo_angle_limit": "on_command",
                 "max_deflection": values["max_deflection"], "inflow": "translational", "flow_angle": "none",
-                "interference": "none", "section": "quadratic_drag",
+                "interference": "none", "section": "lift_times_angle",
                 "lift_slope": values[f"{prefix}_lift_coefficient"]}
     p = vc.plugins()
     return [(p.Fin, fin("rudder", [0.0, -1.0, 0.0])), (p.Fin, fin("stern_plane", [0.0, 0.0, -1.0]))]
@@ -322,7 +322,7 @@ def test_two_lag_fins_stack_their_states_and_equal_the_model_layer_set():
     assert [(d.name, d.size) for d in vessel.graph().stateDescription] == [
         ("servo_state", 1), ("servo_state", 1), ("state", 12)]
     forms = {"servo": "lag_rate_angle", "inflow": "rigid_point", "flow_angle": "small_angle",
-             "interference": "none", "section": "quadratic_drag"}
+             "interference": "none", "section": "lift_times_angle"}
     values = {"servo": SERVO_NUMBERS, "section": {"lift_slope": prestero_value("lift_slope")}}
     a = fin_from_forms(forms, values, geometry([prestero_value("fin_position_x"), 0, 0], E_Y,
                                                prestero_value("fin_area"), E_X))

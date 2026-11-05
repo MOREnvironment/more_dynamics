@@ -253,6 +253,56 @@
     "value": 1e-09,
     "kind": "convention",
     "source": "numerical guard"
+   },
+   "body_lift_form": {
+    "value": "vertical_plane_wing",
+    "kind": "convention",
+    "source": "the lift half of the wing block"
+   },
+   "body_lift_slope_method": {
+    "value": "slender_body_hoerner",
+    "kind": "convention",
+    "source": "unread with body_lift_form 'vertical_plane_wing'"
+   },
+   "body_lift_slope_per_degree": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this hull; read only by the point-force body lift"
+   },
+   "body_lift_slope": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this hull; read only by the point-force body lift with a given slope"
+   },
+   "pressure_centre_method": {
+    "value": "fraction_of_length_from_nose",
+    "kind": "convention",
+    "source": "unread with body_lift_form 'vertical_plane_wing'"
+   },
+   "pressure_centre_fraction": {
+    "value": 0.5,
+    "kind": "placeholder",
+    "source": "no value for this hull; read only by the point-force body lift"
+   },
+   "pressure_centre": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this hull; read only by the point-force body lift with a given centre"
+   },
+   "hull_drag_form": {
+    "value": "wing_drag",
+    "kind": "convention",
+    "source": "the drag half of the wing block"
+   },
+   "roll_damping_form": {
+    "value": "linear",
+    "kind": "convention",
+    "source": "time-constant damping alone"
+   },
+   "roll_quadratic_damping": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this hull; read only by the quadratic roll damping"
    }
   },
   "fin_common": {
@@ -330,9 +380,34 @@
     "source": "no body interference on the fin"
    },
    "section": {
-    "value": "quadratic_drag",
+    "value": "lift_times_angle",
     "kind": "convention",
     "source": "lift slope with drag proportional to the squared angle"
+   },
+   "lift_law": {
+    "value": "lift_slope",
+    "kind": "convention",
+    "source": "the lift slope as given"
+   },
+   "lift_slope_form": {
+    "value": "low_aspect_ratio",
+    "kind": "convention",
+    "source": "unread with lift_law 'lift_slope'"
+   },
+   "fin_span": {
+    "value": 0.0,
+    "kind": "placeholder",
+    "source": "no value for this fin; read only by the finite-wing lift law"
+   },
+   "aspect_ratio_factor": {
+    "value": 2.0,
+    "kind": "placeholder",
+    "source": "read only by the finite-wing lift law"
+   },
+   "section_efficiency": {
+    "value": 0.9,
+    "kind": "placeholder",
+    "source": "read only by the finite-wing lift law"
    }
   },
   "fins": [

@@ -17,9 +17,14 @@ from more_dynamics.models.shared.as_producer import as_producer
 from more_dynamics.models.shared.wiring import function_from
 
 
+# the sign convention this model is built with: a positive rudder deflection moves the trailing edge to starboard (lift
+# along -y, a turn to starboard), a positive stern-plane deflection moves it down (lift along -z, bow down)
+FIN_PAIRS_CONVENTION = "starboard_down_positive"
+
+
 def fin_pairs_deflection_only():
-    """Deflection-only fin pairs (remus100.m 229-246)."""
-    return as_producer(fins_casadi(convention="starboard_down_positive"), "delta", "fin_pairs_deflection_only")
+    """Deflection-only fin pairs (remus100.m 229-246), in the sign convention ``FIN_PAIRS_CONVENTION``."""
+    return as_producer(fins_casadi(convention=FIN_PAIRS_CONVENTION), "delta", "fin_pairs_deflection_only")
 
 
 def fin_pairs_deflection_only_parameters(*, positions_given=True):

@@ -1,4 +1,4 @@
-"""The named parts that take the ocean current in the form MSS's two vehicle models use: "REMUS 100 (MSS, ocean
+"""The named parts that take the ocean current in the form MSS's two vehicle models use: "REMUS 100 (published reference, ocean
 current)" (``current_form = "yaw_rate_terms"``, ``remus100.m`` 118-123 @ 6e78e98) and "Otter (MSS, ocean current)"
 (``current_form = "full_rotation_rate"``, ``otter_legacy.m`` 126-131 @ 6e78e98). Each is a copy of the still-water part with
 that one selector changed: every parameter file equal but it, the same linked actuators; built by rpp's own
@@ -18,7 +18,7 @@ import vehicle_contract as vc
 
 LIBRARY = Path(__file__).resolve().parents[2]
 PARTS = LIBRARY / ".rppws" / "parts"
-PAIRS = [("SpheroidAuv", "REMUS 100 (MSS)", "REMUS 100 (MSS, ocean current)", "yaw_rate_terms",
+PAIRS = [("SpheroidAuv", "REMUS 100 (published reference)", "REMUS 100 (published reference, ocean current)", "yaw_rate_terms",
           ["fin_angle_command"] * 4 + ["drive_command"]),
          ("Catamaran", "Otter (MSS)", "Otter (MSS, ocean current)", "full_rotation_rate",
           ["drive_command"] * 2)]
@@ -96,8 +96,8 @@ def test_a_current_moves_the_part_and_zero_current_equals_the_still_water_part(p
 
 
 # ---- the unit-quaternion form of the kinematics (``kinematics_form``) -------------------------------------------------
-QUATERNION_PART = "REMUS 100 (MSS, quaternion)"
-BASE_PART = "REMUS 100 (MSS, ocean current)"
+QUATERNION_PART = "REMUS 100 (published reference, quaternion)"
+BASE_PART = "REMUS 100 (published reference, ocean current)"
 CURRENT_INPUTS = np.array([0.5, 0.52, 0.1])
 COMMANDS = np.array([0.05, 0.05, -0.03, -0.03, 1300.0])
 
@@ -166,7 +166,7 @@ def test_the_euler_form_is_the_default_of_the_vehicle_type_and_the_other_types_d
     assert [p.default_value for p in SpheroidAuv.PARAMETERS if p.name == "kinematics_form"] == ["euler"]
     for plugin in (Catamaran, Monohull, DerivativeAuv):
         assert "kinematics_form" not in [p.name for p in plugin.PARAMETERS], plugin.__name__
-    assert [d.size for d in _build("SpheroidAuv", "REMUS 100 (MSS)").graph().stateDescription][-1] == 12
+    assert [d.size for d in _build("SpheroidAuv", "REMUS 100 (published reference)").graph().stateDescription][-1] == 12
 
 
 def test_an_unknown_kinematics_form_is_refused_naming_the_options():

@@ -1,5 +1,5 @@
 """Gate tests of the fin section parts (angle of attack -> lift and drag
-coefficients): ``quadratic_drag``, ``linear_section`` now, ``lifting_line``
+coefficients): ``lift_times_angle``, ``linear_section`` now, ``lifting_line``
 written and waiting.
 
 Written 2026-10-08, before the parts exist (contract: ``fin_parts_contract``).
@@ -7,7 +7,7 @@ Coupling input ``angle_of_attack`` (1, rad); outputs ``lift_coefficient``
 and ``drag_coefficient`` (1 each). The skeleton turns them into the force
 ``f = 1/2 rho A U^2 (C_L lift_axis - C_D chord_axis)``.
 
-* ``quadratic_drag``: ``C_L = lift_slope * alpha``, ``C_D = lift_slope *
+* ``lift_times_angle``: ``C_L = lift_slope * alpha``, ``C_D = lift_slope *
   alpha^2`` (MSS ``remus100.m`` 239-246: ``X_r = -1/2 rho U_rh^2 A_r
   CL_delta_r delta_r^2``, ``Y_r = -1/2 rho U_rh^2 A_r CL_delta_r delta_r``;
   stern planes alike). G1 against MATLAB: the coefficients MATLAB's forces
@@ -62,7 +62,7 @@ from fin_parts_contract import (
     rng,
 )
 
-FORMS = ("quadratic_drag", "linear_section")
+FORMS = ("lift_times_angle", "linear_section")
 
 
 @pytest.mark.parametrize("form", FORMS)
@@ -95,7 +95,7 @@ def test_section_refuses_values_outside_their_ranges(form):
 
 
 # --------------------------------------------------------------------------
-# quadratic_drag
+# lift_times_angle
 # --------------------------------------------------------------------------
 def _mss_coefficients(ref, fin):
     """(alpha, C_L, C_D, lift_slope) implied by MATLAB's forces, rows with a
@@ -115,7 +115,7 @@ def _mss_coefficients(ref, fin):
 def _worst_against_mss(fin, factor=1.0):
     ref = mss_fins()
     alpha, c_l, c_d, slope = _mss_coefficients(ref, fin)
-    section = part("section", "quadratic_drag", {"lift_slope": factor * slope})
+    section = part("section", "lift_times_angle", {"lift_slope": factor * slope})
     worst = 0.0
     for a, l, d in zip(alpha, c_l, c_d):
         out = call(section, angle_of_attack=a)
@@ -124,18 +124,18 @@ def _worst_against_mss(fin, factor=1.0):
 
 
 @pytest.mark.parametrize("fin", ["rudder", "stern_plane"])
-def test_G1_quadratic_drag_equals_the_coefficients_of_mss(fin):
+def test_G1_lift_times_angle_equals_the_published_coefficients(fin):
     worst, rows = _worst_against_mss(fin)
     assert rows > 900
     assert worst <= G1_TOLERANCE
 
 
-def test_G4_quadratic_drag_lift_slope_plus_1_percent_is_detected():
+def test_G4_lift_times_angle_lift_slope_plus_1_percent_is_detected():
     assert _worst_against_mss("rudder", 1.01)[0] > G4_FACTOR * G1_TOLERANCE
 
 
-def test_G2_quadratic_drag_equals_its_equation():
-    section = part("section", "quadratic_drag", {"lift_slope": 0.7})
+def test_G2_lift_times_angle_equals_its_equation():
+    section = part("section", "lift_times_angle", {"lift_slope": 0.7})
     for a in rng().uniform(-0.8, 0.8, N_RANDOM):
         out = call(section, angle_of_attack=a)
         assert abs(out["lift_coefficient"][0] - 0.7 * a) <= G2_TOLERANCE

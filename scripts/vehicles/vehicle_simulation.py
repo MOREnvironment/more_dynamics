@@ -5,8 +5,8 @@ a ``Simulation`` of ``more_simulation`` whose ``vessels`` slot takes any
 assigned to the configurations of
 ``.rppws/script_descriptions/vehicle_simulation.json``.
 
-    python vehicle_simulation.py <workspace> --rpp-configuration remus100 --surge-speed 1.5 --duration 20
-    python vehicle_simulation.py <workspace> --rpp-configuration remus100 --command zigzag_20_20 --out run.csv
+    python vehicle_simulation.py <workspace> --rpp-configuration remus100_published_reference --surge-speed 1.5 --duration 20
+    python vehicle_simulation.py <workspace> --rpp-configuration remus100_published_reference --command zigzag_20_20 --out run.csv
 
 Without ``--command`` every input is zero. ``--command <name>`` takes the
 schedule ``Configurations.<configuration>.Commands.<name>`` of the script

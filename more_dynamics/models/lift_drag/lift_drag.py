@@ -112,12 +112,31 @@ _SMOOTH_SPEED_EPSILON = Parameter(
 )
 
 
+LOADS = ("lift", "drag")
+
+
 def lift_drag_parameters(*, smooth_speed=False):
     """The declared parameter set: a tuple of ``Parameter`` (name, shape, SI
     unit, meaning, admissible range), in the order of the block's inputs;
     with ``smooth_speed=True`` ``smooth_speed_epsilon`` is the last one."""
+    return wing_loads_parameters(smooth_speed=smooth_speed, loads=LOADS)
+
+
+def wing_loads_parameters(*, smooth_speed=False, loads=LOADS):
+    """The declared parameters of the block of the halves ``loads`` (``"lift"``, ``"drag"``): the lift needs no parasitic
+    drag coefficient and no Oswald factor, so a block of the lift alone does not declare them."""
     _check_selectors(smooth_speed)
-    return _DECLARED + ((_SMOOTH_SPEED_EPSILON,) if smooth_speed else ())
+    loads = _check_loads(loads)
+    drag_only = ("parasitic_drag_coefficient", "oswald_efficiency")
+    declared = tuple(d for d in _DECLARED if "drag" in loads or d.name not in drag_only)
+    return declared + ((_SMOOTH_SPEED_EPSILON,) if smooth_speed else ())
+
+
+def _check_loads(loads):
+    loads = tuple(loads)
+    if not loads or any(load not in LOADS for load in loads) or len(set(loads)) != len(loads):
+        raise ValueError(f"loads must be a non-empty selection of {LOADS}, got {loads!r}")
+    return loads
 
 
 def _angle_of_attack(nu_r, smooth_speed_epsilon):
@@ -155,19 +174,35 @@ def lift_drag_casadi(*, smooth_speed=False):
     checked inside the graph (``check_values`` with the declaration does
     that, ``smooth_speed_epsilon > 0`` included).
     """
-    declared = lift_drag_parameters(smooth_speed=smooth_speed)
+    return _wing_block(smooth_speed, LOADS, split=False)
+
+
+def wing_loads_casadi(*, smooth_speed=False, loads=LOADS):
+    """The same block with its two halves as outputs: ``(nu_r, <the parameters of
+    wing_loads_parameters(smooth_speed=..., loads=...) by name>) -> (tau, lift_tau,
+    drag_tau)``, ``lift_tau`` and ``drag_tau`` only for the halves in ``loads``.
+
+    ``lift_tau = [q C_L sin(alpha), 0, -q C_L cos(alpha), 0, 0, 0]`` and
+    ``drag_tau = [-q C_D cos(alpha), 0, -q C_D sin(alpha), 0, 0, 0]`` with
+    ``q = 1/2 rho U_r^2 S``; ``tau`` is their sum (the block of
+    ``lift_drag_casadi`` when both halves are built). The lift half reads
+    neither the parasitic drag coefficient nor the Oswald factor. Frame BODY,
+    N and N m about the CO."""
+    return _wing_block(smooth_speed, _check_loads(loads), split=True)
+
+
+def _wing_block(smooth_speed, loads, split):
+    declared = wing_loads_parameters(smooth_speed=smooth_speed, loads=loads)
     p = symbols(declared)
     epsilon = p.get("smooth_speed_epsilon")
     nu_r = ca.SX.sym("nu_r", 6)
     aspect_ratio = p["span"] * p["span"] / p["planform_area"]  # AR = b^2 / S (coeffLiftDrag.m 57)
     lift_slope = math.pi * aspect_ratio / (1.0 + ca.sqrt(1.0 + (0.5 * aspect_ratio) ** 2))  # (coeffLiftDrag.m 60)
-    induced_drag_factor = 1.0 / (math.pi * p["oswald_efficiency"] * aspect_ratio)  # 1 / (pi e AR) (coeffLiftDrag.m 68)
     pressure_area = 0.5 * p["water_density"] * p["planform_area"]  # 1/2 rho S (forceLiftDrag.m 30-31)
 
     alpha = _angle_of_attack(nu_r, epsilon)
     speed_squared = nu_r[0] ** 2 + nu_r[1] ** 2 + nu_r[2] ** 2  # U_r^2 (remus100.m 127)
     lift_coefficient = lift_slope * alpha  # (coeffLiftDrag.m 61, sigma = 0)
-    drag_coefficient = p["parasitic_drag_coefficient"] + lift_coefficient**2 * induced_drag_factor  # (coeffLiftDrag.m 68)
     pressure = pressure_area * speed_squared  # 1/2 rho U_r^2 S (forceLiftDrag.m 30-31)
     if epsilon is not None:
         # flow direction in the x-z plane, construction of this module (module docstring): dissipative
@@ -175,8 +210,27 @@ def lift_drag_casadi(*, smooth_speed=False):
         sin_alpha, cos_alpha = nu_r[2] / plane_speed, nu_r[0] / plane_speed  # direction cosines of (u_r, w_r): construction
     else:
         sin_alpha, cos_alpha = ca.sin(alpha), ca.cos(alpha)
-    surge = -pressure * (drag_coefficient * cos_alpha - lift_coefficient * sin_alpha)  # (forceLiftDrag.m 35)
-    heave = -pressure * (drag_coefficient * sin_alpha + lift_coefficient * cos_alpha)  # (forceLiftDrag.m 37)
-    tau = ca.vertcat(surge, 0.0, heave, 0.0, 0.0, 0.0)
+    zero = 0.0
+    outputs, output_names = {}, []
+    if "drag" in loads:
+        induced_drag_factor = 1.0 / (math.pi * p["oswald_efficiency"] * aspect_ratio)  # 1 / (pi e AR) (coeffLiftDrag.m 68)
+        drag_coefficient = p["parasitic_drag_coefficient"] + lift_coefficient**2 * induced_drag_factor  # (coeffLiftDrag.m 68)
+    if loads == LOADS:
+        surge = -pressure * (drag_coefficient * cos_alpha - lift_coefficient * sin_alpha)  # (forceLiftDrag.m 35)
+        heave = -pressure * (drag_coefficient * sin_alpha + lift_coefficient * cos_alpha)  # (forceLiftDrag.m 37)
+        tau = ca.vertcat(surge, zero, heave, zero, zero, zero)
+    elif loads == ("lift",):
+        tau = ca.vertcat(pressure * lift_coefficient * sin_alpha, zero, -pressure * lift_coefficient * cos_alpha, zero, zero, zero)
+    else:
+        tau = ca.vertcat(-pressure * drag_coefficient * cos_alpha, zero, -pressure * drag_coefficient * sin_alpha, zero, zero, zero)
+    outputs["tau"] = tau
+    if split:
+        if "lift" in loads:  # F_lift = q C_L resolved on the flow axes (forceLiftDrag.m 34-37)
+            outputs["lift_tau"] = ca.vertcat(pressure * lift_coefficient * sin_alpha, zero,
+                                             -pressure * lift_coefficient * cos_alpha, zero, zero, zero)
+        if "drag" in loads:  # F_drag = q C_D resolved on the flow axes (forceLiftDrag.m 34-37)
+            outputs["drag_tau"] = ca.vertcat(-pressure * drag_coefficient * cos_alpha, zero,
+                                             -pressure * drag_coefficient * sin_alpha, zero, zero, zero)
     names = [d.name for d in declared]
-    return ca.Function("lift_drag", [nu_r, *[p[name] for name in names]], [tau], ["nu_r", *names], ["tau"])
+    return ca.Function("lift_drag", [nu_r, *[p[name] for name in names]], list(outputs.values()),
+                       ["nu_r", *names], list(outputs.keys()))

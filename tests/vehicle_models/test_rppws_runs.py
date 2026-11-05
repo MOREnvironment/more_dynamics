@@ -52,8 +52,8 @@ import test_spheroid_auv as g3
 LIBRARY = Path(__file__).resolve().parents[2]
 SCRIPT = LIBRARY / "scripts" / "vehicles" / "vehicle_simulation.py"
 DESCRIPTION = LIBRARY / ".rppws" / "script_descriptions" / "vehicle_simulation.json"
-CONFIGURATION = "remus100"
-PART = "REMUS 100 (MSS)"
+CONFIGURATION = "remus100_published_reference"
+PART = "REMUS 100 (published reference)"
 # the frozen file's command columns (MSS order: rudder, stern plane, shaft speed) as the vehicle's named inputs: the
 # four fins in the order of the vehicle's actuators (rudder, rudder, stern plane, stern plane), then the propulsor
 FROZEN_COMMAND_COLUMNS = {"fin_angle_command": ("ui_01", "ui_01", "ui_02", "ui_02"), "drive_command": ("ui_03",)}

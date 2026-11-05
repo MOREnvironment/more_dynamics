@@ -5,6 +5,10 @@ position, the deflections saturated at ``max_deflection`` (remus100.m
 vehicle; relative velocity and water density come from the vehicle by name,
 the two deflections (rudder, stern plane) are the command.
 
+``convention`` declares the sign convention of the model, ``"starboard_down_positive"``: a positive rudder deflection
+gives a force along -y (a turn to starboard), a positive stern-plane deflection a force along -z (bow down). It is the
+only value the model has; another convention is refused (a ``Fin`` takes its sign from its ``lift_axis``).
+
 ``fin_positions_method`` sets how the two fin positions are known:
 ``"computed"`` (default) puts both pairs at the tail of the body, ``x = -a``
 with ``a`` the body's half length (``semi_major_axis``, read from the vehicle
@@ -27,7 +31,8 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_transformations.more_casadi_transformations import unset
 
-from more_dynamics.models.fin.fin_pairs_deflection_only import (fin_pair_positions, fin_pairs_deflection_only,
+from more_dynamics.models.fin.fin_pairs_deflection_only import (FIN_PAIRS_CONVENTION, fin_pair_positions,
+                                                                    fin_pairs_deflection_only,
                                                                     fin_pairs_deflection_only_parameters)
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder, frozen_block, refuses_unset
 
@@ -41,6 +46,7 @@ class FinPairsDeflectionOnly(ForceProducer):
         ParameterDescription("stern_plane_area", unset()),  # remus100.m:189 A_s = 2 * S_fin (S_fin :179)
         ParameterDescription("rudder_lift_coefficient", unset()),  # remus100.m:183 CL_delta_r
         ParameterDescription("stern_plane_lift_coefficient", unset()),  # remus100.m:188 CL_delta_s
+        ParameterDescription("convention", FIN_PAIRS_CONVENTION),  # the model's own: refused when another
         ParameterDescription("fin_positions_method", "computed"),  # x_r = x_s = -a (remus100.m:185, 190)
         ParameterDescription("rudder_position", unset()),  # given value, read with "given": remus100.m:185 x_r = -a, a = L_auv / 2 (one geometry)
         ParameterDescription("stern_plane_position", unset()),  # given value, read with "given": remus100.m:190 x_s = -a, a = L_auv / 2 (one geometry)
@@ -52,6 +58,9 @@ class FinPairsDeflectionOnly(ForceProducer):
 
     @refuses_unset
     def initialize(self, context: ComponentContext) -> None:
+        convention = context.get_parameter("convention")
+        if convention != FIN_PAIRS_CONVENTION:
+            raise ValueError(f"FinPairsDeflectionOnly: its model has the convention {FIN_PAIRS_CONVENTION!r}, got {convention!r}")
         method = context.get_parameter("fin_positions_method")
         if method not in FIN_POSITIONS_METHODS:
             raise ValueError(f"FinPairsDeflectionOnly: fin_positions_method must be one of {FIN_POSITIONS_METHODS}, "

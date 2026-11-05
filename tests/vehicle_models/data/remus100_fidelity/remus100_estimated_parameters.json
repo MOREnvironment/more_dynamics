@@ -1,0 +1,223 @@
+{
+  "part": "REMUS 100 (estimated)",
+  "configuration": "remus100_estimated",
+  "what": "The one-value REMUS 100 hull, mass, site, hull loads and propeller (base file), with every added-mass Coriolis term kept, the body lift in both planes as one point force, four effective-angle fins whose lift slope is computed from the fin geometry, and the propeller roll reaction at the estimated scale. Straight-line stable at its cruise speed. A sibling of REMUS 100 (published reference), not an identification of the vehicle.",
+  "base": {
+    "file": "../remus100/remus100_parameters_consistent.json",
+    "what": "every value not listed below: SpheroidAuv (length, diameter = beam, body_mass from one_value.mass, body_center_of_gravity, roll_added_inertia_ratio), Site (latitude from gravity.latitude_rad, water_density), SubmergedRestoring (center_of_buoyancy, neutral), AuvHullLoads (time_constants, damping_ratios, planform_area, parasitic_drag_coefficient, oswald_efficiency, span), Propeller (all its entries but roll_moment_scale); kinematic viscosity 1e-6 m^2/s"
+  },
+  "base_additions": {
+    "hull_frontal_drag_coefficient": {
+      "value": 0.42,
+      "kind": "published",
+      "source": "axial drag coefficient of the hull on its frontal area, Allen et al. (2000), cited second-hand, not read; the same value the published reference part's hull loads carry"
+    }
+  },
+  "vehicle": {
+    "coriolis_form": {
+      "value": "kirchhoff_full",
+      "kind": "selector",
+      "source": "every added-mass Coriolis term kept (Fossen 2011, eq. 6.43, p. 120); kept only with the point-force body lift and effective-angle fins with the geometric lift slope, and only with the straight-line stability gate green"
+    },
+    "current_form": {
+      "value": "none",
+      "kind": "selector",
+      "source": "still water (the gates run without current)"
+    }
+  },
+  "hydrodynamics": {
+    "body_lift_form": {
+      "value": "point_force_both_planes",
+      "kind": "selector",
+      "source": "Prestero 2001, eqs. 4.27-4.29, 4.33-4.34, pp. 30-31; Fossen 2011, eq. 12.226, p. 400"
+    },
+    "body_lift_slope_method": {
+      "value": "slender_body_hoerner",
+      "kind": "selector",
+      "source": "Prestero 2001, eqs. 4.30-4.32, p. 30 (Hoerner 1965, p. 13-3, not read); l/d = 1.6 / 0.19 = 8.42, inside the stated 6.7-10"
+    },
+    "body_lift_slope_per_degree": {
+      "value": 0.003,
+      "unit": "1/deg",
+      "kind": "published",
+      "source": "Prestero 2001, eq. 4.31, p. 30 (c_y_beta = 0.003, after Hoerner 1965, not read)"
+    },
+    "pressure_centre_method": {
+      "value": "fraction_of_length_from_nose",
+      "kind": "selector",
+      "source": "Prestero 2001, eq. 4.35, p. 31; nose at +L/2 (hull centred on the body origin)"
+    },
+    "pressure_centre_fraction": {
+      "value": 0.65,
+      "kind": "published",
+      "source": "Prestero 2001, eq. 4.35, p. 31 (0.65 l); Hoerner's range 0.6-0.7 l as Prestero p. 31 gives it -- the gates also run 0.60 and 0.70"
+    },
+    "hull_drag_form": {
+      "value": "wing_drag",
+      "kind": "selector",
+      "source": "the drag half of the wing block kept, so that only the lift changes against the published reference part; its induced part still uses the wing's vertical-plane lift coefficient (a residual of that form, stated)"
+    },
+    "roll_damping_form": {
+      "value": "linear",
+      "kind": "selector",
+      "source": "time-constant damping alone (no identified quadratic roll coefficient for this vehicle)"
+    }
+  },
+  "propeller": {
+    "roll_moment_scale": {
+      "value": 0.35,
+      "kind": "estimate",
+      "source": "scale of the propeller shaft-torque reaction on the hull (Prestero 2001, Sec. 4.6.2, p. 33); calibrated in the generic-models REMUS actuator set to a steady roll of -5.3 deg at 1500 rpm and 1.51 m/s with that plant; carried over here, not re-calibrated for this plant"
+    }
+  },
+  "fin": {
+    "what": "four Fin parts: two rudder fins on the rudder command, two stern-plane fins on the stern-plane command (the vehicle's inputs are the four fin commands in this order, then the shaft speed; a pair receives one command twice)",
+    "fin_area": {
+      "value": 0.00665,
+      "unit": "m^2",
+      "kind": "published",
+      "source": "Prestero 2001, Table 2.2, p. 17 (S_fin, one fin)"
+    },
+    "lift_law": {
+      "value": "finite_wing",
+      "kind": "selector",
+      "source": "the slope from the fin geometry"
+    },
+    "lift_slope_form": {
+      "value": "low_aspect_ratio",
+      "kind": "selector",
+      "source": "Prestero 2001, eqs. 4.38-4.39, p. 31"
+    },
+    "fin_span": {
+      "value": 0.0857,
+      "unit": "m",
+      "kind": "published",
+      "source": "Prestero 2001, Table 2.2, p. 17 (b_fin)"
+    },
+    "aspect_ratio_factor": {
+      "value": 2.0,
+      "kind": "published",
+      "source": "Prestero 2001, eq. 4.39, p. 31 (AR_e = 2 b^2 / S_fin: the body acts as a reflection plane)"
+    },
+    "section_efficiency": {
+      "value": 0.9,
+      "kind": "published",
+      "source": "Prestero 2001, Table 2.2, p. 17 and eq. 4.38, p. 31 (the empirical factor a-bar, after Hoerner 1965 p. 3-2, not read)"
+    },
+    "lift_slope_computed": {
+      "value_note": "3.1158 1/rad per fin = [1/(2 pi 0.9) + 1/(pi 2 0.0857^2/0.00665)]^-1; Prestero 2001, Table 2.2, p. 17 prints 3.12 (derived, not declared)",
+      "kind": "derived"
+    },
+    "inflow": {
+      "value": "rigid_point",
+      "kind": "selector",
+      "source": "Prestero 2001, eq. 4.40, p. 32"
+    },
+    "flow_angle": {
+      "value": "small_angle",
+      "kind": "selector",
+      "source": "Prestero 2001, eqs. 4.41-4.43, pp. 32-33"
+    },
+    "interference": {
+      "value": "none",
+      "kind": "selector",
+      "source": "Prestero 2001, eq. 4.41, p. 32 (both factors one)"
+    },
+    "section": {
+      "value": "lift_times_angle",
+      "kind": "selector",
+      "source": "C_L = a alpha, C_D = C_L alpha (the angle-free form of the published reference model)"
+    },
+    "servo_dynamics": {
+      "value": "none",
+      "kind": "selector",
+      "source": "the command is the deflection, saturated"
+    },
+    "servo_rate_limit": {
+      "value": false,
+      "kind": "selector",
+      "source": "no rate limit"
+    },
+    "servo_angle_limit": {
+      "value": "on_command",
+      "kind": "selector",
+      "source": "the command saturated at the deflection limit"
+    },
+    "max_deflection": {
+      "base": "max_deflection",
+      "kind": "published",
+      "source": "the deflection limit of the base set, 20 deg"
+    },
+    "chord_axis": {
+      "value": [
+        1,
+        0,
+        0
+      ],
+      "kind": "geometry",
+      "source": "chord along x_b"
+    }
+  },
+  "fins": [
+    {
+      "role": "rudder",
+      "command": "rudder",
+      "lift_axis": [
+        0,
+        -1,
+        0
+      ],
+      "fin_position": {
+        "derived": "[-L/2, 0, 0]",
+        "source": "the fin post at the tail of the hull centred on the origin"
+      }
+    },
+    {
+      "role": "rudder",
+      "command": "rudder",
+      "lift_axis": [
+        0,
+        -1,
+        0
+      ],
+      "fin_position": {
+        "derived": "[-L/2, 0, 0]",
+        "source": "the fin post at the tail of the hull centred on the origin"
+      }
+    },
+    {
+      "role": "stern_plane",
+      "command": "stern_plane",
+      "lift_axis": [
+        0,
+        0,
+        -1
+      ],
+      "fin_position": {
+        "derived": "[-L/2, 0, 0]",
+        "source": "the fin post at the tail of the hull centred on the origin"
+      }
+    },
+    {
+      "role": "stern_plane",
+      "command": "stern_plane",
+      "lift_axis": [
+        0,
+        0,
+        -1
+      ],
+      "fin_position": {
+        "derived": "[-L/2, 0, 0]",
+        "source": "the fin post at the tail of the hull centred on the origin"
+      }
+    }
+  ],
+  "cruise": {
+    "shaft_speed": {
+      "value": 920.0884316541092,
+      "unit": "rpm",
+      "kind": "derived",
+      "source": "the shaft speed that holds 1.54 m/s straight (Prestero 2001, Table 8.1, p. 60) in the reference model with every published form, found by reference_torpedo_auv.shaft_speed_holding; a test checks that it still does. The part's own straight-running equilibrium at this shaft speed is its cruise state"
+    }
+  }
+}
