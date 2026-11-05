@@ -2,7 +2,7 @@
   "vehicle": "REMUS 100, the MSS 1.6 m REMUS-like model with one value per quantity",
   "source": {
     "repository": "MSS (T. I. Fossen), MIT licence",
-    "revision": "99fdf4dbdfe0b3f124e26a689c6aabe0beb5654f",
+    "revision": "ca014d99e6c4383dad15a729246bb0fab1628922",
     "file": "CRAFT/AUV/models/remus100.m",
     "copy": "remus100_consistent.m"
   },
@@ -293,7 +293,7 @@
       "block": "propeller",
       "block_parameter": "roll_moment_scale",
       "declared": "new",
-      "place": "remus100.m:253 tau(4) = K_prop / 10",
+      "place": "remus100.m:253 (258-260 at ca014d9) tau(4) = -K_prop / 10, the reaction to the shaft torque",
       "stage": "actuators",
       "kind": "published"
     },

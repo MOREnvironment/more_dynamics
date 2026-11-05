@@ -39,3 +39,14 @@ Written at the revision named beside them. From `72656d1` to `cc07579`: `otter.m
 `remus100_actuators_mss_current.csv` rewritten in place: `remus100.m` reads `rho` 1025 (was 1026, `23c307e`), so the propeller force and moment move by 9.7e-4 relative (max |Delta X_prop| 0.113 N). `differential_thruster_mss_current.csv`, `wageningen_kt_kq_mss_current.csv` and the two template files are byte-identical. Note: `SIMotter.m` now allocates reverse thrust with `k_neg` (2026-10-07 revision, "Corrected reverse-thrust control allocation"); the allocation of `generate_differential_thruster_mss.m` still transcribes the earlier `sign(u) .* sqrt(abs(u))` and is not changed by this re-pin (reported in the ledger).
 
 **MSS 6e78e98 (2026-10-30).** In MSS `otter.m` is now the unified Capytaine-based Otter (frequency-dependent added mass and damping from a data file, equivalent matrices, wave loads applied by `SIMotter.m`); the first-principles Otter this reference follows is the file `otter_legacy.m`, whose executable lines equal `otter.m` up to `ed2ce7b` (200 seeded states: xdot, U, M, B_prop, n_min, n_max identical, max difference 0). The generator calls `otter_legacy` (and instruments that file); the output was re-run on MSS 6e78e98 and is byte-identical to the file frozen here, apart from a revision string where the file name or the metadata carries one.
+
+## Roll moment of the propeller, re-frozen (2026-11-05, MSS `ca014d9`)
+
+The hull feels the reaction to the shaft torque: `remus100.m` now reads `tau(4) = -K_prop / 10` (Prestero 2001, Sec. 4.6.2, p. 33: a negative roll offset at sea, the propeller torque balancing the hydrostatic roll moment). The block applies `-scale K` about the shaft axis since the same change. MATLAB R2026a Update 4, MSS `ca014d9` (the first revision with the fix; every output the fix does not touch is byte-identical on a re-run, listed below).
+
+| File | sha256 |
+|---|---|
+| `propeller_matlab.csv` | `b6e0661a37ae35572dc3ccd5dafe3c5924663b79408a7bc485f80280ee6ae9f1` |
+| `remus100_actuators_mss_current.csv` | `91fb148a4112bd5d57ae914ca1d3cfa1c790227f2209643e0b5296e41bb93fb9` |
+
+`remus100_actuators_mss_current.csv`: only the column `tau_04` differs from the file of `99fdf4d` (the sign: largest change 0.4986 N m, 1036 rows); every other column, including `K_prop`, is byte-identical. `propeller_matlab.csv`: the template writes `tau(4) = -K_prop`, only the column `tau4` differs (largest change 0.4824 N m). `wageningen_kt_kq_mss_current.csv` and the two thruster files are unchanged (byte-identical on re-run at `ca014d9`). The cited line `remus100.m` 253 reads `tau(4) = -K_prop / 10;` (line 260 at `ca014d9`; the other pinned lines keep the numbering of `99fdf4d`).

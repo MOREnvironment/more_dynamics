@@ -4,8 +4,8 @@
 %  Template generator: the linearised propeller of MSS remus100.m written
 %  out (remus_propulsion_reference below, as remus100.m stood in 2026-02),
 %  with rho = 1025 (remus100.m uses 1026) on a speed / rpm grid.
-%  Produces force_producers/propeller_matlab.csv (byte-identical at MSS
-%  cc07579).
+%  Produces force_producers/propeller_matlab.csv (tau4 = -K_prop, the reaction;
+%  the other columns byte-identical at MSS cc07579).
 %  Inputs: inputs.csv beside this file. Output under OUT_DIR (default
 %  <tempdir>/more_mss_references; never this folder, so a run cannot overwrite a
 %  frozen file). Run: MSS_DIR=<MSS checkout> "$MATLAB_BIN" -batch "run('<this file>')"
@@ -145,6 +145,6 @@ K_prop = K_prop / 10;
 
 tau = zeros(6,1);                                
 tau(1) =X_prop;
-tau(4) = K_prop;
+tau(4) = -K_prop;  % the hull feels the reaction to the shaft torque
 
 end

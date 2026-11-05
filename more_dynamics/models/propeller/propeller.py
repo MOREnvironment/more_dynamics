@@ -22,8 +22,12 @@ Equations (keys in References), ``n`` in rpm saturated at ``n_max``,
   ``K_Q0`` for ``n_p <= 0``;
 * body wrench: thrust ``(1 - t) X`` along the shaft axis at ``position``
   (``remus100.m`` 250; moment ``r x f``, Fossen 2011, eq. 12.226, p. 400),
-  plus a torque ``scale K`` about the shaft axis (``remus100.m`` 253, where
-  the scale is ``1/10``; a pure couple, no ``r x f`` part).
+  plus the reaction to the shaft torque, ``-scale K`` about the shaft axis
+  (a pure couple, no ``r x f`` part; the scale is ``1/10`` in the REMUS
+  reference model, ``remus100.m``). The water's torque ``Q = K`` opposes the
+  shaft's rotation and the hull feels the reaction, so a positive shaft speed
+  about the shaft axis gives a negative roll moment on the hull (Prestero
+  2001, Sec. 4.6.2: negative roll offset at sea).
 
 The ``"linearized"`` model equals MSS ``remus100.m`` 149-177, 250 and 253.
 ``open_water_coefficients`` (a selector): ``"polynomial"`` (default) takes
@@ -51,8 +55,9 @@ motor's ``thrust_deduction`` and ``propwash_factor``; the equations need no
 exclusive endpoint).
 
 ``roll_moment_scale`` is an identified coefficient or a comparison form, not a
-physics value: ``remus100.m`` 253 divides the shaft torque by 10 "to match
-exp. results"; the physical shaft reaction torque is the scale 1.
+physics value: ``remus100.m`` divides the shaft torque by 10 "to match
+exp. results"; the physical shaft reaction torque is the scale 1. The scale is
+positive; the sign of the reaction is fixed by the block (``-scale K``).
 
 Frames: the shaft axis is ``R_zyx(orientation)[:, 0]`` in BODY
 (``more_transformations.more_casadi_transformations``
@@ -66,6 +71,9 @@ References
 [Fossen 2011] Fossen, T. I. (2011). *Handbook of Marine Craft Hydrodynamics
     and Motion Control*, 1st ed. John Wiley & Sons, Chichester. Ch. 2,
     eq. 2.18, p. 22; Ch. 12, eq. 12.226, p. 400; eq. 12.265, p. 411.
+[Prestero 2001] Prestero, T. (2001). *Verification of a six-degree of freedom
+    simulation model for the REMUS autonomous underwater vehicle*. MSc thesis,
+    MIT / WHOI. Sec. 4.6.2.
 [MSS] Fossen, T. I. (2026). *Marine Systems Simulator (MSS)*, release 2.0.2
     with the fixes of 2026-10-07. https://github.com/cybergalactic/MSS, MIT
     licence, revision ``6e78e98``: ``CRAFT/AUV/models/remus100.m`` 111, 116,
@@ -203,8 +211,8 @@ def propeller_casadi(*, open_water_model, open_water_coefficients="polynomial", 
 
     axis = MatrixTransforms.Rzyx_explicit(p["orientation"])[:, 0]  # shaft axis R_zyx[:, 0] (Fossen 2011, eq. 2.18, p. 22)
     force = axis * ((1.0 - p["thrust_deduction"]) * thrust)  # (1 - t) X along the shaft (remus100.m 250)
-    shaft_torque = axis * (p["roll_moment_scale"] * torque)  # scale K about the shaft axis (remus100.m 253)
-    # [f; r x f] of the thrust (Fossen 2011, eq. 12.226, p. 400) plus the shaft torque as a couple (remus100.m 253)
+    shaft_torque = -axis * (p["roll_moment_scale"] * torque)  # reaction -scale K about the shaft axis (Prestero 2001, Sec. 4.6.2)
+    # [f; r x f] of the thrust (Fossen 2011, eq. 12.226, p. 400) plus the shaft reaction as a couple
     tau = wrench(force, p["position"]) + ca.vertcat(ca.DM.zeros(3), shaft_torque)
 
     names = [d.name for d in declared]

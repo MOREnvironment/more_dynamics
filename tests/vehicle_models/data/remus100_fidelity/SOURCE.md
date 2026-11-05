@@ -57,3 +57,7 @@ Prestero 2001: Table 2.1 p. 15 (l = 1.33 m, d = 0.191 m), Table 2.2 p. 17 (c_Lα
 - The hull-profile forms (Myring, tabulated offsets), strip-theory added mass and the profile cross-flow damping: their reproductions of Prestero's tables are reported, not checked, and what the profile damping form replaces of the time-constant damping is not defined.
 - A part on Prestero's own geometry and coefficients (also: his propulsion as a constant thrust has no form here, his weight is printed in N with no g, his buoyancy is printed as 306 N and 308 N).
 - The behaviour of `slender_body_hoerner` for a hull outside 6.7 ≤ l/d ≤ 10 (open; owner, 2026-10-13).
+
+## Roll moment of the propeller (2026-11-05)
+
+`reference_torpedo_auv.py` applies the reaction `-scale K` to the hull (Prestero 2001, Sec. 4.6.2, p. 33), as the frozen MSS run it is compared with. `remus100_fidelity_turn_and_stability.csv` was made again with the same generator (sha256 `08982b6cafd72028a720bad63e5f6327ab7d9697bb2843d704242776a897f8e4`): the roots and the cruise equilibrium are unchanged (the sign of the roll moment does not enter the straight-running yaw-sway block); only the last two columns, the mean 4-degree-turn yaw rate and its spread, move (the mean by at most 5.6e-4 relative, `munk_kept_alone`; `mss_forms`: 0.0324058869485307 rad/s; the spreads, of order 1e-5 or less, change by tens of percent).

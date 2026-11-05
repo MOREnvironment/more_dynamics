@@ -83,11 +83,13 @@ if ~(wsI.rho == wsLD.rho && wsLD.rho == wsR.rho)
 end
 % Numbers that remus100.m writes inside an expression, read from its text
 txt = strsplit(original, newline, 'CollapseDelimiters', false);
-wake = regexp(txt{151}, '^Va = ([0-9.]+) \* U_r;', 'tokens', 'once');
-roll = regexp(txt{253}, '^tau\(4\) = K_prop / ([0-9.]+);', 'tokens', 'once');
-wag  = regexp(txt{157}, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)', 'tokens', 'once');
+% The lines are found by their text (the place numbers below are those of MSS 99fdf4d; at ca014d9 the
+% header of remus100.m is five lines longer: Va at 156, wageningen at 162, tau(4) at 260).
+wake = firstMatch(txt, '^Va = ([0-9.]+) \* U_r;');
+roll = firstMatch(txt, '^tau\(4\) = -?K_prop / ([0-9.]+);');
+wag  = firstMatch(txt, 'wageningen\(0,([0-9.]+),([0-9.]+),([0-9]+)\)');
 if isempty(wake) || isempty(roll) || isempty(wag)
-    error('remus100.m lines 151, 157 or 253 moved: re-read the line numbers');
+    error('remus100.m: the lines of Va, wageningen or tau(4) are not found');
 end
 oneMinusW = str2double(wake{1});
 rollScale = 1 / str2double(roll{1});
@@ -120,7 +122,7 @@ P(end+1, :) = {'pitch_diameter_ratio', str2double(wag{1}), '1', 'propeller', 'ol
 P(end+1, :) = {'blade_area_ratio', str2double(wag{2}), '1', 'propeller', 'old', 'remus100.m:156-157 blade-area ratio 0.718', 'actuators'};
 P(end+1, :) = {'blade_count', str2double(wag{3}), '1', 'propeller', 'old', 'remus100.m:156-157 3 blades', 'actuators'};
 P(end+1, :) = {'max_advance_number', wsR.Ja_max, '1', 'propeller', 'old', 'remus100.m:154 Ja_max', 'actuators'};
-P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', 'old', sprintf('remus100.m:253 tau(4) = K_prop / %s', roll{1}), 'actuators'};
+P(end+1, :) = {'roll_moment_scale', rollScale, '1', 'propeller', 'old', sprintf('remus100.m:253 (258-260 at ca014d9) tau(4) = -K_prop / %s, the reaction to the shaft torque', roll{1}), 'actuators'};
 P(end+1, :) = {'position', zeros(3, 1), 'm', 'propeller', 'old', 'remus100.m:250-253 thrust on x_b through the CO (no moment arm)', 'actuators'};
 P(end+1, :) = {'orientation', zeros(3, 1), 'rad', 'propeller', 'old', 'remus100.m:250, 253 shaft along x_b (thrust in tau(1), torque in tau(4))', 'actuators'};
 P(end+1, :) = {'thrust_torque_coefficients', [wsR.KT_0; wsR.KQ_0; wsR.KT_max; wsR.KQ_max], '1', 'propeller', 'old', 'remus100.m:158, 159, 161, 162 [KT_0 KQ_0 KT_max KQ_max]', 'actuators'};
@@ -345,6 +347,15 @@ fprintf('Saved to %s\n', outDir);
 %% ================================================================
 % Scenario helpers
 % ================================================================
+function tok = firstMatch(lines, pattern)
+% the tokens of the first line of ``lines`` that matches ``pattern`` ([] when none does)
+tok = [];
+for k = 1:numel(lines)
+    t = regexp(lines{k}, pattern, 'tokens', 'once');
+    if ~isempty(t), tok = t; return; end
+end
+end
+
 function S = add(S, name, kind, x0, current, T, law)
     sc = struct('name', name, 'kind', kind, 'x0', x0, 'current', current, 'T', T, 'law', law);
     if isempty(S), S = sc; else, S(end + 1) = sc; end

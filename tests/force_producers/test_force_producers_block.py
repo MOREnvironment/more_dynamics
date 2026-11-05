@@ -225,7 +225,9 @@ CITED_LINES = {
     (REMUS, 250): "tau(1) = (1-t_prop) * X_prop + X_r + X_s;",
     (REMUS, 251): "tau(2) = Y_r;",
     (REMUS, 252): "tau(3) = Z_s;",
-    (REMUS, 253): "tau(4) = K_prop / 10;",
+    # the roll moment on the hull is the reaction to the shaft torque: the line reads "tau(4) = -K_prop / 10;"
+    # (line 260 of the revision that holds the fix; 253 in the numbering of the other lines of this table)
+    (REMUS, 253): "tau(4) = -K_prop / 10;",
     (REMUS, 254): "tau(5) = -x_s * Z_s;",
     (REMUS, 255): "tau(6) = x_r * Y_r;",
     (GRAVITY, 11): "g = 9.7803253359 * ( 1 + 0.001931850400 * sin(mu)^2 ) /...",
@@ -584,13 +586,64 @@ def _mss_remus_propeller(p, rpm, nu_r):
     else:
         x = rho * d ** 4 * kt0 * abs(n_p) * n_p
         k = rho * d ** 5 * kq0 * abs(n_p) * n_p
-    return np.array([(1 - p["thrust_deduction"]) * x, 0, 0, p["roll_moment_scale"] * k, 0, 0])
+    return np.array([(1 - p["thrust_deduction"]) * x, 0, 0, -p["roll_moment_scale"] * k, 0, 0])
 
 
 def _propeller_csv():
     h, v = _load_csv("propeller_matlab.csv")
     return {"rpm": v[:, h.index("RPM")], "U": v[:, h.index("U")],
             "tau": v[:, [h.index(f"tau{i}") for i in range(1, 7)]]}
+
+
+def test_the_hull_feels_the_reaction_to_the_shaft_torque_not_the_torque():
+    """Sign case, from the energy balance of a shaft. At zero advance speed the water's torque on the shaft is ``Q = rho D^5
+    K_Q0 n |n|`` (Fossen 2011, eq. 12.265, p. 411), it has the sign of ``n`` and opposes the rotation; the hull feels the
+    reaction, so its moment about the shaft axis ``a`` is ``-scale Q`` and, times the rotation, ``(a . M) n <= 0``: minus the
+    power the motor puts into the water (Prestero 2001, Sec. 4.6.2: a negative roll offset at sea). The shaft part of the
+    wrench is the wrench of the scale ``s`` minus that of the scale 0 (the rest is the thrust, ``[f; r x f]``); a couple
+    about the axis. Checked on the REMUS set (shaft on x) and on a tilted, offset shaft, both senses of rotation."""
+    for p in (_remus_propeller(), _scaled_propeller()):
+        _, free = _build("propeller", {**p, "roll_moment_scale": 0.0})
+        _, reacting = _build("propeller", {**p, "roll_moment_scale": 0.25})
+        out = reacting(n=np.array([100.0]), nu_r=np.zeros(6))
+        axis = np.array(out["shaft_axis"], dtype=float).reshape(-1)
+        kq0 = float(out["coefficients_in_use"][1])
+        for rpm in (-1200.0, -300.0, 300.0, 900.0, 1500.0):
+            n_rps = np.clip(rpm, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0
+            shaft = (_tau(reacting, n=[rpm], nu_r=np.zeros(6)) - _tau(free, n=[rpm], nu_r=np.zeros(6)))[3:]
+            about_axis = float(axis @ shaft)
+            water_torque = p["water_density"] * p["propeller_diameter"] ** 5 * kq0 * abs(n_rps) * n_rps
+            assert abs(about_axis + 0.25 * water_torque) <= 1e-12 * max(1.0, abs(water_torque)), (rpm, about_axis)
+            assert about_axis * rpm < 0.0                                             # the reaction opposes the rotation
+            assert np.linalg.norm(shaft - about_axis * axis) <= 1e-12 * max(1.0, abs(about_axis))   # a couple about the axis
+
+
+def test_remus_steady_roll_offset_at_cruise_is_negative_as_in_the_sea_trials():
+    """Prestero 2001, Sec. 4.6.2 (p. 33, read): at 1500 rpm in steady conditions the REMUS keeps a roll offset of -5.3 degrees
+    (negative) because the propeller torque on the hull balances the hydrostatic roll moment, ``K_prop = -K_HS``. With the
+    vehicle's ``z_g W`` (centre of gravity 0.02 m above the centre of buoyancy, W = 313.3 N) the restoring moment is
+    ``z_g W sin(phi)`` about zero pitch, so the offset is ``phi = arcsin(tau_4 / (z_g W))``. The sign must be negative; with the
+    model's own scale 1/10 the size is about -1.4 degrees, a quarter of the measured offset (the scale 1/10 is "to match exp.
+    results" in the source model, not a measurement of this offset): the sign is gated, the size only bounded."""
+    import json
+    p = _remus_propeller()
+    data = json.loads((Path(__file__).resolve().parents[1] / "vehicle_models" / "data" / "remus100"
+                       / "remus100_parameters_consistent.json").read_text())["parameters"]
+    z_g_w = data["body_center_of_gravity"]["value"][2] * data["weight"]["value"]
+    _, propeller = _build("propeller", p)
+    tau_roll = _tau(propeller, n=[1500.0], nu_r=[1.54, 0, 0, 0, 0, 0])[3]
+    offset = np.degrees(np.arcsin(tau_roll / z_g_w))
+    assert offset < 0.0
+    assert -5.3 < offset < -1.0, offset
+
+
+def test_the_reaction_torque_of_the_remus_set_is_minus_a_tenth_of_the_shaft_torque_of_the_matlab_columns():
+    """The MATLAB columns ``K_prop`` and ``tau`` of the actuator reference (the fixed model file): ``tau(4) = -K_prop / 10``
+    on all 1036 cases, a positive shaft torque gives a negative roll moment."""
+    ref = _actuators_csv()
+    assert np.all(ref["tau"][:, 3] * ref["K_prop"] <= 0.0) and np.any(ref["K_prop"] > 0.0)
+    assert _max_diff(ref["tau"][:, 3], -ref["K_prop"] / 10.0) <= G1_TOLERANCE
+    assert np.all(ref["tau"][ref["K_prop"] > 0.0, 3] < 0.0)
 
 
 def test_propeller_reference_is_the_linearised_remus_model():
@@ -633,7 +686,7 @@ def test_MSS_propeller_full_model_default_beyond_J_1_3_uses_unclamped_polynomial
     kt, kq = _mss_wageningen(j, p["pitch_diameter_ratio"], p["blade_area_ratio"], p["blade_count"])
     rho, d = p["water_density"], p["propeller_diameter"]
     expected = np.array([(1.0 - p["thrust_deduction"]) * rho * d ** 4 * kt * n_rps ** 2, 0, 0,
-                         p["roll_moment_scale"] * rho * d ** 5 * kq * n_rps ** 2, 0, 0])
+                         -p["roll_moment_scale"] * rho * d ** 5 * kq * n_rps ** 2, 0, 0])
     default = _tau(_build("propeller", p)[1], n=[rpm], nu_r=nu_r)
     assert _max_diff(default, expected) <= G1_TOLERANCE, ("wageningen.m at J = 1.5", default, expected)
     flagged = _tau(_build("propeller", {**p, "clip_advance_ratio": True})[1], n=[rpm], nu_r=nu_r)
@@ -1064,7 +1117,7 @@ def _matlab_propeller_part(ref):
     scale = _number_in(REMUS, 253, r"K_prop / ([0-9.]+);")
     part = np.zeros((len(ref["X_prop"]), 6))
     part[:, 0] = (1.0 - t_prop) * ref["X_prop"]
-    part[:, 3] = ref["K_prop"] / scale
+    part[:, 3] = -ref["K_prop"] / scale   # the hull feels the reaction to the shaft torque (line 258-260 at ca014d9)
     return part
 
 
@@ -1439,7 +1492,13 @@ def test_G2_blocks_equal_the_committed_blocks(tmp_path):
         rng = np.random.default_rng(COMMITTED_SEED)
         for k in range(N_COMMITTED_STATES):
             inputs = {**commands(rng), "nu_r": rng.uniform(-3.0, 3.0, 6)}
-            assert _max_diff(_tau(function, **inputs), _tau(old_function, **inputs)) <= G2_TOLERANCE, (label, k)
+            old_tau = np.array(_tau(old_function, **inputs), dtype=float)
+            if name == "propeller":
+                # the committed block applied +scale K about the shaft axis; the hull feels the reaction -scale K:
+                # the new wrench is the shaft-free wrench minus the committed block's shaft torque
+                old_free = getattr(old, "propeller_casadi")(getattr(old, "preprocess_propeller")(**{**old_p, "roll_moment_scale": 0.0}))
+                old_tau = 2.0 * np.array(_tau(old_free, **inputs), dtype=float) - old_tau
+            assert _max_diff(_tau(function, **inputs), old_tau) <= G2_TOLERANCE, (label, k)
     for name, (pd, aeao, z) in WAGENINGEN_SETS.items():
         for clip in (False, True):
             _, function = _build_wageningen(pd, aeao, z, clip_advance_ratio=clip)

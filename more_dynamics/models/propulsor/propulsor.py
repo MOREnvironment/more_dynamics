@@ -15,9 +15,10 @@ knows which form a part has:
 6. housing: ``nu_r``, ``a``, ``r``, ``d``, density -> an extra wrench.
 
 ``thrust = sat(s k_T T, +-T_lim)`` (the thrust along the axis after deduction, power cap and limit) and
-``tau = [thrust a; r x thrust a] + [0; c k_Q Q a] + housing`` with the shaft-torque scale ``c``: the
-wrench of a point force, ``[f; r x f]`` (Fossen 2011, eq. 12.226, p. 400), plus the shaft torque as a
-couple about the axis (MSS ``remus100.m`` 250-253, where the scale is 1/10; the physical reaction has
+``tau = [thrust a; r x thrust a] - [0; c k_Q Q a] + housing`` with the shaft-torque scale ``c``: the
+wrench of a point force, ``[f; r x f]`` (Fossen 2011, eq. 12.226, p. 400), minus the shaft torque as a
+couple about the axis: the water's torque opposes the shaft's rotation and the hull feels the reaction
+(Prestero 2001, Sec. 4.6.2; the scale is 1/10 in the REMUS reference model, the physical reaction has
 scale 1). Several propulsors on one vehicle are several force producers of the vehicle's own list.
 
 Inputs of the function: ``command`` (the drive's command, then the steering's), ``state`` (the drive's,
@@ -153,7 +154,7 @@ def propulsor_casadi(parts, units):
     housing = call("housing", nu_r=nu_r, thrust_axis=axis, thrust_position=point,
                    steering_angle=steering["deflection"], water_density=density)
     tau = (wrench(axis * thrust, point)  # [f; r x f] (Fossen 2011, eq. 12.226, p. 400)
-           + ca.vertcat(ca.DM.zeros(3), axis * (p["shaft_torque_scale"] * shaft_torque))  # shaft torque as a couple (remus100.m 253)
+           - ca.vertcat(ca.DM.zeros(3), axis * (p["shaft_torque_scale"] * shaft_torque))  # reaction to the shaft torque, a couple (Prestero 2001, Sec. 4.6.2)
            + housing["tau"])
     names = ["command", "state", "nu_r", "water_density", *p, *opened]
     return ca.Function("propulsor", [command, state, nu_r, density, *p.values(), *opened.values()],

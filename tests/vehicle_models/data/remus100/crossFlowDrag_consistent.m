@@ -38,13 +38,23 @@ function tau_crossflow = crossFlowDrag_consistent(L,B,T,nu_r,drag_model,rho)  %<
 %
 % Inputs: 
 %   L:  length (m)
-%   B:  beam (m)
-%   T:  draft (m)
+%   B:  beam (m)   : strip width normal to the heave flow (heave, pitch)
+%   T:  draft (m)  : strip width normal to the sway flow (sway, yaw)
 %   nu_r = [u-u_c, v-v_c, w-w_c, p, q, r]': Relative velocity vector
 %   drag_model (Optionally) : 'Hoerner' (default), 'cylinder'
 %
 % Output: 
-%   tau_crossflow = [0 Yh Zh 0 Mh Nh]: 6-DOF cross-flow drag vector
+%   tau_crossflow = [0 Yh Zh 0 Mh Nh]: Physical drag load on the RHS.
+%   The corresponding LHS resistance is d(nu_r) = -tau_crossflow.
+%
+% The local FSD transverse velocities at [x,0,0] are v_r+x*r and w_r-x*q.
+% A strip of length dx meets the sway flow with the projected width T (the
+% draft) and the heave flow with the projected width B (the beam), so
+%   dY = -1/2 rho T Cd |v_r+x*r| (v_r+x*r) dx
+%   dZ = -1/2 rho B Cd |w_r-x*q| (w_r-x*q) dx
+% The strip-width correction leaves results unchanged when B = T, as for
+% the circular-cylinder model with B = T = D. The selected drag model's
+% 2-D coefficient Cd is retained for both directions.
 %
 % References:
 %   Fossen, T. I. (2027). Handbook of Marine Craft Hydrodynamics and Motion
@@ -59,6 +69,10 @@ function tau_crossflow = crossFlowDrag_consistent(L,B,T,nu_r,drag_model,rho)  %<
 %   2021-01-30 : Extended to include heave and pitch for AUVs
 %   2025-06-09 : Make different drag models selectable (M. Seidl)
 %   2026-08-26 : Evaluate 20 strips at their midpoints (J. Harvey)
+%   2026-10-30 : Align heave strip velocity and pitch moment with FSD axes.
+%                Integrated loads for uniform symmetric strips are unchanged.
+%   2026-11-02 : Use beam B as the strip width for heave and pitch (E. Krizman).
+%                Results are unchanged when B = T.
 
 % Hoerner is the default drag model for monohull
 if nargin == 4
@@ -92,10 +106,10 @@ for i = 1:nStrips
     q = nu_r(5);                                      % Pitch rate
     r = nu_r(6);                                      % Yaw rate
     U_h = abs(v_r + xL * r) * (v_r + xL * r);
-    U_v = abs(w_r + xL * q) * (w_r + xL * q);   
+    U_v = abs(w_r - xL * q) * (w_r - xL * q);
     Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;       % Sway force
-    Zh = Zh - 0.5 * rho * T * Cd_2D * U_v * dx;       % Heave force  
-    Mh = Mh - 0.5 * rho * T * Cd_2D * xL * U_v * dx;  % Pitch moment    
+    Zh = Zh - 0.5 * rho * B * Cd_2D * U_v * dx;       % Heave force
+    Mh = Mh + 0.5 * rho * B * Cd_2D * xL * U_v * dx;  % Pitch moment
     Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;  % Yaw moment
 end
 

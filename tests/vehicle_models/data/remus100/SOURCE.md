@@ -272,4 +272,44 @@ Default set:
 
 Author: Enio Krizman · Date: 2026-10-07
 
+## Roll moment of the propeller, re-frozen (2026-11-05, MSS `ca014d9`)
 
+`remus100.m` at `ca014d9` has `tau(4) = -K_prop / 10` (the hull feels the reaction to the shaft torque; Prestero 2001, Sec. 4.6.2, p. 33) and `crossFlowDrag.m` the beam as the strip width for heave and pitch (equal to the draft here: `B = T = D`; the vertical strip velocity is written `w_r - x q`). The five marked copies of `remus100.m` / `crossFlowDrag.m` (`remus100_consistent.m`, `remus100_munk.m`, `remus100_hull.m`, `remus100_hull_munk.m`, `crossFlowDrag_consistent.m`) were brought to `ca014d9` by the same diff; each rebuilds its MSS file byte for byte at `ca014d9` (`test_marked_copies_rebuild_their_mss_files` with `MSS_DIR` at `ca014d9`). Both generators find the lines of `Va`, `wageningen` and `tau(4)` by their text (the header of `remus100.m` is five lines longer); the `place` strings keep the numbering of `99fdf4d`, except the roll line, which names both. MATLAB R2026a Update 4, one run of each generator; the history (`_mss`) and the default (`_consistent`) sets were re-made.
+
+Changed by the sign (the file is the new output): the 640-case derivative files (`tau_04`, the `xdot` columns that follow from roll: 16 columns, largest change 3.2 in a derivative of order 2e3), the trajectory files with a propeller (largest change of a state per file: 0.05 to 0.57 in the runs of the default set, 51.6 in `munk_rudder_step_20deg`, a state of order 1e3), both `rudder_step_15deg_at_925rpm` files, and the tolerance files. Not changed (re-run equal to 1e-15, the bytes of `99fdf4d` kept): the hull-only files (`remus100_hull_derivative_*`, `*_hull_glide*`, `*_hull_munk_glide*`, `*_hull_roll_pitch_decay*`, `*_hull_sway_yaw_release*`) and the mass matrix, which have no propeller (largest difference 4.4e-15 in a derivative, from the vertical strip velocity of `crossFlowDrag.m` written `w_r - x q`). The one-density turn of the density/geometry comparison is now +2.796 deg (was +2.797 deg).
+
+| File | sha256 |
+|---|---|
+| `remus100_derivative_consistent.csv` | `54b6347e7e08afa163bdf34b460c91d9805a4c177ca219ed16a6429bc7e6a828` |
+| `remus100_derivative_mss.csv` | `d4f79017639cd2e99c9745a1d8f9cbdb32d6e5b894acf5c4049a2189c02f9879` |
+| `remus100_parameters.json` | `4ba04f59cc2826de5fd123a43f5340110545389431d176845322728a23653b66` |
+| `remus100_parameters_consistent.json` | `1d02cba9d908bf971316eb90c60ae2742db321d93d9632b307c0d8c3faa0c891` |
+| `remus100_trajectory_dive_and_level_off.csv` | `400601771c3ffc2db125136cec517268afbcf78b229f674f74a76a6d62d44e6d` |
+| `remus100_trajectory_dive_and_level_off_consistent.csv` | `6585495126e720bce6d29ac1bb986242755c5ebe2da45827c76b8184ca7bfd04` |
+| `remus100_trajectory_hull_zoh_rudder_step_20deg.csv` | `a3ba282c82641a91b32916e0e4fe311d01e47da9511815c9773e50c4cfea9fbb` |
+| `remus100_trajectory_hull_zoh_rudder_step_20deg_consistent.csv` | `f19cf0f543c971d422f4cb5c3ec3ada859c8696c8080325c70f36417f60117cd` |
+| `remus100_trajectory_hull_zoh_stern_plane_step_10deg.csv` | `447476f0737caf3975382d311bd107fba866b4184bbcf182b1ac450dac410f9c` |
+| `remus100_trajectory_hull_zoh_stern_plane_step_10deg_consistent.csv` | `1321d10c2e005a1bf1b2f30a9b445728f8d2307a551a7db8c9d12d263fc8fd8d` |
+| `remus100_trajectory_hull_zoh_zigzag_20_20.csv` | `2c93606a7a35d7592aafeb5835455e4334d946e422f68dd446c427d0b0f7638d` |
+| `remus100_trajectory_hull_zoh_zigzag_20_20_consistent.csv` | `2b49fe69433d762b46e5e3a51bc681c16953a6d698fb267af63e40fc86a65fc4` |
+| `remus100_trajectory_munk_rudder_step_20deg.csv` | `0a510ff266c4829a2f38bdf2f81e5f3f696a90e6b517bed5f96bf94266fa6d33` |
+| `remus100_trajectory_munk_rudder_step_20deg_consistent.csv` | `050d2c7a2d78def3c6fdc345530c4c49222f667f67527a34e8719995b42b601a` |
+| `remus100_trajectory_munk_straight_perturbed.csv` | `f98c80be108704c4e28ec4ba6d73684bca14aa9181cdf2ae59d5da48c7f8fe03` |
+| `remus100_trajectory_munk_straight_perturbed_consistent.csv` | `4c8bdf0e9f14deafe838363ef3780c8fc6de683ad7d2aba6f32b804ad472400a` |
+| `remus100_trajectory_rudder_step_10deg_in_current.csv` | `853245fa16e8ea973d8e1e185b2372b1e17f2decf4dfbb594b5031449e31f108` |
+| `remus100_trajectory_rudder_step_10deg_in_current_consistent.csv` | `cff8e9bb114dd9974a4b22fa9f6af079e3b9ce10eeccc1eb0fbc5fae3e9b08df` |
+| `remus100_trajectory_rudder_step_15deg_at_925rpm_consistent.csv` | `f60b3fcf97a7051180eadf6ded86ec617b82085fca18c35f0c11c96341eeaff3` |
+| `remus100_trajectory_rudder_step_15deg_at_925rpm_mss.csv` | `23ab8ce535c636a18274fc487a9702696490e028e25e1135de11605c7f69b9cb` |
+| `remus100_trajectory_rudder_step_15deg_at_925rpm_one_density.csv` | `23ab8ce535c636a18274fc487a9702696490e028e25e1135de11605c7f69b9cb` |
+| `remus100_trajectory_rudder_step_20deg.csv` | `a8b695e102b07469a7da451d40fe06163f0d79537a311adb722c208d578a11cb` |
+| `remus100_trajectory_rudder_step_20deg_consistent.csv` | `09ed640a2ecb455e8b9389cfbadf92b855c630e55ef6b6968d116a3e44aa8845` |
+| `remus100_trajectory_rudder_step_4deg_at_1p54ms.csv` | `eeec2197f02dc4371a7b87681c0d53c1dc575d798587f7dec2a107b769ac2016` |
+| `remus100_trajectory_rudder_step_4deg_at_1p54ms_consistent.csv` | `6fd239478a618d34eb354694afe7623b6cf036060888a9b4f8d5cd03b3246a5d` |
+| `remus100_trajectory_stern_plane_step_10deg.csv` | `22fc39927031586e47cba399e4233264b05c0d8b55ab2bfc53a16c6cf2caf9d8` |
+| `remus100_trajectory_stern_plane_step_10deg_consistent.csv` | `645976211f69f0f954f5ee0833d96637cea7469994ecc8504866aad334ae953f` |
+| `remus100_trajectory_straight_from_rest.csv` | `f7cc498de1a4a0f8674eb37d59486c74ab692b76925d4c2452f949ed92256404` |
+| `remus100_trajectory_straight_from_rest_consistent.csv` | `4b63c3d07a61c4ddf03188885feda32607bde0e1a72cc93da52667015143904f` |
+| `remus100_trajectory_tolerances.csv` | `3234cc36b4fe9cfbf2fe7a7a8667f39fbefc95c281d662cab9aba2d8f9dcf86e` |
+| `remus100_trajectory_tolerances_consistent.csv` | `330b635ba0b8da3ca77c4ccf5c04c989719efa8191d00db207239c2538bd16d8` |
+| `remus100_trajectory_zigzag_20_20.csv` | `938e14eb4e7eac1cfe6ee744e382a434e9a3d95da7396802a03ab32afa4e0721` |
+| `remus100_trajectory_zigzag_20_20_consistent.csv` | `4bac02379c20a61e0cf70facfb92b95cc05c6e8673dc484b42aa1d1325b50726` |

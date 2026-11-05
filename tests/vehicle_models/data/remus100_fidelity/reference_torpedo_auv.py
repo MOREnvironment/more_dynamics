@@ -293,7 +293,7 @@ def lifting_fin(nu_r, rho, deflection, fin):
 
 
 def thrust_torque_propeller(speed, shaft_speed_rpm, rho, p):
-    """remus100.m 146-177, 249, 252 with the printed open-water coefficients."""
+    """remus100.m 146-177, 249 with the printed open-water coefficients; the hull feels the reaction -scale K to the shaft torque."""
     n_p = np.clip(shaft_speed_rpm, -p["max_shaft_speed"], p["max_shaft_speed"]) / 60.0
     d = p["propeller_diameter"]
     kt0, kq0, ktm, kqm = p["thrust_torque_coefficients"]
@@ -307,7 +307,7 @@ def thrust_torque_propeller(speed, shaft_speed_rpm, rho, p):
         torque = rho * d ** 5 * kq0 * abs(n_p) * n_p
     tau = np.zeros(6)
     tau[0] = (1 - p["thrust_deduction"]) * thrust                           # remus100.m 249
-    tau[3] = p["roll_moment_scale"] * torque                                # remus100.m 252
+    tau[3] = -p["roll_moment_scale"] * torque                               # reaction to the shaft torque (Prestero 2001, Sec. 4.6.2)
     return tau
 
 

@@ -80,7 +80,7 @@ The parts "REMUS 100 (MSS, ocean current)" and "REMUS 100 (MSS, quaternion)" hol
 | `blade_area_ratio` | 0.718 | 1 | remus100.m:156-157 blade-area ratio 0.718 | document |
 | `blade_count` | 3 | 1 | remus100.m:156-157 3 blades | document |
 | `max_advance_number` | 0.6632 | 1 | remus100.m:154 Ja_max | document |
-| `roll_moment_scale` | 0.1 | 1 | remus100.m:253 tau(4) = K_prop / 10 | document |
+| `roll_moment_scale` | 0.1 | 1 | remus100.m:253 tau(4) = K_prop / 10, scale 1/10; the hull feels the reaction -scale K (Prestero 2001, Sec. 4.6.2) | document |
 | `position` | [0, 0, 0] | m | remus100.m:250-253 thrust on x_b through the CO (no moment arm) | document |
 | `orientation` | [0, 0, 0] | rad | remus100.m:250, 253 shaft along x_b (thrust in tau(1), torque in tau(4)) | document |
 | `thrust_torque_coefficients` | [0.4566, 0.07, 0.1798, 0.0312] | 1 | remus100.m:158, 159, 161, 162 [KT_0 KQ_0 KT_max KQ_max] | document |

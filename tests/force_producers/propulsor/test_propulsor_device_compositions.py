@@ -120,7 +120,7 @@ def test_G1_the_fixed_propeller_equals_the_matlab_rows_of_the_linearised_law():
     worst = 0.0
     for rpm, nu_r, x_prop, k_prop in zip(ref.rpm, ref.nu_r, ref.x_prop, ref.k_prop):
         got = tau(f, [rpm], nu_r, rho)
-        expected = [(1.0 - t_prop) * x_prop, 0.0, 0.0, scale * k_prop, 0.0, 0.0]   # remus100.m 249-252
+        expected = [(1.0 - t_prop) * x_prop, 0.0, 0.0, -scale * k_prop, 0.0, 0.0]   # remus100.m 249 and the reaction -scale K (Prestero 2001, Sec. 4.6.2)
         worst = max(worst, max_diff(got, expected))
     assert worst <= G1_TOLERANCE, worst
     assert len(ref.rpm) == 1036 and np.any(np.abs(ref.rpm) > 1525.0)             # beyond the saturation, both signs
@@ -132,7 +132,7 @@ def test_the_shaft_torque_scale_is_the_only_thing_between_a_free_and_a_reacting_
     full = _propeller_composition({**values, "roll_moment_scale": 1.0}, "linearized")
     a, b = tau(free, [900.0], [1.5, 0, 0, 0, 0, 0], values["water_density"]), tau(full, [900.0], [1.5, 0, 0, 0, 0, 0],
                                                                                 values["water_density"])
-    assert max_diff(a[[0, 1, 2, 4, 5]], b[[0, 1, 2, 4, 5]]) <= 1e-12 and a[3] == 0.0 and b[3] > 0.0
+    assert max_diff(a[[0, 1, 2, 4, 5]], b[[0, 1, 2, 4, 5]]) <= 1e-12 and a[3] == 0.0 and b[3] < 0.0   # ahead: the hull feels the reaction, a negative roll moment
 
 
 # --------------------------------------------------------------------------
