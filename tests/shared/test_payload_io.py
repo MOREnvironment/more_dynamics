@@ -3,11 +3,13 @@
 
 A plugin carries no vehicle numbers: a declared value is ``unset()`` until the
 composition gives it, and the plugin's configuration callback refuses with one
-message that lists every missing value. The decorator ``refuses_unset`` is
-checked with both names the callback has had (``initialize`` and
-``on_configure``) since it does not look at the name. The context is a plain
-stand-in with ``get_parameter``; no component tree is needed.
+message that lists every missing value. The decorator ``refuses_unset`` wraps
+``on_configure(context)`` of an ``rpp_py`` plugin, whose result is a
+``CallbackResult`` (a stand-in with the same fields is used here, so the tests
+do not import ``rpp_py``). The context is a plain stand-in with
+``get_parameter``; no component tree is needed.
 """
+from dataclasses import dataclass
 from types import SimpleNamespace
 
 import casadi as ca
@@ -80,29 +82,40 @@ def test_read_value_refuses_unset_and_passes_a_value():
 
 # ---- the refusal decorator ---------------------------------------------------------------------------------------
 
-def _plugin(callback_name):
-    def callback(self, context):
+@dataclass(frozen=True)
+class CallbackResult:
+    """Same fields as ``rpp_py.lifecycle.CallbackResult``."""
+    success: bool = True
+    message: str = ""
+
+
+class Hull:
+    @refuses_unset
+    def on_configure(self, context):
         read_declared(context, (LENGTH, MASS, MATRIX))
         self.built = True
-        return "done"
-    callback.__name__ = callback_name
-    return type("Hull", (), {callback_name: refuses_unset(callback)})
+        return CallbackResult()
 
 
-@pytest.mark.parametrize("callback_name", ["initialize", "on_configure"])
-def test_decorator_passes_the_result_of_a_complete_configuration(callback_name):
-    plugin = _plugin(callback_name)()
+def test_decorator_passes_the_result_of_a_complete_configuration():
+    plugin = Hull()
     context = Context(length=5.0, hull_mass=1.0, stiffness=[[1.0, 0.0], [0.0, 1.0]])
-    assert getattr(plugin, callback_name)(context) == "done"
+    assert plugin.on_configure(context) == CallbackResult(True, "")
     assert plugin.built
 
 
-@pytest.mark.parametrize("callback_name", ["initialize", "on_configure"])
-def test_decorator_lists_every_missing_value_at_once(callback_name):
-    plugin = _plugin(callback_name)()
+def test_decorator_passes_a_failed_result_through():
+    class Refusing:
+        @refuses_unset
+        def on_configure(self, context):
+            return CallbackResult(False, "no")
+    assert Refusing().on_configure(Context()) == CallbackResult(False, "no")
+
+
+def test_decorator_lists_every_missing_value_at_once():
     context = Context(length=5.0, hull_mass=unset(), stiffness=unset())
     with pytest.raises(UnsetValues) as caught:
-        getattr(plugin, callback_name)(context)
+        Hull().on_configure(context)
     text = str(caught.value)
     assert text.startswith("Hull: not set in the composition -- missing parameter(s): ")
     assert "'hull_mass' [kg]" in text and "'stiffness' [N/m]" in text and "'length'" not in text

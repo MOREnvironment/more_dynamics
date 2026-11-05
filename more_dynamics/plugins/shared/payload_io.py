@@ -17,11 +17,11 @@ A plugin carries no vehicle's numbers: every value of a vehicle, a device or a
 site is declared with ``unset()`` (an empty list, ``more_transformations``) and
 comes from the composition's named part. ``read_declared`` and ``read_value``
 refuse an unset value, and ``refuses_unset`` (the decorator of a plugin's
-configuration callback, ``initialize(context)`` in the current ``rpp_py``
-release, ``on_configure(context)`` after it; it keeps the callback's return
-value and does not look at its name) turns the refusal into one message that lists every value of
-the component that its selected forms read and the composition left unset,
-with unit and meaning. A convention of this library, no source equation.
+``on_configure(context)``; it keeps the callback's return value, a
+``CallbackResult`` of ``rpp_py``) turns the refusal into one message that
+lists every value of the component that its selected forms read and the
+composition left unset, with unit and meaning. ``rpp_py`` reports the
+exception as a failed configuration. A convention of this library, no source equation.
 
 Author:    Enio Krizman
 Date:      2026-10-08
@@ -93,11 +93,11 @@ def _missing_text(declared):
 
 
 def refuses_unset(configure):
-    """Decorator of a plugin's configuration callback (``initialize(self,
-    context)`` or ``on_configure(self, context)``): when a value its selected forms read is still unset, the error
-    names the plugin and lists every such value at once (a second pass lists the rest, with a placeholder in
-    each, before the plugin refuses; no graph is made). The callback therefore runs twice on a refusal: it must
-    not leave state behind that a failed configuration cannot repeat."""
+    """Decorator of a plugin's ``on_configure(self, context)``: when a value its selected forms read is still
+    unset, the error names the plugin and lists every such value at once (a second pass lists the rest, with a
+    placeholder in each, before the plugin refuses; no graph is made). A complete configuration returns what
+    the callback returns (its ``CallbackResult``). The callback therefore runs twice on a refusal: it must not
+    leave state behind that a failed configuration cannot repeat."""
     @functools.wraps(configure)
     def wrapper(self, context):
         try:
