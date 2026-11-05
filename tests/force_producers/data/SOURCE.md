@@ -50,3 +50,14 @@ The hull feels the reaction to the shaft torque: `remus100.m` now reads `tau(4) 
 | `remus100_actuators_mss_current.csv` | `91fb148a4112bd5d57ae914ca1d3cfa1c790227f2209643e0b5296e41bb93fb9` |
 
 `remus100_actuators_mss_current.csv`: only the column `tau_04` differs from the file of `99fdf4d` (the sign: largest change 0.4986 N m, 1036 rows); every other column, including `K_prop`, is byte-identical. `propeller_matlab.csv`: the template writes `tau(4) = -K_prop`, only the column `tau4` differs (largest change 0.4824 N m). `wageningen_kt_kq_mss_current.csv` and the two thruster files are unchanged (byte-identical on re-run at `ca014d9`). The cited line `remus100.m` 253 reads `tau(4) = -K_prop / 10;` (line 260 at `ca014d9`; the other pinned lines keep the numbering of `99fdf4d`).
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+| File | Result | sha256 (files that changed) |
+|---|---|---|
+| `differential_thruster_mss_current.csv`, `wageningen_kt_kq_mss_current.csv`, `differential_thruster_matlab.csv`, `propeller_matlab.csv` | byte-identical | — |
+| `remus100_actuators_mss_current.csv` | **rewritten in place**: 16 of 38 columns differ (`nu_r_01..03`, `U_r`, `X_prop`, `K_prop`, `tau_*`, ...), largest 4.74 (a force in N); cause: the relative velocity of the 1000 seeded cases with a current now uses the full attitude, the propeller and the fin forces follow `nu_r` | `56784bfafd34a15e54d911206c751c3698a53bac7ad411b22a335c5b45e208c5` |
+
+`remus100.m` line numbers of this folder's tests are those of `aff76cf` (the header of the file is 13 lines longer than at `99fdf4d`; the roll line reads `tau(4) = -K_prop / 10;` at 262).

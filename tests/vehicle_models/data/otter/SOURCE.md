@@ -33,3 +33,22 @@ is below 1e-5 in every state. Re-run: `MSS_DIR=<MSS> OUT_DIR=<scratch> "$MATLAB_
 `vehicle_simulation.json` sample by sample, CVODES against a finer RK4).
 
 **MSS 6e78e98 (2026-10-30).** In MSS `otter.m` is now the unified Capytaine-based Otter (frequency-dependent added mass and damping from a data file, equivalent matrices, wave loads applied by `SIMotter.m`); the first-principles Otter this reference follows is the file `otter_legacy.m`, whose executable lines equal `otter.m` up to `ed2ce7b` (200 seeded states: xdot, U, M, B_prop, n_min, n_max identical, max difference 0). The generator calls `otter_legacy` (and instruments that file); the output was re-run on MSS 6e78e98 and is byte-identical to the file frozen here, apart from a revision string where the file name or the metadata carries one.
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+Run once with `generate_otter_commanded_mss.m` unchanged; the output carries the tag `aff76cf`. The files of `ed2ce7b` stay beside them as the record (their runs used the earlier source model: the draft cross-flow strips for heave and pitch and the kinematics at the shifted attitude).
+
+| File | Result against the `ed2ce7b` file | sha256 |
+|---|---|---|
+| `otter_commanded_meta_mss_aff76cf.json` | the revision field only | `03f3c6fbd4d456ce5ad46d0b8b8d195b5f2a697cefa48ce65bbf78fdb76cf46d` |
+| `otter_trajectory_astern_from_speed_mss_aff76cf.csv` | 6 of 17 columns, largest 0.072 | `5b7aec961f9907d9d6c27c3c5bae5250f8af08932dd62859587f8e605487e2ca` |
+| `otter_trajectory_commands_beyond_the_limits_mss_aff76cf.csv` | 12 columns, 0.040 | `676281b1ae318e075c9dd5ccb0bfb1e70fef42195a656294a096c3b02d6e8e78` |
+| `otter_trajectory_differential_turn_mss_aff76cf.csv` | 12 columns, 0.116 | `4f2b8fc4022ebea6c0028b01c7f9ba581eb8f684a46e90428c286cb92d6bb84d` |
+| `otter_trajectory_spin_in_place_mss_aff76cf.csv` | 12 columns, 0.021 | `2f563890267d90ec86b93a38860ff0dbd9634e307935119924c0887991ed19e9` |
+| `otter_trajectory_straight_from_rest_thrust_step_mss_aff76cf.csv` | 6 columns, 0.081 | `92e55812746a3ebf06adaafff99f719cc408f8603fa61be69635a1462169f366` |
+| `otter_trajectory_zigzag_differential_steps_mss_aff76cf.csv` | 12 columns, 0.108 | `b9f25fafc58cf905de97c5ed8feae7879bb594c4d7f92d413ecf6ef3f4df47e2` |
+| `otter_trajectory_tolerances_mss_aff76cf.csv` | tolerances, largest change 1.1e-6 | `9ee57dd355ffd9f50192d5469a12b8e7d8a7a3d29c1cac6d0ab6e186f92c27e2` |
+
+Causes: `crossFlowDrag.m` with the beam as the strip width for heave and pitch (the fix of `ca014d9`, reached by the library at its previous change) and the kinematics at the actual attitude with the payload trim only in the restoring (`8667294`). The physics form of the payload trim (`weight_wrench`) reproduces all six runs within the frozen tolerance (3e-14 in the differential turn, the largest state error) with `tests/restoring/test_payload_trim.py`; the named part `Otter (MSS)` selects that form since this pin.

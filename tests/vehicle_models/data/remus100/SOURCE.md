@@ -313,3 +313,37 @@ Changed by the sign (the file is the new output): the 640-case derivative files 
 | `remus100_trajectory_tolerances_consistent.csv` | `330b635ba0b8da3ca77c4ccf5c04c989719efa8191d00db207239c2538bd16d8` |
 | `remus100_trajectory_zigzag_20_20.csv` | `938e14eb4e7eac1cfe6ee744e382a434e9a3d95da7396802a03ab32afa4e0721` |
 | `remus100_trajectory_zigzag_20_20_consistent.csv` | `4bac02379c20a61e0cf70facfb92b95cc05c6e8673dc484b42aa1d1325b50726` |
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+Both sets (history `*_mss.*` and default `*_consistent.*`) were re-made. The five marked copies were brought to `aff76cf` by a three-way merge with the revision they were last made at (`ca014d9`): only the argument rename `w_c` to `vD_c` (header, usage, defaults) and the call of `oceanCurrents` replace the old current lines; each rebuilds its MSS file byte for byte at `aff76cf` (checked for `remus100_consistent.m` and `remus100_hull.m` against `git show aff76cf:CRAFT/AUV/models/remus100.m`; `test_marked_copies_rebuild_their_mss_files` with `MSS_DIR` at `aff76cf`). The CSV columns named `w_c` keep their name (the value is the vertical current, positive down).
+
+| Result | Files |
+|---|---|
+| byte-identical | both mass matrices; 13 trajectories of the default set and 12 of the history set, and the two variant files of the 925 rpm turn (all still water: straight from rest, dive and level off, rudder 20 deg and 4 deg, stern plane, zigzag, the three `hull_zoh_*`, `munk_rudder_step`, `munk_straight`, `hull_sway_yaw_release`, `rudder_step_15deg_at_925rpm`) |
+| numerically equal, **old bytes kept** (differences at most 1.1e-16 in a state of order 20, the sign of zeros) | `*_hull_glide`, `*_hull_munk_glide`, `*_hull_roll_pitch_decay` (history and default, 5 files) |
+| **rewritten**: derivatives with a current | `remus100_derivative_mss.csv` (18 columns, largest 26.3), `remus100_derivative_consistent.csv` (24 columns, largest 27.3, of order 2e3), `remus100_hull_derivative_mss.csv` and `_consistent.csv` (12 columns, 25.1 and 25.1, of order 6e2): the cases with a current (the earlier file rotated the current by the heading only) |
+| **rewritten**: the one run in a current | `remus100_trajectory_rudder_step_10deg_in_current.csv` (0.039) and `_consistent.csv` (0.040), 12 of 19 columns |
+| **rewritten**: tolerance files | `remus100_trajectory_tolerances.csv`, `_consistent.csv` (largest change 1.6e-8; they follow the runs) |
+| parameter files | `remus100_parameters.json`, `_consistent.json`: the revision string only |
+
+| File | sha256 |
+|---|---|
+| `remus100_derivative_mss.csv` | `fbe7168a2f8d94d499180c8bfac22d832cb8802d57aa577e30d859c02a24addb` |
+| `remus100_derivative_consistent.csv` | `fa4388746b5d7f2f300e0e4952acca05a338e8cac49b9d50c9e611f054f3116e` |
+| `remus100_hull_derivative_mss.csv` | `7079dfe77928a4a2de3fa630450ffb679bff574573f7025899f4fc428d8fd499` |
+| `remus100_hull_derivative_consistent.csv` | `74454a5845f5e2ff8f3f76e81a20f1ee3fe172bc995051045bb4fc1d66bd81a8` |
+| `remus100_trajectory_rudder_step_10deg_in_current.csv` | `f10aa6e535c87f31471f5b86e053dd4c90e4a898f07c5233135bca6b682dfa60` |
+| `remus100_trajectory_rudder_step_10deg_in_current_consistent.csv` | `3d7e55836f4049a4041497db65a91da67b811e6e5fedb335bc6ce4eb4c295d3d` |
+| `remus100_trajectory_tolerances.csv` | `552d084ca2ed47f64aaa6b6043a3caa4814b85c731ca30b87ae25b5637e6c5f2` |
+| `remus100_trajectory_tolerances_consistent.csv` | `a0bcd9aa5f96ab3c9a4cf78c00cfea41807cee8b3d7ffb93dcadca31bcfef5c6` |
+| `remus100_parameters.json` | `ff2bcfbe933857afc7286fa9411715cb33f68900d830b1ca00afcf7505279669` |
+| `remus100_parameters_consistent.json` | `886c0b956b9df6d9ba11e654d2d669f7f31346fdce52a11516ff8edf1a58b0bb` |
+| `remus100_consistent.m` | `c75d936dbd67c8038d4d19a12f268ee289a2fb06b189fe76cb83ff5608ce816d` |
+| `remus100_hull.m` | `9514d2a3678f449d620098c62a391105da75909f96d94123dc405faeb8d9f11b` |
+| `remus100_munk.m` | `f26a635aefcb7a31d71558e45323e2ffa2f8c5cfcb73d10ff516d1d423b217e2` |
+| `remus100_hull_munk.m` | `c866d44ceff2eb07775039294fd1537829e43e15a053656800c9a0465e440b61` |
+
+The density/geometry comparison of this folder is unchanged: the one-density turn is +2.796 deg.

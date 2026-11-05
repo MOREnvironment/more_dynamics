@@ -40,3 +40,13 @@ Line numbers written in the generators are those of the MSS revision named besid
 | `rigid_body_spheroid_mss_current.csv`, `spheroid_matlab_reference_mss_current.csv` | rewritten in place: `imlay61.m` reads `rho` 1025 (was 1026, `23c307e`); max relative change 9.7e-4 | see the table above |
 
 Unchanged byte for byte: `rigid_body_hull_mss_current.csv`, `rigid_body_m2c_3dof_coupled_mss_cc07579.csv`, `rigid_body_m2c_3dof_mss_current.csv`, `rigid_body_rbody_mss_current.csv`.
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+| File | Result | sha256 |
+|---|---|---|
+| `rigid_body_{rbody,spheroid,hull,m2c_3dof}_mss_current.csv`, `rigid_body_m2c_3dof_coupled_mss_cc07579.csv`, `matlab_reference_mss_99fdf4d.csv` | byte-identical | — |
+| `spheroid_matlab_reference_mss_current.csv` | **rewritten in place**: 7 of 150 columns differ (`nu_r_01..03`, `C_A_*` that follow the relative velocity), largest 5.04; cause: the full-attitude current of `remus100.m` | `94e2bc642bec2893f1459a1ef36193da312c20205519a2c8dd0b229827fd6f68` |
+| `matlab_reference.csv` (template) | not re-frozen: the re-run differs by 1e-13 (rounding of the template's own arithmetic) | — |

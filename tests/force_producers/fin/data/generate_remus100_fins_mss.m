@@ -23,13 +23,13 @@
 %  cases with a constant current Vc = 0.3 m/s, betaVc = 30 deg, w_c = 0.1 m/s
 %  so that nu_r differs from nu in all three axes.
 %  MSS line numbers are those of MSS 99fdf4d (2026-10-23).
-%  Output: <OUT_DIR>/force_producers/fin_parts/remus100_fins_mss_99fdf4d.csv
+%  Output: <OUT_DIR>/force_producers/fin_parts/remus100_fins_mss_aff76cf.csv
 %  Run (nothing relative to a machine): MSS_DIR (required) = the MSS checkout,
 %  MATLAB_BIN = the MATLAB executable, OUT_DIR (optional) = output folder,
 %  default <tempdir>/more_mss_references; never this folder, so a run cannot
 %  overwrite a frozen file. Byte-compare the output with the frozen file:
 %    MSS_DIR=<MSS checkout> "$MATLAB_BIN" -batch "run('<this file>')"
-%    cmp <OUT_DIR>/force_producers/fin_parts/remus100_fins_mss_99fdf4d.csv <this folder>/remus100_fins_mss_99fdf4d.csv
+%    cmp <OUT_DIR>/force_producers/fin_parts/remus100_fins_mss_aff76cf.csv <this folder>/remus100_fins_mss_aff76cf.csv
 %
 %  Author:    Enio Krizman
 %  Date:      2026-10-08
@@ -136,7 +136,7 @@ fprintf('Instrumented vs unmodified remus100 (xdot, M), max |diff| = %.3g\n', ma
 fprintf('max |X_prop| = %.3g, max |K_prop| = %.3g (propeller at rest)\n', ...
     max(abs(allRecords.X_prop)), max(abs(allRecords.K_prop)));
 
-outFile = fullfile(target, 'remus100_fins_mss_99fdf4d.csv');
+outFile = fullfile(target, 'remus100_fins_mss_aff76cf.csv');
 writetable(allRecords, outFile);
 fprintf('Saved %d rows x %d columns to %s\n', height(allRecords), width(allRecords), outFile);
 

@@ -189,3 +189,39 @@ session did not find a precedent for in the committed tree; not created, named h
 porter sessions' new functions have been).
 
 Author: Enio Krizman · Date: 2026-10-09
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+`npsauv_hull.m` (the marked copy) was brought to `aff76cf` by a three-way merge with `6e78e98` (the revision it rebuilt before): the argument `vD_c`, the call of `oceanCurrents`, the through-water surge speed in `prop` and `epsilon`, and the pitch moment of the cross-flow sum with `(xL*q - w_r)`. It rebuilds `npsauv.m` byte for byte at `aff76cf`. Two upstream changes move the numbers:
+
+1. **`0599e35` (2026-11-02, in `ca014d9`)**: the cross-flow pitch moment `Cm` uses `(xL*q - w_r)`, as `Cz` and the physics demand (registry F-MSS-43, fixed upstream). The earlier file had `(w_r + xL*q)`. The hull block `cross_flow_strip_combined_drag` reproduced the earlier form "as written"; it now has the corrected form (the same change, with a test from the moment of each strip's own force).
+2. **`5e4314a` / `aff76cf`**: the full-attitude current; the propeller advance ratio and slip from the through-water surge speed `u_r`.
+
+| Result | Files |
+|---|---|
+| byte-identical | `npsauv_b_delta.csv`, `npsauv_mass_matrix.csv`, `npsauv_trajectory_hull_glide.csv` |
+| **rewritten** | `npsauv_derivative.csv`, `npsauv_derivative_sign_flip_control.csv` (6 of 43 columns, the velocity derivatives `xdot_01..06`, largest 6.71), `npsauv_hull_derivative.csv` (6 columns, 3.96; with no current the cases differ by up to 0.049, from the pitch-moment sign alone), and ten trajectories (largest change per file 1.1e-6 to 2.35; the largest, `rudder_step_10deg_in_current`, is the run with a current) and the tolerance file |
+| parameter file | `nps_auv_ii_parameters.json`: the revision string only |
+
+| File | sha256 |
+|---|---|
+| `npsauv_derivative.csv` | `7f25a8137dd3850ec79015ccaa190f5fa52b72afa657de12e47ccae227c0f8ad` |
+| `npsauv_derivative_sign_flip_control.csv` | `4888e8621658a0faa53000158c0a91e159ecb7ad17e0675d2fff409f9bb926fa` |
+| `npsauv_hull_derivative.csv` | `836e35bbcb8d1e98d453090e9bb8a536d31b0f367a980d514d20b3055d2d1210` |
+| `npsauv_trajectory_actuator_step_response.csv` | `e7f51f7c4674091dafb8f966c245c30912bd2a2cf71d4dae2461b428877bf3f0` |
+| `npsauv_trajectory_bow_plane_step_10deg.csv` | `9aea16235fb02b56466a8ceac867576376dd1314c694eff702573cb5438d6399` |
+| `npsauv_trajectory_dive_and_level_off.csv` | `05c94f54b4972631f14faaed53f990c616a0a411683c2e82f1579706cf29db6f` |
+| `npsauv_trajectory_hull_roll_pitch_decay.csv` | `50b3aaedad957ee97dfc04535c16dc315863679a463eb1bbb87e4371b53176dc` |
+| `npsauv_trajectory_hull_sway_yaw_release.csv` | `d342a2396afaccb0a023aa15c7a99b16a7135cda4aad7bfd4b7d7783791ba2fe` |
+| `npsauv_trajectory_rudder_step_10deg_in_current.csv` | `f77b0b4deb3b8a7e2d03a394e8a0ce25de64357b59d9c5a359037010b1dc1019` |
+| `npsauv_trajectory_rudder_step_20deg.csv` | `6c70e62e8ab863990f9f43c183f18ddd2ff646006d2138aa7765513b4aaf3d20` |
+| `npsauv_trajectory_stern_plane_step_10deg.csv` | `67ae469cb923f6204ec37eff10fbcb6f6c6deaeebc69c751e0d6c92710c6a507` |
+| `npsauv_trajectory_straight_from_rest.csv` | `b83a8ec3e644f7ce7dac168d55da355038f88fbfda7130027e2810ff8cf950f2` |
+| `npsauv_trajectory_zigzag_20_20.csv` | `c036af89e40dd2b877fb6f82e28eb5410b1ed63a48f99445226911dd55bcb943` |
+| `npsauv_trajectory_tolerances.csv` | `65bc0e034083278e7f2bd787668dfe31ed7ee7b2f5beae003f16cedcdb3128ff` |
+| `nps_auv_ii_parameters.json` | `c9938b605709d2fcf21e2633346930d2008bff51a18fe4007771f6613ca4e614` |
+| `npsauv_hull.m` | `84f8e795990a2c3f19578aab16efb3841f6c9415676d47713d44cac2a035256c` |
+
+The statement under "Findings" above that the pitch-moment strip term uses `(w_r + x q)` and is reproduced as written describes the earlier source model; the block now follows `aff76cf`. `DerivativeAuv`'s default `current_form` is `full_attitude` (it was the yaw-rate shortcut of the earlier source model).

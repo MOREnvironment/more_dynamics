@@ -1,5 +1,5 @@
-%<removed> function [xdot, U, M, B_delta] = npsauv(x, ui, Vc, betaVc, w_c)
-function [xdot, U, M] = npsauv_hull(x, tau_ext, Vc, betaVc, w_c)  %<added>
+%<removed> function [xdot, U, M, B_delta] = npsauv(x, ui, Vc, betaVc, vD_c)
+function [xdot, U, M] = npsauv_hull(x, tau_ext, Vc, betaVc, vD_c)  %<added>
 % npsauv_hull.m: modified copy of MSS CRAFT/AUV/models/npsauv.m (T. I. Fossen),  %<added>
 % MSS revision cc07579 (https://github.com/cybergalactic/MSS).  %<added>
 % Change: the five actuator commands ui, the actuator states and their  %<added>
@@ -50,18 +50,22 @@ function [xdot, U, M] = npsauv_hull(x, tau_ext, Vc, betaVc, w_c)  %<added>
 %   delta_bs_com:   Starboard bow plane command   (rad)
 %   n_com:          Propeller shaft speed command (rpm)  
 %
-% The arguments Vc (m/s), betaVc (rad), w_c (m/s) are optional arguments for 
-% ocean currents
+% The arguments Vc (m/s), betaVc (rad), vD_c (m/s) are optional arguments for 
+% a constant current in NED. Vc is the horizontal speed, betaVc is the
+% azimuth towards which the current flows, and vD_c is positive down:
 %
-%    v_c = [ Vc * cos(betaVc - psi), Vc * sin( betaVc - psi), w_c ]  
+%    v_c^n = [Vc * cos(betaVc), Vc * sin(betaVc), vD_c]'.
+%
+% oceanCurrents rotates this current by the full attitude and computes
+% its BODY derivative. SIMnpsauv supplies bounded stochastic current inputs.
 %
 % Example usage:
 %   [~,~,M,B_delta] = npsauv() : Return the 6x6 mass matrix M and 2x4 
 %                                input matrix B_delta
 %   [xdot, U] = npsauv(x,ui)   : Return xdot and U, no ocean currents
 %   xdot = npsauv(x,ui)        : Return xdot, no ocean currents
-%   xdot = npsauv(x,ui,Vc,betaVc,alphaVc,w_c) : Return xdot, 3-D currents
-%   xdot = npsauv(x,ui,Vc,betaVc,alphaVc) : Return xdot, horizontal currents
+%   xdot = npsauv(x,ui,Vc,betaVc,vD_c) : Return xdot, 3-D currents
+%   xdot = npsauv(x,ui,Vc,betaVc)     : Return xdot, horizontal currents
 %
 % M-file Simulators:
 %   SIMnpsauv.m : Script demonstrating MIMO PID heading and deph control
@@ -78,11 +82,16 @@ function [xdot, U, M] = npsauv_hull(x, tau_ext, Vc, betaVc, w_c)  %<added>
 % Author:    Thor I. Fossen
 % Date:      2024-06-03
 % Revisions: 2025-06-05 : Corrected the sign of Cz (crossflow drag).
+%            2026-11-02 : Corrected the sign of w_r in the pitch moment Cm
+%                         (crossflow drag), now consistent with Cz.
+%            2026-11-02 : Use oceanCurrents for the full-attitude current
+%                         velocity and derivative. Use through-water surge
+%                         velocity in the propeller advance ratio and slip.
 
-%<removed> if nargin == 0, x=zeros(17,1); ui=zeros(5,1); Vc=0; betaVc=0; w_c=0; end 
-if nargin == 0, x=zeros(12,1); tau_ext=zeros(6,1); Vc=0; betaVc=0; w_c=0; end   %<added>
-if (nargin == 2), Vc=0; betaVc=0; w_c=0; end   % no ocean currents
-if (nargin == 4), w_c=0; end                   % no vertical ocean currents
+%<removed> if nargin == 0, x=zeros(17,1); ui=zeros(5,1); Vc=0; betaVc=0; vD_c=0; end 
+if nargin == 0, x=zeros(12,1); tau_ext=zeros(6,1); Vc=0; betaVc=0; vD_c=0; end   %<added>
+if (nargin == 2), Vc=0; betaVc=0; vD_c=0; end   % no ocean currents
+if (nargin == 4), vD_c=0; end                   % no vertical ocean currents
 
 %<removed> if (length(x) ~= 17), error('x-vector must have dimension 17!'); end
 if (length(x) ~= 12), error('x-vector must have dimension 12!'); end  %<added>
@@ -98,15 +107,14 @@ phi = x(10); theta = x(11); psi = x(12);
 % Speed
 U = sqrt(u^2 + v^2 + w^2); 
 
-% Ocean currents expressed in BODY, nu_c = [u_c v_c w_c 0 0 0]'
-u_c = Vc * cos( betaVc - psi );                               
-v_c = Vc * sin( betaVc - psi );   
-
-u_r = u - u_c;                      % Relative velocities
-v_r = v - v_c;
-w_r = w - w_c;
-
-Dnu_c = [ v_c*r -u_c*r 0 0 0 0 ]';    % Time derivative of nu_c
+% Constant NED current expressed in BODY, using the hybrid specification.
+Vtotal = hypot(Vc, vD_c);
+gammaVc = atan2(vD_c, Vc);
+[nu_c, Dnu_c] = oceanCurrents( ...
+    Vtotal, betaVc, gammaVc, x(10:12), x(4:6), 'constant');
+u_r = u - nu_c(1);                      % Relative velocities
+v_r = v - nu_c(2);
+w_r = w - nu_c(3);
 
 %<removed> % Actuator dynamics and saturation limits
 %<removed> max_u = [deg2rad(20); deg2rad(20); deg2rad(20); deg2rad(20); 1500];
@@ -196,11 +204,11 @@ M = MRB + MA;
 %<removed> % Control forces and moments
 %<removed> Cd0   = 0.00385;
 %<removed> eps_prop = 1e-10;  % Avoid dividing by zero
-%<removed> prop  = 0.012 * n_p / (u + eps_prop); 
+%<removed> prop  = 0.012 * n_p / (u_r + eps_prop);
 %<removed> Xprop = Cd0 * ( abs(prop) * prop - 1 );
 %<removed> Ct    = 0.008 * L^2 * abs(prop) * prop / 2;
 %<removed> Ct1   = 0.008 * L^2 / 2;
-%<removed> epsilon = -1 + sign(n_p)/sign(u + eps_prop) * ...
+%<removed> epsilon = -1 + sign(n_p)/sign(u_r + eps_prop) * ...
 %<removed>     ( sqrt(Ct+1)-1 ) / ( sqrt(Ct1+1)-1 + eps_prop );
 %<removed> 
 %<removed> tau1 = r3 * (Xrdr*u_r*r*delta_r + (Xqds*delta_s + Xqdb2*delta_bp +...
@@ -249,7 +257,7 @@ for xL = -L/2:dxL:L/2   % Cross-flow drag integrals
     
     Cy = Cy + dxL * drag_term * (v_r + xL * r) / Ucf;
     Cz = Cz + dxL * drag_term * (w_r - xL * q) / Ucf;
-    Cm = Cm + dxL * drag_term * (w_r + xL * q) / Ucf * xL;
+    Cm = Cm + dxL * drag_term * (xL * q - w_r) / Ucf * xL;
     Cn = Cn + dxL * drag_term * (v_r + xL * r) / Ucf * xL;
 
 end

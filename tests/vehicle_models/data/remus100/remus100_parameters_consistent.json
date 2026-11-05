@@ -2,7 +2,7 @@
   "vehicle": "REMUS 100, the MSS 1.6 m REMUS-like model with one value per quantity",
   "source": {
     "repository": "MSS (T. I. Fossen), MIT licence",
-    "revision": "ca014d99e6c4383dad15a729246bb0fab1628922",
+    "revision": "aff76cfe8e72b19d99e626cca22e2a37bdbea8bc",
     "file": "CRAFT/AUV/models/remus100.m",
     "copy": "remus100_consistent.m"
   },

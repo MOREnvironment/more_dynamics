@@ -51,3 +51,15 @@ Two runs on this machine gave byte-identical files (sha256 `9f1a905873a4fae7a1aa
 ## Payload trim with the cross-flow strip width fixed (2026-11-05)
 
 `payload_trim_mss_6e78e98_beam_strips.csv` (sha256 `4e8b7e4923cd09f2c48f337543858ace8bac902aee9f48d222196e579b368121`) is `generate_payload_trim_mss.m` run on MSS `6e78e98` with the one file `LIBRARY/modeling/crossFlowDrag.m` of MSS `ca014d9` (heave and pitch strips as wide as the beam; MATLAB R2026a Update 4): of the 48 cases the columns `xdot_mss_01..06` and `xdot_corr_01..06` (the velocity derivative: largest change 8.8e-3 in heave) differ from `payload_trim_mss_ed2ce7b.csv`; every other column is byte-identical (the restoring columns and the kinematic half of `xdot` are the earlier file's). The file is not made on `ca014d9` itself because that revision also carries the kinematics change of `otter_legacy.m` (the actual attitude in the NED kinematics, 2026-11-01), which is a different change. `payload_trim_mss_ed2ce7b.csv` stays as the record with the draft-height strips; `test_payload_trim.py` reads the new file.
+
+## Re-pin to MSS `aff76cf` (2026-11-05, MATLAB R2026a Update 4, `TMPDIR` unset)
+
+MSS `aff76cf` (`aff76cfe8e72b19d99e626cca22e2a37bdbea8bc`) is six commits after `ca014d9`: the current of all craft models is computed by `oceanCurrents.m` (the constant NED current rotated into BODY by the full attitude, with its BODY derivative; the argument `w_c` is now `vD_c`, positive down, same position and meaning), `npsauv.m` takes the through-water surge speed in the propeller, and the LOS observer, examples and documents changed. Every generator was run once, unchanged except where a section below says so, with `MSS_DIR` at `aff76cf`, `OUT_DIR` a scratch folder and the output compared with the frozen file (`cmp`, then column by column).
+
+| File | Result | sha256 |
+|---|---|---|
+| `gravity_mss_cc07579.csv`, `surface_chain_mss_cc07579.csv`, `surface_gmtrx_mss_current.csv`, `spheroid_matlab_reference_mss_current.csv` | byte-identical | — |
+| `payload_trim_mss_aff76cf.csv` (**new**, beside the `6e78e98_beam_strips` and `ed2ce7b` files) | against the `6e78e98` record only `xdot_mss_07..12` differ (largest 0.0375): `otter_legacy.m` now evaluates the kinematics at the actual attitude (the line `eta = eta - eta_0` is removed upstream, 2026-11-01, F-MSS-24); `xdot_mss` equals `xdot_corr` to 5e-15 | `98b05b03c685c483a5a25783b41e9f1f90c697d0b1c5178ae7f34f4d08047b46` |
+| `generate_payload_trim_mss.m` | the restoring vector is written `G * (eta - eta_0)`, which holds at both the shifted (earlier) and the unshifted (now) `eta` of the instrumented model; with the earlier line it would have returned `G * eta` and moved `g_mss_03..05` by `G * eta_0` (490 N) | `c8e7868a51c87b4d164073dd67ca7b5aac1c50ced4d68ebced7b2f2b37e9a68e` |
+
+The earlier record `payload_trim_mss_6e78e98_beam_strips.csv` stays: the form `lever_arm_and_heave_shift` (shifted-attitude kinematics) is tested against it; the physics form `weight_wrench` against the new file.

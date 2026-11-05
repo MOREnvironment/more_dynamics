@@ -94,7 +94,7 @@ for mp = masses
             [xdot1, ~, ~, ~, ~, ~, ws] = otter_ws(x, n, mp, rp, Vc, beta_c);
             maxSelfCheck = max([maxSelfCheck; abs(xdot1 - xdot0)]);
 
-            g_mss = ws.G * ws.eta;                            % restoring vector of otter_legacy.m (ws.eta is shifted)
+            g_mss = ws.G * (x(7:12) - ws.eta_0);              % restoring vector of otter_legacy.m: G * (eta - eta_0)
 
             % corrected form: MSS's g_0 (payload weight as a wrench on z = 0), kinematics at the actual attitude
             g0c = [0; 0; ws.g_0(3); ws.m_payload];

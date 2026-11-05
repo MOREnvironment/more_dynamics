@@ -1,6 +1,6 @@
 {
   "vehicle": "REMUS 100, the MSS 1.6 m REMUS-like model",
-  "source": {"repository": "MSS (T. I. Fossen), MIT licence", "revision": "ca014d99e6c4383dad15a729246bb0fab1628922", "file": "CRAFT/AUV/models/remus100.m"},
+  "source": {"repository": "MSS (T. I. Fossen), MIT licence", "revision": "aff76cfe8e72b19d99e626cca22e2a37bdbea8bc", "file": "CRAFT/AUV/models/remus100.m"},
   "gravity": {"latitude_rad": 1.1073560310932362, "g": 9.8217848645790813, "place": "remus100.m:96-97 mu = deg2rad(63.446827), g_mu = gravity(mu); weight = mass * g"},
   "selectors": {"mass_properties": "spheroid", "coriolis": "co", "drag_model": "cylinder", "strip_grid": "midpoint", "sway_damping_fade": false, "smooth_speed": false, "open_water_model": "linearized", "clip_advance_ratio": false, "convention": "starboard_down_positive"},
   "parameters": {
