@@ -4,7 +4,7 @@ The reference set is the marked one-density, one-geometry MSS copy.  States
 in its CSVs are [nu; eta]; the vehicle graph and step use [eta; nu].  The
 reordering is confined to these tests.  Stage 1 has a prescribed wrench as
 its actuator; stage 2 has fins and a propeller.  The vehicle's inputs are
-the three current values (``current_form`` is the MSS yaw-rate form in these
+the three current values (``current_form`` is the full-attitude form, the one of the source model in these
 gates), then the commands of its actuators in list order.
 
 Author:    Enio Krizman
@@ -517,7 +517,7 @@ def test_a_parameter_the_composition_leaves_out_takes_the_plugin_default():
     """Every plugin declares its parameters with defaults (the frozen REMUS 100 set, cited in the plugin): a
     composition that sets only the two form choices gives the same vehicle."""
     p = plugins()
-    bare = vc.build_context(p.SpheroidAuv, {"coriolis_form": "munk_couplings_removed", "current_form": "yaw_rate_terms"},
+    bare = vc.build_context(p.SpheroidAuv, {"coriolis_form": "munk_couplings_removed", "current_form": "full_attitude"},
                             site=(p.Site, vc.remus_site()), hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                             actuators=[p.PrescribedWrench])
     table = _read_csv(HULL_DERIVATIVE_FILE)

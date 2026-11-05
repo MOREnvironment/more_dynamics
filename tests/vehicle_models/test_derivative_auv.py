@@ -249,6 +249,68 @@ def test_refuses_a_missing_derivative_table_entry():
 
 
 # ---------------------------------------------------------------------------
+# The strip integral of the hull: the moment of each strip's own force
+# ---------------------------------------------------------------------------
+
+def _strip_sum_from_first_principles(nu_r, length, rho, cd, dims, sections):
+    """BODY (FRD) strip sum written from the point velocity ``nu(1:3) + omega x r`` at ``r = (x, 0, 0)``: lateral
+    ``v + x r`` and vertical ``w - x q`` speeds, each strip's force opposing its own cross-flow, and each moment
+    ``r x F``: ``M_y = -x F_z``, ``N_z = +x F_y``."""
+    v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
+    dx = length / sections
+    force = np.zeros(6)
+    for i in range(sections + 1):
+        x = -length / 2 + i * dx
+        lateral, vertical = v_r + x * r, w_r - x * q
+        ucf = np.hypot(lateral, vertical) + 1e-6
+        drag = cd[0] * dims[0] * lateral ** 2 + cd[1] * dims[1] * vertical ** 2
+        f_y = -0.5 * rho * dx * drag * lateral / ucf
+        f_z = -0.5 * rho * dx * drag * vertical / ucf
+        force += np.array([0.0, f_y, f_z, 0.0, -x * f_z, x * f_y])
+    return force
+
+
+def _strip_block():
+    from more_dynamics.models.cross_flow.cross_flow_strip import cross_flow_strip_combined_drag
+    return cross_flow_strip_combined_drag(sections=10)
+
+
+def test_G1_the_strip_moments_are_the_moments_of_the_strips_own_forces():
+    """Pitch and yaw moments of the combined-drag strip sum equal ``sum r x F`` of the strips' own forces, written from
+    the point velocity (units N, N m; BODY FRD; sign case: a heave flow with a pitch rate)."""
+    block = _strip_block()
+    rng = np.random.default_rng(20261105)
+    worst = 0.0
+    for _ in range(200):
+        nu_r = np.r_[rng.uniform(0, 3), rng.uniform(-1, 1, 2), rng.uniform(-0.5, 0.5, 3)]
+        length, rho = rng.uniform(1.0, 6.0), rng.uniform(1000.0, 1030.0)
+        cd, dims = rng.uniform(0.3, 1.2, 2), rng.uniform(0.2, 0.8, 2)
+        ours = np.asarray(block(nu_r=nu_r, length=length, water_density=rho, cross_flow_drag_coefficients=cd,
+                                cross_flow_section_dimensions=dims)["tau"]).ravel()
+        worst = max(worst, np.abs(ours - _strip_sum_from_first_principles(nu_r, length, rho, cd, dims, 10)).max())
+    assert worst <= 1e-9, worst
+
+
+def test_G4_the_strip_pitch_moment_is_not_the_one_with_the_heave_speed_of_the_wrong_sign():
+    """With ``w_r != 0`` and ``q != 0`` the pitch moment of the strips differs from the form with ``w_r + x q``; the first
+    check above tells them apart."""
+    block = _strip_block()
+    nu_r = np.array([1.0, 0.0, 0.4, 0.0, 0.3, 0.0])
+    cd, dims, length, rho = np.array([0.6, 0.9]), np.array([0.5, 0.5]), 3.0, 1025.0
+    ours = np.asarray(block(nu_r=nu_r, length=length, water_density=rho, cross_flow_drag_coefficients=cd,
+                            cross_flow_section_dimensions=dims)["tau"]).ravel()
+    dx = length / 10
+    wrong = 0.0
+    for i in range(11):
+        x = -length / 2 + i * dx
+        lateral, vertical = 0.0, nu_r[2] - x * nu_r[4]
+        ucf = np.hypot(lateral, vertical) + 1e-6
+        drag = cd[1] * dims[1] * vertical ** 2
+        wrong += -0.5 * rho * dx * drag * (nu_r[2] + x * nu_r[4]) / ucf * x
+    assert abs(ours[4] - wrong) > 1e-3 * abs(ours[4])
+
+
+# ---------------------------------------------------------------------------
 # G1: derivative equals npsauv.m / npsauv_hull.m
 # ---------------------------------------------------------------------------
 

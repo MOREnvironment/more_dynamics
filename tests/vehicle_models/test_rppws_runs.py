@@ -255,7 +255,7 @@ def test_a_command_the_configuration_does_not_have_is_refused():
 # ---------------------------------------------------------------------------------------------------------------
 OTTER_CONFIGURATION, OTTER_PART = "otter", "Otter (MSS)"
 OTTER_DATA = Path(__file__).resolve().parent / "data" / "otter"
-OTTER_TAG = "_mss_ed2ce7b"
+OTTER_TAG = "_mss_aff76cf"
 OTTER_RUNS = sorted(f.stem[len("otter_trajectory_"):-len(OTTER_TAG)] for f in OTTER_DATA.glob(f"otter_trajectory_*{OTTER_TAG}.csv")
                     if "tolerances" not in f.name)
 OTTER_COLUMNS = {"drive_command": ("ui_01", "ui_02")}  # port (n(1)), starboard (n(2)) shaft speeds, rad/s
@@ -329,10 +329,10 @@ def test_G3_through_rpp_otter_trajectory_equals_matlab_rk4_run(name):
 
 
 @pytest.mark.parametrize("name", ["differential_turn", "zigzag_differential_steps"])
-def test_G4_swapped_thrusters_or_the_corrected_trim_are_detected(name):
-    """The gate can fail: the two shaft speeds swapped between port and starboard, and the physics payload trim (the
-    default form, kinematics at the actual attitude) in place of MSS's (the part's form), each leave the frozen run by
-    far more than its tolerance."""
+def test_G4_swapped_thrusters_or_the_shifted_attitude_trim_are_detected(name):
+    """The gate can fail: the two shaft speeds swapped between port and starboard, and the payload trim with the
+    kinematics at the shifted attitude (the form of the source model before its repair) in place of the part's, each
+    leave the frozen run by far more than its tolerance."""
     table = _otter_table(name)
     tolerance = _otter_tolerances()[name]
     swapped = _otter_rk4_run(_vehicle(OTTER_CONFIGURATION), table, {"drive_command": ("ui_02", "ui_01")})
@@ -340,8 +340,9 @@ def test_G4_swapped_thrusters_or_the_corrected_trim_are_detected(name):
     p = vc.plugins()
     thrusters = [(p.Propulsor, vc.pick(p.Propulsor, vc.reference_part(n)))
                  for n in ("Otter port thruster", "Otter starboard thruster")]
-    corrected = vc.otter(actuators=thrusters)  # the default form, weight_wrench
-    run = _otter_rk4_run(corrected, table)
+    shifted = vc.otter(actuators=thrusters, hydrostatics=(p.SurfaceRestoring, {
+        **vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2, "payload_trim_form": "lever_arm_and_heave_shift"}))
+    run = _otter_rk4_run(shifted, table)
     assert (np.abs(run - _otter_reference(table)).max(axis=0) > 10 * tolerance).any()
 
 

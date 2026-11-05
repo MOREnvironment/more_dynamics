@@ -214,9 +214,10 @@ MSSC = "$MSS_DIR/LIBRARY/mssConstants.m"
 FLD_OLD = "$MSS_DIR@cc07579/LIBRARY/modeling/forceLiftDrag.m"   # two densities in one MSS model: rho = 1026 here
 OTTER_OLD = "$MSS_DIR@cc07579/CRAFT/USV/models/otter.m"   # the linear-surge Otter the retained "surface" form follows
 CLD = "$MSS_DIR/LIBRARY/modeling/coeffLiftDrag.m"
-CFD = "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m"
-# the revision that holds the strip-width fix (heave and pitch strips as wide as the beam) and the vertical strip velocity w_r - x q
-CFD_FIXED = "$MSS_DIR@ca014d9/LIBRARY/modeling/crossFlowDrag.m"
+CFD = "$MSS_DIR@6e78e98/LIBRARY/modeling/crossFlowDrag.m"
+# the pinned revision holds the strip-width fix (heave and pitch strips as wide as the beam) and the vertical strip velocity w_r - x q;
+# CFD is the file before that fix (the history the draft-strip transcription follows)
+CFD_FIXED = "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m"
 CYL = "$MSS_DIR/HYDRO/cylinderDrag.m"
 HOERNER = "$MSS_DIR/HYDRO/Hoerner.m"
 GRAVITY = "$MSS_DIR/INS/functions/gravity.m"
@@ -241,26 +242,26 @@ GEN_CAT = "$TESTS/hydrodynamic_loads/data/generate_catamaran_template.m"
 # (file relative to <more>, line) -> how the stripped line starts. Pinned by
 # test_cited_lines_are_unchanged; every constant below is parsed from these.
 CITED_LINES = {
-    (REMUS, 96): "mu = deg2rad(63.446827);",
-    (REMUS, 127): "alpha = atan2( nu_r(3), nu_r(1) );",
-    (REMUS, 128): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
-    (REMUS, 132): "L_auv = 1.6;",
-    (REMUS, 133): "D_auv = 0.19;",
-    (REMUS, 134): "S = 0.7 * L_auv * D_auv;",
-    (REMUS, 136): "b = 1.0096 * D_auv/2;",
-    (REMUS, 138): "r_bG = [ 0 0 0.02 ]';",
-    (REMUS, 139): "r_bB = [ 0 0 0 ]';",
-    (REMUS, 144): "Cd = 0.42;",
-    (REMUS, 145): "CD_0 = Cd * pi * b^2 / S;",
-    (REMUS, 193): "T1 = 20;",
-    (REMUS, 194): "T2 = 20;",
-    (REMUS, 195): "zeta4 = 0.3;",
-    (REMUS, 196): "zeta5 = 0.8;",
-    (REMUS, 197): "T6 = 1;",
-    (REMUS, 218): "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
-    (REMUS, 219): "D(1,1) = D(1,1) * exp(-3 * U_r);",
-    (REMUS, 221): "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
-    (REMUS, 222): "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
+    (REMUS, 109): "mu = deg2rad(63.446827);",
+    (REMUS, 134): "alpha = atan2( nu_r(3), nu_r(1) );",
+    (REMUS, 135): "U_r = sqrt( nu_r(1)^2 + nu_r(2)^2 + nu_r(3)^2 );",
+    (REMUS, 139): "L_auv = 1.6;",
+    (REMUS, 140): "D_auv = 0.19;",
+    (REMUS, 141): "S = 0.7 * L_auv * D_auv;",
+    (REMUS, 143): "b = 1.0096 * D_auv/2;",
+    (REMUS, 145): "r_bG = [ 0 0 0.02 ]';",
+    (REMUS, 146): "r_bB = [ 0 0 0 ]';",
+    (REMUS, 151): "Cd = 0.42;",
+    (REMUS, 152): "CD_0 = Cd * pi * b^2 / S;",
+    (REMUS, 200): "T1 = 20;",
+    (REMUS, 201): "T2 = 20;",
+    (REMUS, 202): "zeta4 = 0.3;",
+    (REMUS, 203): "zeta5 = 0.8;",
+    (REMUS, 204): "T6 = 1;",
+    (REMUS, 225): "D = Dmtrx([T1 T2 T6],[zeta4 zeta5],MRB,MA,[W r_bG' r_bB']);",
+    (REMUS, 226): "D(1,1) = D(1,1) * exp(-3 * U_r);",
+    (REMUS, 228): "tau_liftdrag = forceLiftDrag(D_auv,S,CD_0,alpha,U_r);",
+    (REMUS, 229): "tau_crossflow = crossFlowDrag(L_auv,D_auv,D_auv,nu_r,'cylinder');",
     (DMTRX, 30): "M = MRB + MA;",
     (DMTRX, 44): "T3 = T2;",
     (DMTRX, 45): "w4 = sqrt( W * (r_bg(3)-r_bb(3)) / M(4,4) );",
@@ -334,19 +335,19 @@ CITED_LINES = {
     (XITTC, 36): "Cf = 0.075 / (log10(Re) - 2)^2;",
     (XITTC, 38): "S = 1.025 * L * (C_B*B + 1.7*T);",
     (XITTC, 39): "Xuu = -0.5 * rho * S * (1+k) * Cf;",
-    (OSV, 61): "vessel.L = 83;",
-    (OSV, 62): "vessel.B = 18;",
-    (OSV, 63): "vessel.T = 5;",
-    (OSV, 64): "constant = mssConstants();",
-    (OSV, 65): "vessel.rho = constant.rho_water;",
-    (OSV, 66): "vessel.Cb = 0.65;",
-    (OSV, 67): "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B;",
-    (OSV, 70): "vessel.K_max = [300e3 300e3 420e3 655e3]';",
-    (OSV, 76): "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4);",
-    (OSV, 77): "vessel.U_max = 7.7;",
-    (OSV, 79): "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T;",
-    (OSV, 80): "vessel.m = vessel.rho * vessel.nabla;",
-    (OSV, 129): "vessel.T1 = 100;",
+    (OSV, 68): "vessel.L = 83;",
+    (OSV, 69): "vessel.B = 18;",
+    (OSV, 70): "vessel.T = 5;",
+    (OSV, 71): "constant = mssConstants();",
+    (OSV, 72): "vessel.rho = constant.rho_water;",
+    (OSV, 73): "vessel.Cb = 0.65;",
+    (OSV, 74): "vessel.S = vessel.L * vessel.B + 2 * vessel.T * vessel.B;",
+    (OSV, 77): "vessel.K_max = [300e3 300e3 420e3 655e3]';",
+    (OSV, 83): "vessel.thrust_max = vessel.K_max(3)+vessel.K_max(4);",
+    (OSV, 84): "vessel.U_max = 7.7;",
+    (OSV, 86): "vessel.nabla = vessel.Cb * vessel.L * vessel.B * vessel.T;",
+    (OSV, 87): "vessel.m = vessel.rho * vessel.nabla;",
+    (OSV, 136): "vessel.T1 = 100;",
     (OSV_SURGE_CALL, 180): "[X,Xuu,Xu] = forceSurgeDamping(flag,nu_r(1),vessel.m,vessel.S,vessel.L, ...",
     (OSV_SURGE_CALL, 181): "vessel.T1,vessel.rho,vessel.U_max,vessel.thrust_max);",
     (OSV_2_0_2, 188): "vessel.D(1,1) = 0;",
@@ -358,19 +359,19 @@ CITED_LINES = {
     (GRAVITY, 12): "sqrt( 1 - 0.006694384442 * sin(mu)^2 );",
     (MSSC, 12): "constant.rho_water = 1025;",
     (MSSC, 14): "constant.g = 9.81;",
-    (OTTER, 101): "constant = mssConstants();",
-    (OTTER, 102): "g = constant.g;",
-    (OTTER, 103): "rho = constant.rho_water;",
-    (OTTER, 104): "L = 2.0;",
-    (OTTER, 106): "m = 55.0;",
-    (OTTER, 111): "T_surge = 5;",
-    (OTTER, 113): "T_yaw = 1;",
-    (OTTER, 114): "Umax = 6 * 0.5144;",
-    (OTTER, 117): "B_pont  = 0.25;",
-    (OTTER, 120): "Cb_pont = 0.4;",
-    (OTTER, 134): "nabla = (m+mP)/rho;",
-    (OTTER, 135): "T = nabla / (2 * Cb_pont * B_pont * L);",
-    (OTTER, 112): "T_sway = 0.5;",
+    (OTTER, 100): "constant = mssConstants();",
+    (OTTER, 101): "g = constant.g;",
+    (OTTER, 102): "rho = constant.rho_water;",
+    (OTTER, 103): "L = 2.0;",
+    (OTTER, 105): "m = 55.0;",
+    (OTTER, 110): "T_surge = 5;",
+    (OTTER, 112): "T_yaw = 1;",
+    (OTTER, 113): "Umax = 6 * 0.5144;",
+    (OTTER, 116): "B_pont  = 0.25;",
+    (OTTER, 119): "Cb_pont = 0.4;",
+    (OTTER, 133): "nabla = (m+mP)/rho;",
+    (OTTER, 134): "T = nabla / (2 * Cb_pont * B_pont * L);",
+    (OTTER, 111): "T_sway = 0.5;",
     (OTTER_OLD, 99): "T_sway = 1;",
     (OTTER_OLD, 100): "T_yaw = 1;",
     (OTTER_OLD, 101): "Umax = 6 * 0.5144;",
@@ -380,25 +381,25 @@ CITED_LINES = {
     (OTTER_OLD, 205): "Kp = -2 * 0.2 * w4 * M(4,4);",
     (OTTER_OLD, 206): "Mq = -2 * 0.4 * w5 * M(5,5);",
     (OTTER_OLD, 240): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-    (OTTER, 207): "LCF = -0.2;",
-    (OTTER, 212): "w3 = sqrt( G33/M(3,3) );",
-    (OTTER, 213): "w4 = sqrt( G44/M(4,4) );",
-    (OTTER, 214): "w5 = sqrt( G55/M(5,5) );",
-    (OTTER, 217): "Xu = -M(1,1) / T_surge;",
-    (OTTER, 218): "Xuu = -24.4 * g / Umax^2;",
-    (OTTER, 219): "Yv = -M(2,2) / T_sway;",
-    (OTTER, 220): "Zw = -2 * 0.3 * w3 * M(3,3);",
-    (OTTER, 221): "Kp = -2 * 0.2 * w4 * M(4,4);",
-    (OTTER, 222): "Mq = -2 * 0.4 * w5 * M(5,5);",
-    (OTTER, 223): "Nr = -M(6,6) / T_yaw;",
-    (OTTER, 251): "Xh = Xu  * exp(-3 * abs(nu_r(1))) * nu_r(1) + ...",
-    (OTTER, 252): "Xuu * abs(nu_r(1)) * nu_r(1);",
-    (OTTER, 253): "Yh = Yv * nu_r(2);",
-    (OTTER, 254): "Zh = Zw * nu_r(3);",
-    (OTTER, 255): "Kh = Kp * nu_r(4);",
-    (OTTER, 256): "Mh = Mq * nu_r(5);",
-    (OTTER, 257): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
-    (OTTER, 262): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
+    (OTTER, 206): "LCF = -0.2;",
+    (OTTER, 211): "w3 = sqrt( G33/M(3,3) );",
+    (OTTER, 212): "w4 = sqrt( G44/M(4,4) );",
+    (OTTER, 213): "w5 = sqrt( G55/M(5,5) );",
+    (OTTER, 216): "Xu = -M(1,1) / T_surge;",
+    (OTTER, 217): "Xuu = -24.4 * g / Umax^2;",
+    (OTTER, 218): "Yv = -M(2,2) / T_sway;",
+    (OTTER, 219): "Zw = -2 * 0.3 * w3 * M(3,3);",
+    (OTTER, 220): "Kp = -2 * 0.2 * w4 * M(4,4);",
+    (OTTER, 221): "Mq = -2 * 0.4 * w5 * M(5,5);",
+    (OTTER, 222): "Nr = -M(6,6) / T_yaw;",
+    (OTTER, 250): "Xh = Xu  * exp(-3 * abs(nu_r(1))) * nu_r(1) + ...",
+    (OTTER, 251): "Xuu * abs(nu_r(1)) * nu_r(1);",
+    (OTTER, 252): "Yh = Yv * nu_r(2);",
+    (OTTER, 253): "Zh = Zw * nu_r(3);",
+    (OTTER, 254): "Kh = Kp * nu_r(4);",
+    (OTTER, 255): "Mh = Mq * nu_r(5);",
+    (OTTER, 256): "Nh = Nr * (1 + 10 * abs(nu_r(6))) * nu_r(6);",
+    (OTTER, 261): "tau_crossflow = crossFlowDrag(L,B_pont,T,nu_r);",
     (GEN_SPH, 234): "rho = 1025;",
     (GEN_SPH, 295): "D(1,1) = D(1,1) * exp(-3*U_r);",
     (GEN_SPH, 296): "D(2,2) = D(2,2) * exp(-3*U_r);",
@@ -535,7 +536,7 @@ MSS_OSV_SURGE = "osv_surge_damping_mss_cc07579.csv"
 # 2026-10-06: the same generator re-run unchanged at MSS ac77394; only the four
 # non-zero tau_crossflow columns differ from MSS_SPHEROID (test below)
 MSS_AC_SPHEROID = "spheroid_matlab_reference_mss_ac77394.csv"
-MSS_99_SPHEROID = "spheroid_matlab_reference_mss_99fdf4d.csv"   # the same columns at MSS 99fdf4d
+MSS_99_SPHEROID = "spheroid_matlab_reference_mss_aff76cf.csv"   # the same columns at MSS 99fdf4d
 MSS_SURGE = "surge_damping_mss_ac77394.csv"          # forceSurgeDamping.m, direct calls
 MSS_XUU_ITTC = "xuu_ittc_mss_ac77394.csv"            # XuuITTC.m, direct calls
 MSS_FLOATING = "floating_damping_mss_ac77394.csv"    # Dmtrx.m surface branch, direct calls
@@ -587,10 +588,10 @@ def _max_diff(a, b):
 # Parameter sets (every number parsed from a pinned line)
 # --------------------------------------------------------------------------
 def _spheroid_geometry():
-    l_auv, d_auv = _value(REMUS, 132), _value(REMUS, 133)
-    s = _value(REMUS, 134, {"L_auv": l_auv, "D_auv": d_auv})
-    b = _value(REMUS, 136, {"D_auv": d_auv})
-    cd0 = _value(REMUS, 145, {"Cd": _value(REMUS, 144), "b": b, "S": s})
+    l_auv, d_auv = _value(REMUS, 139), _value(REMUS, 140)
+    s = _value(REMUS, 141, {"L_auv": l_auv, "D_auv": d_auv})
+    b = _value(REMUS, 143, {"D_auv": d_auv})
+    cd0 = _value(REMUS, 152, {"Cd": _value(REMUS, 151), "b": b, "S": s})
     return {"L": l_auv, "D": d_auv, "S": s, "CD_0": cd0}
 
 
@@ -602,11 +603,11 @@ def _spheroid_damping(fade, csv=LEGACY_SPHEROID):
     return {
         "rigid_body_mass_matrix": mrb,
         "added_mass_matrix": ma,
-        "weight": mrb[0, 0] * ECEFNEDtransform.gravity(_value(REMUS, 96), unit="rad"),  # remus100.m 214
-        "center_of_gravity": _value(REMUS, 138),
-        "center_of_buoyancy": _value(REMUS, 139),
-        "time_constants": [_value(REMUS, 193), _value(REMUS, 194), _value(REMUS, 197)],
-        "damping_ratios": [_value(REMUS, 195), _value(REMUS, 196)],
+        "weight": mrb[0, 0] * ECEFNEDtransform.gravity(_value(REMUS, 109), unit="rad"),  # remus100.m 214
+        "center_of_gravity": _value(REMUS, 145),
+        "center_of_buoyancy": _value(REMUS, 146),
+        "time_constants": [_value(REMUS, 200), _value(REMUS, 201), _value(REMUS, 204)],
+        "damping_ratios": [_value(REMUS, 202), _value(REMUS, 203)],
         "sway_damping_fade": fade,
     }
 
@@ -619,14 +620,14 @@ def _cross_flow_spheroid(grid):
 
 
 def _catamaran_draft():
-    m, rho, mp = _value(OTTER, 106), _value(MSSC, 12), _value(GEN_CAT, 35)
-    nabla = _value(OTTER, 134, {"m": m, "mP": mp, "rho": rho})
-    return _value(OTTER, 135, {"nabla": nabla, "Cb_pont": _value(OTTER, 120),
-                               "B_pont": _value(OTTER, 117), "L": _value(OTTER, 104)})
+    m, rho, mp = _value(OTTER, 105), _value(MSSC, 12), _value(GEN_CAT, 35)
+    nabla = _value(OTTER, 133, {"m": m, "mP": mp, "rho": rho})
+    return _value(OTTER, 134, {"nabla": nabla, "Cb_pont": _value(OTTER, 119),
+                               "B_pont": _value(OTTER, 116), "L": _value(OTTER, 103)})
 
 
 def _cross_flow_catamaran(grid):
-    return {"length": _value(OTTER, 104), "beam": _value(OTTER, 117),
+    return {"length": _value(OTTER, 103), "beam": _value(OTTER, 116),
             "draft": _catamaran_draft(), "water_density": _value(MSSC, 12),
             "drag_model": "hoerner", "strip_grid": grid}                # otter.m 244
 
@@ -648,21 +649,21 @@ def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
     m, g_co = ref["M"][0], ref["G"][0]
     blend = csv in (MSS_CATAMARAN_99FDF4D, MSS_CATAMARAN_CA014D9)
     o = OTTER if blend else OTTER_OLD
-    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 207 if blend else 192), 0.0, 0.0]))
+    h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 206 if blend else 192), 0.0, 0.0]))
     p = {
         "mass_matrix": m,
         "restoring_matrix": h_inv.T @ g_co @ h_inv,
-        "max_speed": _value(OTTER, 114) if blend else _value(OTTER_OLD, 101),
-        "yaw_damping_nonlinearity": _number_in(OTTER if blend else OTTER_OLD, 257 if blend else 240,
+        "max_speed": _value(OTTER, 113) if blend else _value(OTTER_OLD, 101),
+        "yaw_damping_nonlinearity": _number_in(OTTER if blend else OTTER_OLD, 256 if blend else 240,
                                                r"\(1 \+ ([0-9.]+) \* abs"),
     }
     if blend:
         p.update({
-            "max_forward_thrust": _number_in(OTTER, 218, r"Xuu = -([0-9.]+) \*") * gravity,
-            "surge_time_constant": _value(OTTER, 111),
-            "surge_blend_decay": _number_in(OTTER, 251, r"exp\(-([0-9.]+) \*"),
-            "time_constants": [_value(OTTER, 112), _value(OTTER, 113)],
-            "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (220, 221, 222)],
+            "max_forward_thrust": _number_in(OTTER, 217, r"Xuu = -([0-9.]+) \*") * gravity,
+            "surge_time_constant": _value(OTTER, 110),
+            "surge_blend_decay": _number_in(OTTER, 250, r"exp\(-([0-9.]+) \*"),
+            "time_constants": [_value(OTTER, 111), _value(OTTER, 112)],
+            "damping_ratios": [_number_in(OTTER, n, r"-2 \* ([0-9.]+) \*") for n in (219, 220, 221)],
         })
     else:
         p.update({
@@ -1520,13 +1521,13 @@ def test_surge_reference_set_1_is_osv():
     ac77394, the revision of the surge reference)."""
     ref = _named_columns(MSS_SURGE)
     row = int(np.flatnonzero(ref["set"] == 1)[0])
-    length, beam, draft = _value(OSV, 61), _value(OSV, 62), _value(OSV, 63)
-    rho, cb = _value(MSSC, 12), _value(OSV, 66)
-    k_max = _value(OSV, 70)
+    length, beam, draft = _value(OSV, 68), _value(OSV, 69), _value(OSV, 70)
+    rho, cb = _value(MSSC, 12), _value(OSV, 73)
+    k_max = _value(OSV, 77)
     assert ref["L"][row] == length and ref["rho"][row] == rho
     assert ref["m"][row] == rho * cb * length * beam * draft                  # lines 78-79
     assert ref["S"][row] == length * beam + 2 * draft * beam                  # line 66
-    assert ref["T1"][row] == _value(OSV, 129) and ref["u_max"][row] == _value(OSV, 77)
+    assert ref["T1"][row] == _value(OSV, 136) and ref["u_max"][row] == _value(OSV, 84)
     assert ref["thrust_max"][row] == k_max[2] + k_max[3]                      # line 75
 
 

@@ -104,7 +104,7 @@ def cross_flow_strip_combined_drag(*, sections):
         Ucf = sqrt((v_r + x r)^2 + (w_r - x q)^2) + eps
         drag = Cdy Hx (v_r + x r)^2 + Cdz Bx (w_r - x q)^2
         Cy += dx drag (v_r + x r) / Ucf,  Cz += dx drag (w_r - x q) / Ucf
-        Cm += dx drag (w_r + x q) / Ucf x,  Cn += dx drag (v_r + x r) / Ucf x
+        Cm += dx drag (x q - w_r) / Ucf x,  Cn += dx drag (v_r + x r) / Ucf x
         tau = (rho / 2) [0, -Cy, -Cz, 0, -Cm, -Cn]
 
     ``sections`` (an int, not a CasADi symbol: it sets how many strip terms
@@ -112,11 +112,13 @@ def cross_flow_strip_combined_drag(*, sections):
     ``cross_flow_sections`` of the same value is checked against it by the
     plugin, not fed into this graph.
 
-    **Reproduced as written, not fixed (rule 15):** ``Cm``'s strip term uses
-    ``(w_r + x q)``, the same sign as the vertical speed term rather than
-    ``(w_r - x q)`` that ``Cz`` and the cross-flow kinematics use everywhere
-    else in this file (``npsauv.m`` 232); a candidate MSS asymmetry, flagged
-    for A-65's register, not corrected here."""
+    Frame and sign (BODY, FRD, x forward): the strip at ``x`` sees the vertical velocity ``w_r - x q`` (the point
+    velocity ``nu_r(1:3) + omega x r`` with ``r = (x, 0, 0)``). Its vertical force is
+    ``Z_i = -(rho/2) drag (w_r - x q) / Ucf dx`` and its pitch moment about the origin is
+    ``M_i = -x Z_i = (rho/2) drag (w_r - x q) x / Ucf dx``, so ``tau(5) = -(rho/2) Cm`` needs
+    ``Cm += dx drag (x q - w_r) / Ucf x``. The form ``(w_r + x q)`` has the heave speed with the sign of the
+    pitch term and is inconsistent with ``Cz``; the two agree only for ``w_r = 0``. Checked against the
+    moment of each strip's own force in ``tests/vehicle_models/test_derivative_auv.py``."""
     nu_r = ca.SX.sym("nu_r", 6)
     length = ca.SX.sym("length")
     water_density = ca.SX.sym("water_density")
@@ -134,7 +136,7 @@ def cross_flow_strip_combined_drag(*, sections):
         drag = cdy * hx * (v_r + x * r) ** 2 + cdz * bx * (w_r - x * q) ** 2  # (npsauv.m 228)
         y_sum += dx * drag * (v_r + x * r) / ucf  # (npsauv.m 230)
         z_sum += dx * drag * (w_r - x * q) / ucf  # (npsauv.m 231)
-        m_sum += dx * drag * (w_r + x * q) / ucf * x  # (npsauv.m 232, the flagged sign, module docstring)
+        m_sum += dx * drag * (x * q - w_r) / ucf * x  # (npsauv.m 232; the moment of the strip's own force, docstring)
         n_sum += dx * drag * (v_r + x * r) / ucf * x  # (npsauv.m 233)
     tau = (water_density / 2.0) * ca.vertcat(0, -y_sum, -z_sum, 0, -m_sum, -n_sum)  # (npsauv.m 236)
     return function_from(

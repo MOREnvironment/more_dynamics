@@ -144,7 +144,7 @@ class DerivativeAuv(VehicleModel3D):
         ParameterDescription("buoyancy", unset()),  # N, npsauv.m:108 B (neutral: the hydrostatics child's own method)
         ParameterDescription("center_of_buoyancy", unset()),  # m, npsauv.m:107 r_bb
         ParameterDescription("derivative_scaling", "nondimensional"),  # npsauv.m:116-124 (Fossen prime-scaling)
-        ParameterDescription("current_form", "yaw_rate_terms"),  # npsauv.m:83-90 (the gate's own MSS form)
+        ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
         *[ParameterDescription(f"nondim_{name}", unset()) for name in GIVEN_DERIVATIVE_ADDED_MASS_NAMES],  # npsauv.m 166-171
     ]
 

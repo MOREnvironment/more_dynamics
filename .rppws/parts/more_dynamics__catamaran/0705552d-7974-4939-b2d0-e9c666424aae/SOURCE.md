@@ -18,10 +18,11 @@ revision `6e78e98`) as cited in the comment beside it, plus `generate_catamaran_
 The part's hull-loads subcomponent selects `manoeuvring_damping = time_constants_surge_blend`
 (`otter_legacy.m` 212-223, 250-257: surge force `Xu exp(-3|u_r|) u_r + Xuu |u_r| u_r`, `Xu = -M11/T_surge`
 with `T_surge` 5 s, `Xuu = -24.4 g / Umax^2`; `T_sway` 0.5 s). The part's restoring selects
-`payload_trim_form = lever_arm_and_heave_shift`, so the part is bit-for-bit the MSS form, including
-the payload `eta_0` shift of `otter_legacy.m` 265-275 that the registry lists as F-MSS-24 and F-MSS-31 (still present
-at `6e78e98`: the payload weight in heave a second time, and the kinematics at the shifted attitude); this part
-does not correct them. The library's corrected form is the plugin's default, `lever_arm_moment`.
+`payload_trim_form = weight_wrench`, the library's default: the payload weight is a wrench on the unloaded waterline
+(`z = 0`) and the kinematics are at the actual attitude, the payload `eta_0` shift of `otter_legacy.m` 265-275 with
+the line `eta = eta - eta_0` removed upstream (fixed upstream 2026-11-01, F-MSS-24; F-MSS-31 is withdrawn: the trim is
+textbook). Until the MSS pin `aff76cf` this part selected `lever_arm_and_heave_shift`, the form with the shifted-attitude
+kinematics; that form stays in the library for the earlier record.
 
 The actuators are the two thrusters of the Otter, linked from the named parts `Otter port thruster` and
 `Otter starboard thruster` (`otter_legacy.m` 32-35, 145-152, 236-248): two inputs named `drive_command`, the shaft speed

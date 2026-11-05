@@ -92,16 +92,16 @@ VEHICLE_NAMES = ("remus", "otter", "grethe", "marie", "hugin", "lauv",
 # how the stripped line starts. ``test_cited_mss_lines_are_unchanged`` pins them.
 REMUS = "CRAFT/AUV/models/remus100.m"
 CITED_LINES = {
-    (REMUS, 96): "mu = deg2rad(63.446827);",
-    (REMUS, 132): "L_auv = 1.6;",
-    (REMUS, 133): "D_auv = 0.19;",
-    (REMUS, 135): "a = 1.0096 * L_auv/2;",
-    (REMUS, 136): "b = 1.0096 * D_auv/2;",
-    (REMUS, 138): "r_bG = [ 0 0 0.02 ]';",
-    (REMUS, 139): "r_bB = [ 0 0 0 ]';",
-    (REMUS, 215): "m = MRB(1,1); W = m * g_mu; B = W;",
-    (REMUS, 232): "g = gRvect(W,B,R,r_bG,r_bB);",
-    (REMUS, 259): "(tau + tau_liftdrag + tau_crossflow - C * nu_r - D * nu_r  - g)",
+    (REMUS, 109): "mu = deg2rad(63.446827);",
+    (REMUS, 139): "L_auv = 1.6;",
+    (REMUS, 140): "D_auv = 0.19;",
+    (REMUS, 142): "a = 1.0096 * L_auv/2;",
+    (REMUS, 143): "b = 1.0096 * D_auv/2;",
+    (REMUS, 145): "r_bG = [ 0 0 0.02 ]';",
+    (REMUS, 146): "r_bB = [ 0 0 0 ]';",
+    (REMUS, 222): "m = MRB(1,1); W = m * g_mu; B = W;",
+    (REMUS, 239): "g = gRvect(W,B,R,r_bG,r_bB);",
+    (REMUS, 268): "(tau + tau_liftdrag + tau_crossflow - C * nu_r - D * nu_r  - g)",
     ("LIBRARY/mssConstants.m", 12): "constant.rho_water = 1025;",
     ("LIBRARY/modeling/spheroid.m", 35): "constant = mssConstants();",
     ("LIBRARY/modeling/spheroid.m", 36): "rho = constant.rho_water;",
@@ -323,11 +323,11 @@ def test_typed_constants_equal_the_cited_mss_lines():
     """REMUS_CONSTANTS are typed with their lines (no number from memory, nothing
     relative to one machine); with MSS_DIR set they are read back from MSS."""
     c = REMUS_CONSTANTS
-    assert _mss_value(REMUS, 132) == c["L_auv"] and _mss_value(REMUS, 133) == c["D_auv"]
+    assert _mss_value(REMUS, 139) == c["L_auv"] and _mss_value(REMUS, 140) == c["D_auv"]
     assert _mss_value("LIBRARY/mssConstants.m", 12) == c["rho"]   # spheroid.m 36 reads it
-    assert abs(_mss_value(REMUS, 96) - np.deg2rad(c["mu_deg"])) == 0.0
-    assert list(_mss_value(REMUS, 138)) == c["r_bG"] and list(_mss_value(REMUS, 139)) == c["r_bB"]
-    for prefix, key in (("a = 1.0096", 135), ("b = 1.0096", 136)):
+    assert abs(_mss_value(REMUS, 109) - np.deg2rad(c["mu_deg"])) == 0.0
+    assert list(_mss_value(REMUS, 145)) == c["r_bG"] and list(_mss_value(REMUS, 146)) == c["r_bB"]
+    for prefix, key in (("a = 1.0096", 142), ("b = 1.0096", 143)):
         assert _mss_line(REMUS, key).startswith(prefix)
 
 

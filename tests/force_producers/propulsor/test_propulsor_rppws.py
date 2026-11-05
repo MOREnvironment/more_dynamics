@@ -116,7 +116,7 @@ def test_the_otter_with_two_linked_named_thrusters_equals_the_otter_driven_by_th
     thrusters = freeze(differential_thruster_casadi(), declared, check_differential_thruster_values(block_values))
     p = vc.plugins()
     reference = vc.otter(actuators=[p.PrescribedWrench], hydrostatics=(p.SurfaceRestoring, {
-        **vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2, "payload_trim_form": "lever_arm_and_heave_shift"}))
+        **vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2, "payload_trim_form": "weight_wrench"}))
     a, b = vc.graph_of(built), vc.graph_of(reference)
     g = rng()
     worst = 0.0
