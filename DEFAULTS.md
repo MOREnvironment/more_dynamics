@@ -276,7 +276,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 
 | Parameter | Default | Unit | Read by | Meaning |
 |---|---|---|---|---|
-| `drive` | "normalized_lag" | - | selector | the drive part: `speed_command_rpm`, `speed_command_rad_s`, `power_limited_speed_command_rpm`, `speed_command_normalized`, `normalized_lag`, `thrust_command`, `thrust_command_lag` |
+| `drive` | "normalized_lag" | - | selector | the drive part: `speed_command_rpm`, `speed_command_rad_s`, `speed_command_lag_rpm`, `speed_command_lag_rad_s`, `power_limited_speed_command_rpm`, `speed_command_normalized`, `normalized_lag`, `thrust_command`, `thrust_command_lag` |
 | `steering` | "servo_lag_rate_angle" | - | selector | the steering part: `fixed`, `servo_ideal`, `servo_no_limits`, `servo_lag_rate_angle`, `servo_output_saturated`, `jet_nozzle_clamp` |
 | `mounting` | "steered_rotation" | - | selector | the mounting part: `fixed_euler`, `fixed_direction`, `azimuth`, `jet_nozzle_direction`, `steered_rotation` |
 | `inflow` | "none" | - | selector | the inflow part: `none`, `speed_magnitude`, `surge_component`, `horizontal_speed_floored` |
@@ -284,13 +284,14 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `housing` | "none" | - | selector | the housing part: `none`, `leg_normal_force` |
 | `steering_convention` | "port_positive" | - | mounting: azimuth | `port_positive` or `starboard_positive`: which way the boat turns for a positive angle when the unit is aft of the CO (selector; refused for a unit at or ahead of the CO) |
 | `shaft_torque_scale` | unset | 1 | skeleton | share of the shaft torque that reacts on the body (physical: 1) |
-| `min_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: power_limited_speed_command_rpm | lowest shaft-speed command (astern limit) |
-| `max_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: power_limited_speed_command_rpm | highest shaft-speed command (ahead limit) |
+| `min_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: speed_command_lag_rpm; drive: speed_command_lag_rad_s; drive: power_limited_speed_command_rpm | lowest shaft-speed command (astern limit) |
+| `max_command` | unset | rpm / rad/s | drive: speed_command_rpm; drive: speed_command_rad_s; drive: speed_command_lag_rpm; drive: speed_command_lag_rad_s; drive: power_limited_speed_command_rpm | highest shaft-speed command (ahead limit) |
 | `max_power` | unset | W | drive: power_limited_speed_command_rpm | electrical input power limit P_max |
 | `efficiency` | unset | 1 | drive: power_limited_speed_command_rpm | drive efficiency eta: the shaft power cap is eta P_max |
 | `thrust_saturation` | unset | N | drive: power_limited_speed_command_rpm | thrust limit of the unit |
 | `max_shaft_speed` | unset | rev/s | drive: speed_command_normalized | shaft speed at a command of +1 (ahead) |
 | `min_shaft_speed` | unset | rev/s | drive: speed_command_normalized | shaft speed at a command of -1 (astern), not above zero |
+| `speed_time_constant` | unset | s | drive: speed_command_lag_rpm; drive: speed_command_lag_rad_s | time constant T_n of the shaft-speed lag (Fossen 2011 eq. 13.154, p. 446) |
 | `thrust_rise_time` | unset | s | drive: normalized_lag | time constant when the effort rises |
 | `thrust_fall_time` | unset | s | drive: normalized_lag | time constant when the effort falls |
 | `thrust_time_constant` | unset | s | drive: thrust_command_lag | time constant of the thrust's first-order lag |
@@ -402,7 +403,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 
 `DerivativeAuv` and `CoefficientHullLoads` (the NPS AUV II vehicle): the named part is not landed (its own job); until it is, their
 reference values are the frozen data file `tests/vehicle_models/data/npsauv/nps_auv_ii_parameters.json` (every entry cited to its
-`npsauv.m` line, kind `document`, paper not read: needs-access, its `SOURCE.md`). The vehicle declares the 14 acceleration derivatives
+`npsauv.m` line, kind `document`, not compared with the paper's table: its `SOURCE.md`). The vehicle declares the 14 acceleration derivatives
 and the inertia; `CoefficientHullLoads` declares the 52 hull derivatives and the cross-flow geometry (a derivative is declared once, on
 the part that reads it); the 27 actuator-coupled derivatives are declared by no plugin until an actuator design reads them, and stay in
 the data file and its `SOURCE.md`. `cross_flow_sections` (the number of strips, 10 for this vehicle) is vehicle data.

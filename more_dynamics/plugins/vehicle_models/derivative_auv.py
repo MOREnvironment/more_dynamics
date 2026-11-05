@@ -76,8 +76,8 @@ designed here; it is an owner question for the next job.
 
 Every vehicle number is unset in the plugin and comes from a named part
 (``DEFAULTS.md`` gives each reference part's provenance); the underlying
-paper itself is not read (needs-access, ``SOURCE.md``) — every value is read
-from MSS's instrumented workspace, cited to its line.
+paper's own table is not compared value by value (``SOURCE.md``) — every value is
+read from MSS's instrumented workspace, cited to its line.
 
 References
 ----------

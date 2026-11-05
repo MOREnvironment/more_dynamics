@@ -11,6 +11,8 @@ Written 2026-10-10, before the parts exist (contract: ``propulsor_contract``).
   floored at 1e-3), scale ``eta P_max / P`` (otherwise 1), and a thrust limit
   that is the declared saturation. A construction of the steerable outboard
   block (no MSS file holds it), stated there line by line.
+* ``speed_command_lag`` (rpm and rad/s variants): the shaft speed is a state, ``n_dot = (n_c - n) / T_n``
+  (Fossen 2011, eq. 13.154, p. 446), ranged to the limits after the flow; the output is the ranged state in rev/s.
 * ``normalized_lag``: a normalised-effort state clamped to [-1, 1], pulled to
   the clamped command with separate rise and fall time constants; the output
   is the clamped state (unit "1").
@@ -127,3 +129,92 @@ def test_normalized_lag_is_a_clamped_asymmetric_first_order_lag():
 def test_normalized_lag_has_one_state_and_one_command():
     f = part("drive", "normalized_lag", LAG)
     assert f.size1_in("command") == 1 and f.size1_in("drive_state") == 1 and f.size1_out("drive_state_dot") == 1
+
+
+# --------------------------------------------------------------------------
+# speed_command_lag
+# --------------------------------------------------------------------------
+SPEED_LAG = {**LIMITS, "speed_time_constant": 0.1}
+
+
+def _lag(unit="rpm", values=None):
+    return part("drive", f"speed_command_lag_{unit.replace('/', '_')}", values or SPEED_LAG)
+
+
+def _rk4(f, state, command, h, steps):
+    """The state of the lag after ``steps`` RK4 steps of ``h`` under a constant command, and the whole path."""
+    def dot(x):
+        return float(call(f, command=[command], drive_state=[x], shaft_torque=0.0)["drive_state_dot"][0])
+    path = [state]
+    for _ in range(steps):
+        k1 = dot(state)
+        k2 = dot(state + 0.5 * h * k1)
+        k3 = dot(state + 0.5 * h * k2)
+        k4 = dot(state + h * k3)
+        state = state + h / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+        path.append(state)
+    return np.array(path)
+
+
+def test_speed_lag_flow_is_the_first_order_lag_inside_the_range():
+    f = _lag()
+    g = rng()
+    for x, c in zip(g.uniform(-1400.0, 1100.0, N_RANDOM), g.uniform(-1450.0, 1150.0, N_RANDOM)):
+        out = call(f, command=[c], drive_state=[x], shaft_torque=g.uniform(-5, 5))
+        assert abs(out["drive_state_dot"][0] - (c - x) / SPEED_LAG["speed_time_constant"]) <= 1e-9, (x, c)
+        assert abs(out["drive_output"][0] - x / 60.0) <= 1e-14
+        assert out["thrust_scale"][0] == 1.0 and np.isinf(out["thrust_limit"][0])
+
+
+@pytest.mark.parametrize("unit, per_unit", [("rpm", 1.0 / 60.0), ("rad/s", 1.0 / (2.0 * np.pi))])
+def test_speed_lag_step_response_is_the_closed_form_exponential(unit, per_unit):
+    """n(t) = n_c + (n_0 - n_c) exp(-t / T_n) for a command step inside the range; the output is n(t) in rev/s."""
+    values = {"min_command": -100.0, "max_command": 100.0, "speed_time_constant": 0.25}
+    f = _lag(unit, values)
+    h, steps = 0.001, 2000
+    path = _rk4(f, -20.0, 60.0, h, steps)
+    t = h * np.arange(steps + 1)
+    exact = 60.0 + (-20.0 - 60.0) * np.exp(-t / 0.25)
+    rk4_error = 80.0 * (h / 0.25) ** 4          # the step's own truncation (RK4 of an exponential), the bound of the comparison
+    assert np.max(np.abs(path - exact)) <= rk4_error
+    out = call(f, command=[60.0], drive_state=[path[-1]], shaft_torque=0.0)
+    assert abs(out["drive_output"][0] - exact[-1] * per_unit) <= rk4_error * per_unit
+    assert abs(path[int(round(0.25 / h))] - (60.0 - 80.0 * np.exp(-1.0))) <= rk4_error     # one time constant: 63.2 % of the step
+
+
+def test_speed_lag_state_reaches_the_limit_at_the_closed_form_time_and_rests_there():
+    """The command is beyond the range: the state follows the exponential to the limit, at t* = T ln((n_c - n_0)/(n_c - n_max)),
+    and stays on it (the output is the limit) as long as the command stays beyond it."""
+    values = {"min_command": -50.0, "max_command": 80.0, "speed_time_constant": 0.2}
+    f = _lag("rpm", values)
+    h, command, n0 = 0.001, 200.0, 10.0
+    t_star = 0.2 * np.log((command - n0) / (command - 80.0))
+    path = _rk4(f, n0, command, h, 1500)
+    t = h * np.arange(path.size)
+    before = t < t_star - 2 * h
+    assert np.max(np.abs(path[before] - (command + (n0 - command) * np.exp(-t[before] / 0.2)))) <= 1e-9
+    after = t > t_star + 2 * h
+    overshoot = h * (command - 80.0) / 0.2        # a step that crosses the limit overshoots by at most one step of the flow
+    assert np.max(np.abs(path[after] - 80.0)) <= overshoot, np.max(np.abs(path[after] - 80.0))
+    out = call(f, command=[command], drive_state=[path[-1]], shaft_torque=0.0)
+    assert out["drive_output"][0] == pytest.approx(80.0 / 60.0, abs=1e-14)      # the output is the ranged state, exactly
+
+
+def test_speed_lag_leaves_the_limit_at_once_when_the_command_returns_and_astern_is_the_same():
+    values = {"min_command": -50.0, "max_command": 80.0, "speed_time_constant": 0.2}
+    f = _lag("rpm", values)
+    up = call(f, command=[200.0], drive_state=[80.0], shaft_torque=0.0)
+    assert up["drive_state_dot"][0] == 0.0 and up["drive_output"][0] == pytest.approx(80.0 / 60.0)
+    back = call(f, command=[30.0], drive_state=[80.0], shaft_torque=0.0)
+    assert back["drive_state_dot"][0] == pytest.approx((30.0 - 80.0) / 0.2)         # an ordinary lag, no wind-up memory
+    down = call(f, command=[-300.0], drive_state=[-50.0], shaft_torque=0.0)
+    assert down["drive_state_dot"][0] == 0.0 and down["drive_output"][0] == pytest.approx(-50.0 / 60.0)
+    off = call(f, command=[10.0], drive_state=[-50.0], shaft_torque=0.0)
+    assert off["drive_state_dot"][0] == pytest.approx(60.0 / 0.2)
+
+
+def test_speed_lag_has_one_state_one_command_and_the_declared_numbers():
+    f = _lag()
+    assert f.size1_in("command") == 1 and f.size1_in("drive_state") == 1 and f.size1_out("drive_state_dot") == 1
+    open_part = part("drive", "speed_command_lag_rpm")
+    assert [open_part.name_in(i) for i in range(open_part.n_in())][-3:] == ["min_command", "max_command", "speed_time_constant"]

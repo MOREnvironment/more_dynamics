@@ -215,3 +215,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local checks against reference simulator data (not part of the library)
+local_checks/
