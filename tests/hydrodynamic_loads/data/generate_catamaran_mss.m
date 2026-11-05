@@ -23,7 +23,9 @@
 %    full/catamaran_dynamics_full_debug_mss.csv            (every column)
 %    hydrodynamics/catamaran_matlab_reference_mss_<tag>.csv (its columns;
 %        tag = current for the L*B_pont KB, cc07579 for the Aw_pont KB with
-%        the linear surge damping, 99fdf4d for the blended surge damping)
+%        the linear surge damping, 99fdf4d for the blended surge damping, ca014d9
+%        for the blended surge damping with heave and pitch cross-flow strips as
+%        wide as the beam)
 %    rigid_body/matlab_reference_mss_<tag>.csv             (its columns; tag =
 %        current, or 99fdf4d with Xudot on m+mP)
 %  Run (nothing relative to a machine): MSS_DIR (required) = the MSS checkout,
@@ -136,8 +138,12 @@ else
     error('otter_legacy.m: KB line not recognised; revisit the output names');
 end
 testsDir = fileparts(fileparts(scriptDir));   % tests/; each block keeps its frozen data in tests/<block>/data
+hydroTag = catTag;
+if contains(fileread(which('crossFlowDrag')), '0.5 * rho * B * Cd_2D')
+    hydroTag = 'ca014d9';    % heave and pitch strips with the beam (crossFlowDrag.m, strip-width fix); the rest as catTag
+end
 extract_like(outFile, fullfile(testsDir, 'hydrodynamic_loads', 'data', 'catamaran_matlab_reference_mss_current.csv'), ...
-    fullfile(outDir, 'hydrodynamics', ['catamaran_matlab_reference_mss_' catTag '.csv']));
+    fullfile(outDir, 'hydrodynamics', ['catamaran_matlab_reference_mss_' hydroTag '.csv']));
 rigidTag = 'current';
 if strcmp(catTag, '99fdf4d'), rigidTag = '99fdf4d'; end
 extract_like(outFile, fullfile(testsDir, 'rigid_body', 'data', 'matlab_reference_mss_current.csv'), ...

@@ -8,7 +8,7 @@ the shifted attitude) and ``lever_arm_moment`` (legacy, origin-dependent: no hea
 default, ``test_payload_trim_origin.py`` shows why).
 
 Gates (the test names carry them): G1 the vehicle against MATLAB running MSS (frozen CSV
-``data/payload_trim_mss_ed2ce7b.csv``, ``data/generate_payload_trim_mss.m``): the shift, the restoring vector and the
+``data/payload_trim_mss_6e78e98_beam_strips.csv``, ``data/generate_payload_trim_mss.m``): the shift, the restoring vector and the
 whole derivative of the Otter with two thrusters, for the MSS form against the unmodified ``otter_legacy.m`` and for the
 physics form against the same call with the kinematics at the actual attitude (written out in the generator; equal to
 ``otter_legacy.m`` at d78d97e, which repaired that line, to 3e-15), 1e-9; G2 properties the equations imply (the heave
@@ -38,7 +38,7 @@ SUFFIX = {"lever_arm_and_heave_shift": "mss", "weight_wrench": "corr"}
 
 
 def _table():
-    data = np.genfromtxt(DATA / "payload_trim_mss_ed2ce7b.csv", delimiter=",", names=True)
+    data = np.genfromtxt(DATA / "payload_trim_mss_6e78e98_beam_strips.csv", delimiter=",", names=True)
     return {name: np.atleast_1d(data[name]) for name in data.dtype.names}
 
 

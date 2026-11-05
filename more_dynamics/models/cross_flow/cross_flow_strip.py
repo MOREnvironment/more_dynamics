@@ -1,5 +1,5 @@
 """The cross-flow strip integral, one member of the ``hydrodynamic_loads``
-list, with the 2-D section drag law as its own named sub-slot
+list (strip height: the draft ``T`` for sway and yaw, the beam ``B`` for heave and pitch), with the 2-D section drag law as its own named sub-slot
 (``section_drag``) — the same by-name resolution the vehicle uses,
 one level down. One part file serves both the
 torpedo (circular section) and the catamaran (Hoerner section).
@@ -46,9 +46,14 @@ def cross_flow_strip_with_section(section):
     for name in section.name_in():
         if name not in pool:
             extra[name] = pool[name] = ca.SX.sym(name, section.size_in(name))
+    if "beam" not in pool:
+        raise ValueError(f"section {section.name()!r} must take the beam: the heave and pitch strips are as wide as it")
+    beam = pool["beam"]
     section_drag_coefficient = section(**{n: pool[n] for n in section.name_in()})["section_drag_coefficient"]
     positions, dx = _strip_positions(length)
-    factor = -0.5 * water_density * draft * section_drag_coefficient * dx  # (crossFlowDrag.m 64-67)
+    # sway and yaw meet the flow with the draft T, heave and pitch with the beam B (Fossen 2011, eqs. 6.91-6.92, p. 127)
+    factor_horizontal = -0.5 * water_density * draft * section_drag_coefficient * dx
+    factor_vertical = -0.5 * water_density * beam * section_drag_coefficient * dx
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
     y_sum = z_sum = m_sum = n_sum = ca.SX(0.0)
     for x in positions:
@@ -58,7 +63,8 @@ def cross_flow_strip_with_section(section):
         z_sum += ca.fabs(vertical) * vertical  # (crossFlowDrag.m 65)
         m_sum += x * ca.fabs(vertical) * vertical  # (crossFlowDrag.m 66)
         n_sum += x * ca.fabs(horizontal) * horizontal  # (crossFlowDrag.m 67)
-    tau = ca.vertcat(0, factor * y_sum, factor * z_sum, 0, factor * m_sum, factor * n_sum)  # (crossFlowDrag.m 70)
+    tau = ca.vertcat(0, factor_horizontal * y_sum, factor_vertical * z_sum, 0, factor_vertical * m_sum,
+                     factor_horizontal * n_sum)  # (crossFlowDrag.m 70)
     return function_from(f"cross_flow_strip_{section.name()}",
                          {"nu_r": nu_r, "length": length, "draft": draft, "water_density": water_density, **extra},
                          {"tau": tau})

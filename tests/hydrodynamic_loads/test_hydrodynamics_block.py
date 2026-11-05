@@ -215,6 +215,8 @@ FLD_OLD = "$MSS_DIR@cc07579/LIBRARY/modeling/forceLiftDrag.m"   # two densities 
 OTTER_OLD = "$MSS_DIR@cc07579/CRAFT/USV/models/otter.m"   # the linear-surge Otter the retained "surface" form follows
 CLD = "$MSS_DIR/LIBRARY/modeling/coeffLiftDrag.m"
 CFD = "$MSS_DIR/LIBRARY/modeling/crossFlowDrag.m"
+# the revision that holds the strip-width fix (heave and pitch strips as wide as the beam) and the vertical strip velocity w_r - x q
+CFD_FIXED = "$MSS_DIR@ca014d9/LIBRARY/modeling/crossFlowDrag.m"
 CYL = "$MSS_DIR/HYDRO/cylinderDrag.m"
 HOERNER = "$MSS_DIR/HYDRO/Hoerner.m"
 GRAVITY = "$MSS_DIR/INS/functions/gravity.m"
@@ -278,6 +280,17 @@ CITED_LINES = {
     (CLD, 60): "CL_alpha = pi * AR / ( 1 + sqrt(1 + (AR/2)^2) );",
     (CLD, 61): "CL_linear = CL_alpha * alpha;",
     (CLD, 68): "CD = CD_0 + CL.^2 / (pi * e * AR);",
+    (CFD_FIXED, 50): "constant = mssConstants();",
+    (CFD_FIXED, 51): "rho = constant.rho_water;",
+    (CFD_FIXED, 52): "nStrips = 20;",
+    (CFD_FIXED, 53): "dx = L / nStrips;",
+    (CFD_FIXED, 71): "xL = -L/2 + (i - 0.5) * dx;",
+    (CFD_FIXED, 76): "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
+    (CFD_FIXED, 77): "U_v = abs(w_r - xL * q) * (w_r - xL * q);",
+    (CFD_FIXED, 78): "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;",
+    (CFD_FIXED, 79): "Zh = Zh - 0.5 * rho * B * Cd_2D * U_v * dx;",
+    (CFD_FIXED, 80): "Mh = Mh + 0.5 * rho * B * Cd_2D * xL * U_v * dx;",
+    (CFD_FIXED, 81): "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;",
     (CFD, 36): "constant = mssConstants();",
     (CFD, 37): "rho = constant.rho_water;",
     (CFD, 38): "nStrips = 20;",
@@ -512,6 +525,11 @@ MSS_CATAMARAN = "catamaran_matlab_reference_mss_current.csv"
 MSS_CATAMARAN_CC07579 = "catamaran_matlab_reference_mss_cc07579.csv"
 # MSS 99fdf4d: surge damping blended from Xu and Xuu, surge added mass on m + mP (be1f126, dd6b85f)
 MSS_CATAMARAN_99FDF4D = "catamaran_matlab_reference_mss_99fdf4d.csv"
+# MSS ca014d9: the same otter_legacy.m and the heave and pitch cross-flow strips as wide as the beam (crossFlowDrag.m, the fix of
+# the strip width); only tau_crossflow_03 and tau_crossflow_05 differ from the 99fdf4d file
+MSS_CATAMARAN_CA014D9 = "catamaran_matlab_reference_mss_ca014d9.csv"
+# the files made before that fix hold the earlier strip integral: the draft T is the height of all four strips
+EARLIER_STRIP_HEIGHT = (LEGACY_CATAMARAN, MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D)
 # osv.m surge law of release 2.0.2 at cc07579 (generate_osv_surge_mss.m)
 MSS_OSV_SURGE = "osv_surge_damping_mss_cc07579.csv"
 # 2026-10-06: the same generator re-run unchanged at MSS ac77394; only the four
@@ -628,7 +646,7 @@ def _surface_damping_catamaran(gravity, csv=LEGACY_CATAMARAN):
     linear one of the retained ``surface`` form."""
     ref = _catamaran_reference(csv)
     m, g_co = ref["M"][0], ref["G"][0]
-    blend = csv == MSS_CATAMARAN_99FDF4D
+    blend = csv in (MSS_CATAMARAN_99FDF4D, MSS_CATAMARAN_CA014D9)
     o = OTTER if blend else OTTER_OLD
     h_inv = MatrixTransforms.H_matrix(-np.array([_value(OTTER if blend else OTTER_OLD, 207 if blend else 192), 0.0, 0.0]))
     p = {
@@ -728,26 +746,41 @@ def _mss_hoerner(beam, draft):
     return float(np.interp(ratio, data[:, 0], data[:, 1]))
 
 
-def _mss_cross_flow(p, nu_r, history_reynolds_on_length=False):
-    """crossFlowDrag.m 36-69 (current: 20 midpoints); ``strip_grid="endpoint"``
-    gives the pre-2026-08-26 loop ``for xL = -L/2:dx:L/2`` of MSS.
-    ``history_reynolds_on_length``: the cylinder Re of MSS before ``ac77394``."""
+def _mss_cross_flow(p, nu_r, history_reynolds_on_length=False, earlier_strip_height=False):
+    """crossFlowDrag.m 50-84 at ca014d9 (20 midpoints): the sway and yaw strips have the height of the draft T, the heave and
+    pitch strips the beam B, the vertical strip velocity is ``w_r - x q`` and ``M = +1/2 rho B Cd sum x U_v dx``;
+    ``strip_grid="endpoint"`` gives the pre-2026-08-26 loop ``for xL = -L/2:dx:L/2`` of MSS.
+    ``history_reynolds_on_length``: the cylinder Re of MSS before ``ac77394``. ``earlier_strip_height``: the integral of the
+    files made before the strip-width fix (lines 62-67 at 6e78e98): the draft T for all four strips and ``w_r + x q``,
+    ``M = -1/2 rho T Cd sum x U_v dx`` (the two sign changes cancel on the symmetric grid)."""
     length, beam, draft = p["length"], p["beam"], p["draft"]
     if p["drag_model"] == "cylinder":
         cd = _mss_cylinder_cd(length, beam, nu_r, length if history_reynolds_on_length else None)
     else:
         cd = _mss_hoerner(beam, draft)
-    n_strips = int(_value(CFD, 38))
+    n_strips = int(_value(CFD_FIXED, 52))
     dx = length / n_strips
     if p.get("strip_grid", "midpoint") == "midpoint":
-        xs = -length / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx   # line 56
+        xs = -length / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx   # line 71
     else:
         xs = -length / 2 + dx * np.arange(n_strips + 1)
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
-    u_h = np.abs(v_r + xs * r) * (v_r + xs * r)                      # line 61
-    u_v = np.abs(w_r + xs * q) * (w_r + xs * q)                      # line 62
-    k = -0.5 * p["water_density"] * draft * cd * dx                 # lines 63-66
-    return np.array([0.0, k * u_h.sum(), k * u_v.sum(), 0.0, k * (xs * u_v).sum(), k * (xs * u_h).sum()])
+    u_h = np.abs(v_r + xs * r) * (v_r + xs * r)                      # line 76
+    k_h = -0.5 * p["water_density"] * draft * cd * dx                # lines 78, 81
+    if earlier_strip_height:
+        u_v = np.abs(w_r + xs * q) * (w_r + xs * q)                  # line 63 at 6e78e98
+        return np.array([0.0, k_h * u_h.sum(), k_h * u_v.sum(), 0.0, k_h * (xs * u_v).sum(), k_h * (xs * u_h).sum()])
+    u_v = np.abs(w_r - xs * q) * (w_r - xs * q)                      # line 77
+    k_v = -0.5 * p["water_density"] * beam * cd * dx                 # lines 79, 80
+    return np.array([0.0, k_h * u_h.sum(), k_v * u_v.sum(), 0.0, -k_v * (xs * u_v).sum(), k_h * (xs * u_h).sum()])
+
+
+def _earlier_strip_height(tau, p):
+    """The block's cross-flow force as the files made before the strip-width fix hold it: the heave force and the pitch moment
+    with the strip height of the draft ``T`` (the block has the beam ``B``): ``Z, M`` times ``T / B``."""
+    out = np.array(tau, dtype=float).copy()
+    out[[2, 4]] *= p["draft"] / p["beam"]
+    return out
 
 
 def _mss_lift_drag(p, nu_r):
@@ -1033,7 +1066,8 @@ def test_transcriptions_reproduce_the_stored_matlab_reference():
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
         assert _max_diff(np.diag(deriv), cat["D"][k]) <= G1_TOLERANCE, k
         assert _max_diff(tau, cat["tau_damp"][k]) <= G1_TOLERANCE, k
-        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k]), cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k], earlier_strip_height=True),
+                         cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
 
 
 # --------------------------------------------------------------------------
@@ -1071,7 +1105,7 @@ def test_G1_block_catamaran_surface_damping_and_cross_flow():
         out = _evaluate(damping, ref["nu_r"][k])
         assert _max_diff(out["D"], -ref["D"][k]) <= G1_TOLERANCE, ("D", k)
         assert _max_diff(out["tau"].reshape(-1), ref["tau_damp"][k]) <= G1_TOLERANCE, ("tau", k)
-        tau_cf = _evaluate(cross_flow, ref["nu_r"][k])["tau"].reshape(-1)
+        tau_cf = _earlier_strip_height(_evaluate(cross_flow, ref["nu_r"][k])["tau"].reshape(-1), _cross_flow_catamaran("endpoint"))
         assert _max_diff(tau_cf, ref["tau_crossflow"][k]) <= G1_TOLERANCE, ("cross_flow", k)
 
 
@@ -1235,9 +1269,10 @@ def test_endpoint_grid_flag_reproduces_the_template():
     ref = _catamaran_reference()
     legacy = _build_cross_flow(_cross_flow_catamaran("endpoint"))
     current = _build_cross_flow(_cross_flow_catamaran("midpoint"))
-    worst_legacy = max(_max_diff(_evaluate(legacy, n)["tau"].reshape(-1), ref["tau_crossflow"][k])
+    p_cf = _cross_flow_catamaran("midpoint")   # the template holds the earlier strip height: the draft T for all four strips
+    worst_legacy = max(_max_diff(_earlier_strip_height(_evaluate(legacy, n)["tau"].reshape(-1), p_cf), ref["tau_crossflow"][k])
                        for k, n in enumerate(ref["nu_r"]))
-    worst_current = max(_max_diff(_evaluate(current, n)["tau"].reshape(-1), ref["tau_crossflow"][k])
+    worst_current = max(_max_diff(_earlier_strip_height(_evaluate(current, n)["tau"].reshape(-1), p_cf), ref["tau_crossflow"][k])
                         for k, n in enumerate(ref["nu_r"]))
     assert worst_legacy <= G1_TOLERANCE
     assert worst_current > G4_FACTOR * G1_TOLERANCE
@@ -1276,15 +1311,16 @@ def test_transcriptions_reproduce_the_current_mss_matlab_reference():
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
         assert _max_diff(np.diag(deriv), cat["D"][k]) <= G1_TOLERANCE, k
         assert _max_diff(tau, cat["tau_damp"][k]) <= G1_TOLERANCE, k
-        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k]), cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k], earlier_strip_height=True),
+                         cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
 
 
-@pytest.mark.parametrize("csv", [MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D, MSS_CATAMARAN_CA014D9])
 def test_transcriptions_reproduce_the_revision_tagged_catamaran_references(csv):
     """The otter.m transcriptions land on the cc07579 catamaran file (the KB
     fix of cf349d4 moved G44, G55, Kp, Mq; linear surge law) and on the 99fdf4d
     file (surge damping blended from Xu and Xuu, T_sway 0.5 s, surge added mass
-    on m + mP)."""
+    on m + mP) and on the ca014d9 file (the same, with the heave and pitch cross-flow strips as wide as the beam)."""
     cat = _catamaran_reference(csv)
     p_cat = _surface_damping_catamaran(_value(MSSC, 14), csv)
     p_cat_cf = _cross_flow_catamaran("midpoint")
@@ -1292,7 +1328,8 @@ def test_transcriptions_reproduce_the_revision_tagged_catamaran_references(csv):
         deriv, tau = _mss_otter_damping(p_cat, cat["nu_r"][k])
         assert _max_diff(np.diag(deriv), cat["D"][k]) <= G1_TOLERANCE, k
         assert _max_diff(tau, cat["tau_damp"][k]) <= G1_TOLERANCE, k
-        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k]), cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        assert _max_diff(_mss_cross_flow(p_cat_cf, cat["nu_r"][k], earlier_strip_height=csv in EARLIER_STRIP_HEIGHT),
+                         cat["tau_crossflow"][k]) <= G1_TOLERANCE, k
 
 
 def test_G1_MSS_submerged_damping_default_equals_matlab():
@@ -1374,7 +1411,7 @@ def test_G1_MSS_lift_drag_equals_matlab_99fdf4d():
         assert _max_diff(out, ref["tau_lift_drag"][k]) <= G1_TOLERANCE, k
 
 
-@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D, MSS_CATAMARAN_CA014D9])
 def test_G1_MSS_catamaran_surface_damping_equals_matlab(csv):
     """otter.m g = 9.81 (line 90); M and G of the 2026-10-05 file (inertia about the
     combined CG) and of the cc07579 file (the KB fix changes G44, G55 and with
@@ -1387,16 +1424,33 @@ def test_G1_MSS_catamaran_surface_damping_equals_matlab(csv):
         assert _max_diff(out["tau"].reshape(-1), ref["tau_damp"][k]) <= G1_TOLERANCE, ("tau", k)
 
 
-@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
-def test_G1_MSS_catamaran_cross_flow_default_equals_matlab(csv):
-    """Hoerner on the default grid (20 midpoints): no deviation from MSS (at
-    cc07579 too)."""
-    ref = _catamaran_reference(csv)
+def test_G1_MSS_catamaran_cross_flow_default_equals_matlab():
+    """Hoerner on the default grid (20 midpoints): no deviation from MSS at ca014d9 (the heave and pitch strips as wide as the
+    beam: MATLAB running ``otter_legacy.m`` and the fixed ``crossFlowDrag.m``)."""
+    ref = _catamaran_reference(MSS_CATAMARAN_CA014D9)
     p = {k: v for k, v in _cross_flow_catamaran("midpoint").items() if k != "strip_grid"}
     function = _build_cross_flow(p)
     for k in range(50):
         out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
         assert _max_diff(out, ref["tau_crossflow"][k]) <= G1_TOLERANCE, k
+
+
+@pytest.mark.parametrize("csv", [MSS_CATAMARAN, MSS_CATAMARAN_CC07579, MSS_CATAMARAN_99FDF4D])
+def test_earlier_catamaran_cross_flow_files_differ_only_in_the_strip_height_of_heave_and_pitch(csv):
+    """The three files made before the fix of the strip width hold the draft ``T`` as the height of the heave and pitch strips.
+    The block (beam ``B``) equals them in sway and yaw and, in heave and pitch, after the factor ``T / B`` (the 2-D drag
+    coefficient, the velocities and the grid are the same), and differs from them by the fix (it is not the same number)."""
+    ref = _catamaran_reference(csv)
+    p = _cross_flow_catamaran("midpoint")
+    function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
+    fixed = _catamaran_reference(MSS_CATAMARAN_CA014D9)
+    worst_fix = 0.0
+    for k in range(50):
+        out = _evaluate(function, ref["nu_r"][k])["tau"].reshape(-1)
+        assert _max_diff(_earlier_strip_height(out, p), ref["tau_crossflow"][k]) <= G1_TOLERANCE, k
+        worst_fix = max(worst_fix, _max_diff(out, ref["tau_crossflow"][k]))
+        assert _max_diff(out[[1, 5]], fixed["tau_crossflow"][k][[1, 5]]) <= G1_TOLERANCE, k   # sway, yaw: no change
+    assert worst_fix > G4_FACTOR * G1_TOLERANCE
 
 
 def test_hoerner_below_its_table_raises_naming_the_ratio():
@@ -1846,21 +1900,24 @@ def test_physical_cross_flow_equals_first_principles_strip_integral():
     """The strip at x (from the CO, z down) moves with v + x r sideways and
     w - x q vertically (omega x r for r = [x 0 0]); its moments are
     N = +x Y_i and M = -x Z_i. Fossen (2011) eqs. 6.91-6.92 (p. 127) state the
-    sway/yaw half; heave/pitch is derived here the same way. crossFlowDrag.m
-    62 and 65 use w + x q and +x Z: two sign flips that cancel on a grid
-    symmetric about the CO (found 2026-10-05), so the default block must equal
-    the first-principles form; a pure pitch or yaw rate must be opposed."""
+    sway/yaw half with the draft T as the strip height; heave/pitch is derived
+    here the same way with the waterplane width of the strip, the beam B (the
+    strip meets the vertical flow with the width it has in plan). The block has
+    w + x q and +x Z: two sign flips that cancel on a grid symmetric about the
+    CO (found 2026-10-05), so the default block must equal the first-principles
+    form; a pure pitch or yaw rate must be opposed."""
     for p in (_cross_flow_spheroid("midpoint"), _cross_flow_catamaran("midpoint")):
         function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
-        n_strips = int(_value(CFD, 38))
+        n_strips = int(_value(CFD_FIXED, 52))
         dx = p["length"] / n_strips
         xs = -p["length"] / 2 + (np.arange(1, n_strips + 1) - 0.5) * dx
         for k, nu_r in enumerate(_states()):
             cd = (_mss_cylinder_cd(p["length"], p["beam"], nu_r) if p["drag_model"] == "cylinder"
                   else _mss_hoerner(p["beam"], p["draft"]))
             v_pt, w_pt = nu_r[1] + xs * nu_r[5], nu_r[2] - xs * nu_r[4]
-            per_strip = -0.5 * p["water_density"] * p["draft"] * cd * dx
-            y_i, z_i = per_strip * np.abs(v_pt) * v_pt, per_strip * np.abs(w_pt) * w_pt
+            strip_y = -0.5 * p["water_density"] * p["draft"] * cd * dx    # sway meets the flow with the draft T
+            strip_z = -0.5 * p["water_density"] * p["beam"] * cd * dx     # heave meets the flow with the waterplane width B
+            y_i, z_i = strip_y * np.abs(v_pt) * v_pt, strip_z * np.abs(w_pt) * w_pt
             physical = np.array([0, y_i.sum(), z_i.sum(), 0, -(xs * z_i).sum(), (xs * y_i).sum()])
             out = _evaluate(function, nu_r)["tau"].reshape(-1)
             assert _max_diff(out, physical) <= G1_TOLERANCE, (p["drag_model"], k)
@@ -1868,6 +1925,23 @@ def test_physical_cross_flow_equals_first_principles_strip_integral():
         yaw = _evaluate(function, np.array([0, 0, 0, 0, 0, 0.2]))["tau"].reshape(-1)
         assert pitch[4] < 0 and abs(pitch[2]) <= G1_TOLERANCE
         assert yaw[5] < 0 and abs(yaw[1]) <= G1_TOLERANCE
+
+
+def test_prism_heave_and_sway_force_scale_with_the_beam_and_the_draft():
+    """Closed form for a prism in a uniform flow (zero rates): ``Y = -1/2 rho T Cd L |v| v`` and ``Z = -1/2 rho B Cd L |w| w``
+    (Fossen 2011, eqs. 6.91-6.92, p. 127, the strip integral of a constant velocity; the same 2-D coefficient ``Cd(B / 2T)``
+    from Hoerner's table in both directions). A beam of 0.5 m against a draft of 0.2 m: the heave force is 2.5 times the sway
+    force at the same speed, pushing against the flow (sign case), and there is no pitch or yaw moment."""
+    p = {**_cross_flow_catamaran("midpoint"), "length": 2.0, "beam": 0.5, "draft": 0.2}
+    function = _build_cross_flow({k: v for k, v in p.items() if k != "strip_grid"})
+    cd = _mss_hoerner(p["beam"], p["draft"])
+    speed = 0.4
+    sway = _evaluate(function, np.array([0, speed, 0, 0, 0, 0]))["tau"].reshape(-1)
+    heave = _evaluate(function, np.array([0, 0, speed, 0, 0, 0]))["tau"].reshape(-1)
+    assert abs(sway[1] + 0.5 * p["water_density"] * p["draft"] * cd * p["length"] * speed ** 2) <= G1_TOLERANCE
+    assert abs(heave[2] + 0.5 * p["water_density"] * p["beam"] * cd * p["length"] * speed ** 2) <= G1_TOLERANCE
+    assert abs(heave[2] / sway[1] - p["beam"] / p["draft"]) <= 1e-12 and heave[2] < 0.0 and sway[1] < 0.0
+    assert max(abs(sway[[0, 2, 3, 4, 5]]).max(), abs(heave[[0, 1, 3, 4, 5]]).max()) <= G1_TOLERANCE
 
 
 # --------------------------------------------------------------------------
@@ -2196,6 +2270,19 @@ def _committed_package(tmp_path):
         sys.path.remove(str(tmp_path))
 
 
+def _committed_with_the_beam_strips(committed, p):
+    """The block committed at ``COMMITTED_REVISION`` has the draft ``T`` as the height of all four strips; the block has the beam
+    ``B`` for heave and pitch (the strip-width fix): the same function with the heave force and the pitch moment times
+    ``B / T`` (the 2-D drag coefficient, the velocities and the grid are the same), a plain function of ``nu_r``."""
+    factor = p["beam"] / p["draft"]
+
+    def call(nu_r):
+        tau = np.array(committed(nu_r=nu_r)["tau"], dtype=float).reshape(6, 1)
+        tau[[2, 4]] *= factor
+        return {"tau": tau}
+    return call
+
+
 def _committed_cases(old):
     """(label, new function of nu_r, old function of nu_r, output names) for
     every selector choice of the four blocks, on small-craft sets (G2's 1e-10
@@ -2221,7 +2308,8 @@ def _committed_cases(old):
         for grid in ("midpoint", "endpoint"):
             p = make(grid)
             cases.append((f"cross_flow {p['drag_model']} {grid}", _build_cross_flow(p),
-                          old.cross_flow.cross_flow_drag_casadi(old.cross_flow.preprocess_cross_flow_drag(**p)),
+                          _committed_with_the_beam_strips(
+                              old.cross_flow.cross_flow_drag_casadi(old.cross_flow.preprocess_cross_flow_drag(**p)), p),
                           ("tau",)))
     for eps in (0.0, 1e-6, 1e-3):
         p = {**_lift_drag_spheroid(_value(FLD_OLD, 26)), "smooth_speed_epsilon": eps}

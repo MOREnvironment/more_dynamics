@@ -168,6 +168,19 @@
    "79": "sigma = 1 - tanh(u_r / u_cross);",
    "82": "X = sigma .* Xu .* u_r + (1 - sigma) .* Xuu .* abs(u_r) .* u_r;"
   },
+  "$MSS_DIR@ca014d9/LIBRARY/modeling/crossFlowDrag.m": {
+   "50": "constant = mssConstants();",
+   "51": "rho = constant.rho_water;",
+   "52": "nStrips = 20;       % Number of hull strips",
+   "53": "dx = L / nStrips;   % Strip width (m)",
+   "71": "xL = -L/2 + (i - 0.5) * dx;                       % Strip midpoint",
+   "76": "U_h = abs(v_r + xL * r) * (v_r + xL * r);",
+   "77": "U_v = abs(w_r - xL * q) * (w_r - xL * q);",
+   "78": "Yh = Yh - 0.5 * rho * T * Cd_2D * U_h * dx;       % Sway force",
+   "79": "Zh = Zh - 0.5 * rho * B * Cd_2D * U_v * dx;       % Heave force",
+   "80": "Mh = Mh + 0.5 * rho * B * Cd_2D * xL * U_v * dx;  % Pitch moment",
+   "81": "Nh = Nh - 0.5 * rho * T * Cd_2D * xL * U_h * dx;  % Yaw moment"
+  },
   "$MSS_DIR@cc07579/CRAFT/USV/models/otter.m": {
    "100": "T_yaw = 1;          % time constant in yaw (s)",
    "101": "Umax = 6 * 0.5144;  % 6 knots maximum forward speed (m/s)",

@@ -13,12 +13,17 @@ Equations (keys in References):
 * Strip theory, 20 strips of width ``dx = L / 20`` at ``x_i``::
 
       Y = -1/2 rho T Cd_2D sum |v_r + x_i r| (v_r + x_i r) dx
-      Z = -1/2 rho T Cd_2D sum |w_r + x_i q| (w_r + x_i q) dx
-      M = -1/2 rho T Cd_2D sum x_i |w_r + x_i q| (w_r + x_i q) dx
+      Z = -1/2 rho B Cd_2D sum |w_r + x_i q| (w_r + x_i q) dx
+      M = -1/2 rho B Cd_2D sum x_i |w_r + x_i q| (w_r + x_i q) dx
       N = -1/2 rho T Cd_2D sum x_i |v_r + x_i r| (v_r + x_i r) dx
 
-  (Fossen 2011, eqs. 6.91-6.92, p. 127, sway and yaw as integrals; MSS
-  ``crossFlowDrag.m`` 36-38, 54-69, which adds heave and pitch).
+  A strip meets the lateral flow with its draft ``T`` and the vertical flow
+  with its waterplane width, the beam ``B`` (Fossen 2011, eqs. 6.91-6.92,
+  p. 127, for the lateral flow, the same integral applied to the vertical
+  flow; MSS ``crossFlowDrag.m`` 36-38, 54-69). For ``B = T`` (a circular
+  section) the two factors are equal. The signs of the vertical terms are
+  those of the earlier MSS revision; on the symmetric strip grid they equal
+  the form with ``w_r - x_i q`` and the opposite sign of ``M``.
 * Hoerner: ``Cd_2D`` interpolated in ``B / (2T)`` from the table of MSS
   ``Hoerner.m`` 25-45 (Fossen 2011, Fig. 6.5, p. 128), the last value beyond
   it (``Hoerner.m`` 47-51).
@@ -57,7 +62,7 @@ Options and deviations:
 
 Conventions: ``nu_r = [u v w p q r]`` relative to the water, body axes z down;
 the cylinder coefficient is one number per call, set by the cross-flow speed;
-strip height = ``draft``; ``x`` along the body from the CO, strips centred on
+strip height = ``draft`` for sway and yaw, ``beam`` for heave and pitch; ``x`` along the body from the CO, strips centred on
 it.
 
 References
@@ -244,8 +249,10 @@ def cross_flow_drag_casadi(*, drag_model, strip_grid="midpoint"):
         drag_coefficient = _clamped_interp_casadi(p["beam"] / (2.0 * p["draft"]), HOERNER_DRAG_DATA)  # Cd_2D(B/(2T)) (Hoerner.m 47-51)
     positions, dx = _strip_positions(p["length"], strip_grid)
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
-    # -1/2 rho T Cd_2D dx (Fossen 2011, eqs. 6.91-6.92, p. 127; crossFlowDrag.m 63-66)
-    factor = -0.5 * p["water_density"] * p["draft"] * drag_coefficient * dx
+    # -1/2 rho T Cd_2D dx for sway and yaw, -1/2 rho B Cd_2D dx for heave and pitch
+    # (Fossen 2011, eqs. 6.91-6.92, p. 127; crossFlowDrag.m 63-66)
+    factor_horizontal = -0.5 * p["water_density"] * p["draft"] * drag_coefficient * dx
+    factor_vertical = -0.5 * p["water_density"] * p["beam"] * drag_coefficient * dx
     y_sum = z_sum = m_sum = n_sum = ca.SX(0.0)
     for x in positions:
         horizontal = v_r + x * r  # (crossFlowDrag.m 61)
@@ -256,7 +263,8 @@ def cross_flow_drag_casadi(*, drag_model, strip_grid="midpoint"):
         z_sum += u_v  # (crossFlowDrag.m 64)
         m_sum += x * u_v  # (crossFlowDrag.m 65)
         n_sum += x * u_h  # (crossFlowDrag.m 66)
-    tau = ca.vertcat(0.0, factor * y_sum, factor * z_sum, 0.0, factor * m_sum, factor * n_sum)  # (crossFlowDrag.m 69)
+    tau = ca.vertcat(0.0, factor_horizontal * y_sum, factor_vertical * z_sum, 0.0, factor_vertical * m_sum,
+                     factor_horizontal * n_sum)  # (crossFlowDrag.m 69)
     names = [d.name for d in _DECLARED]
     return ca.Function("cross_flow_drag", [nu_r, *[p[name] for name in names]], [tau],
                        ["nu_r", *names], ["tau"])

@@ -233,21 +233,26 @@ def _clamped_interp(x, table):
 
 
 def cross_flow_hoerner(nu_r, length, beam, draft, water_density):
-    """Strip integral, 20 midpoint strips, Hoerner's rectangular section
-    (Fossen 2011, eqs. 6.91-6.92, p. 127; crossFlowDrag.m 54-69, Hoerner.m 47-51)."""
+    """Strip integral, 20 midpoint strips, Hoerner's rectangular section, written from the physics of a strip at ``x`` (z down):
+    it moves sideways with ``v_r + x r`` and vertically with ``w_r - x q``, meets the sideways flow with its draft ``T`` and the
+    vertical flow with its waterplane width, the beam ``B``; the moments are ``N = +x Y_i`` and ``M = -x Z_i`` (Fossen 2011,
+    eqs. 6.91-6.92, p. 127, for the lateral flow, the same integral for the vertical flow; Hoerner.m 47-51 for ``Cd_2D``)."""
     cd = _clamped_interp(beam / (2.0 * draft), HOERNER_DRAG_DATA)
     dx = length / NUMBER_OF_STRIPS
     positions = [-length / 2 + (i - 0.5) * dx for i in range(1, NUMBER_OF_STRIPS + 1)]
-    factor = -0.5 * water_density * draft * cd * dx
+    factor_horizontal = -0.5 * water_density * draft * cd * dx
+    factor_vertical = -0.5 * water_density * beam * cd * dx
     v_r, w_r, q, r = nu_r[1], nu_r[2], nu_r[4], nu_r[5]
     y_sum = z_sum = m_sum = n_sum = 0.0
     for x in positions:
-        horizontal, vertical = v_r + x * r, w_r + x * q
-        y_sum += abs(horizontal) * horizontal
-        z_sum += abs(vertical) * vertical
-        m_sum += x * abs(vertical) * vertical
-        n_sum += x * abs(horizontal) * horizontal
-    return np.array([0.0, factor * y_sum, factor * z_sum, 0.0, factor * m_sum, factor * n_sum])
+        horizontal, vertical = v_r + x * r, w_r - x * q
+        y_i = factor_horizontal * abs(horizontal) * horizontal
+        z_i = factor_vertical * abs(vertical) * vertical
+        y_sum += y_i
+        z_sum += z_i
+        m_sum += -x * z_i
+        n_sum += x * y_i
+    return np.array([0.0, y_sum, z_sum, 0.0, m_sum, n_sum])
 
 
 # ---------------------------------------------------------------------------

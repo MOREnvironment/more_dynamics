@@ -77,7 +77,7 @@ def test_G1_catamaran_matches_existing_otter_block_references():
     current = np.array(_reference_current())
     rigid_in = np.loadtxt(TESTS / "rigid_body" / "data" / "inputs.csv", delimiter=",", skiprows=1)
     rigid_ref = _table(TESTS / "rigid_body" / "data" / "matlab_reference_mss_99fdf4d.csv")
-    hydro_ref = _table(TESTS / "hydrodynamic_loads" / "data" / "catamaran_matlab_reference_mss_99fdf4d.csv")
+    hydro_ref = _table(TESTS / "hydrodynamic_loads" / "data" / "catamaran_matlab_reference_mss_ca014d9.csv")
     worst = {}
 
     for k, state in enumerate(rigid_in[:, :12]):
