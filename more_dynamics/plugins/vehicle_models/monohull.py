@@ -79,7 +79,7 @@ from rpp_py.parameter_description import ParameterDescription
 from more_transformations.more_casadi_transformations import unset
 
 from more_dynamics.models.added_mass.added_mass_parts import SCALED_DERIVATIVES_PARAMETERS, scaled_derivatives
-from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
+from more_dynamics.models.coriolis.added_mass_coriolis_parts import full, couplings_removed
 from more_dynamics.models.hull_form.hull_form import SINGLE_HULL_PARAMETERS, single_hull
 from more_dynamics.models.rigid_body.rigid_body_parts import hull_with_point_payload, hull_with_point_payload_parameters
 from more_dynamics.plugins.shared.payload_io import frozen_block, payload_name, refuses_unset
@@ -88,7 +88,7 @@ from more_dynamics.plugins.shared.vehicle_graph import (
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs
 
 ADDED_MASS_FORMS = {"scaled_derivatives": (scaled_derivatives, lambda: SCALED_DERIVATIVES_PARAMETERS)}
-CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
+CORIOLIS_FORMS = {"full": full, "couplings_removed": couplings_removed}
 ADDED_MASS_MASS_BASES = ("hull", "displaced")
 
 
@@ -117,7 +117,7 @@ class Monohull(VehicleModel3D):
         ParameterDescription("added_mass_coefficients", unset()),  # estimate: grethe_mariner5.yaml mass.added_mass_scales workspace_rppws_value (open: the library value is -1.2 in yaw)
         ParameterDescription("added_mass_form", "scaled_derivatives"),  # otter.m 152-159
         ParameterDescription("added_mass_mass_basis", "hull"),  # "hull" keeps the committed gates green; a payload-carrying part may select "displaced" (E-101 Q5 a, DEFAULTS.md)
-        ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
+        ParameterDescription("coriolis_form", "full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
 

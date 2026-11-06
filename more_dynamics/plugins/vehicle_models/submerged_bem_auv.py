@@ -31,8 +31,8 @@ Outputs by name for the children: ``added_mass_matrix``, ``rigid_body_mass_matri
 
 Options, each with its fidelity and what raises it:
 
-* ``coriolis_form``: ``"kirchhoff_full"`` (default: every term of ``C_A``, the physics form of a body in an ideal
-  fluid, Fossen 2011, eq. 6.43, p. 120, with the Munk moment of eq. 6.52, p. 121) or ``"munk_couplings_removed"``
+* ``coriolis_form``: ``"full"`` (default: every term of ``C_A``, the physics form of a body in an ideal
+  fluid, Fossen 2011, eq. 6.43, p. 120, with the Munk moment of eq. 6.52, p. 121) or ``"couplings_removed"``
   (the pitch-heave, pitch-surge, yaw-surge and yaw-sway entries and their transposes removed: a bare hull without
   the fin and body-lift derivatives that balance the Munk moment in reality). Raise: the straight-line stability of
   the hull with its fins and body lift, checked against a logged run.
@@ -66,7 +66,7 @@ from rpp_py.parameter_description import ParameterDescription
 
 from more_transformations.more_casadi_transformations import unset
 
-from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
+from more_dynamics.models.coriolis.added_mass_coriolis_parts import full, couplings_removed
 from more_dynamics.models.frequency_reduction.power_based import (
     power_based_reduction, power_based_reduction_parameters)
 from more_dynamics.models.frequency_reduction.viscous_damping import (
@@ -81,7 +81,7 @@ from more_dynamics.plugins.shared.vehicle_graph import (
     INTEGRATION_STEP, CompositionError, Craft, Parts, VehicleAssembly)
 from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_inputs, kinematics_form
 
-CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
+CORIOLIS_FORMS = {"full": full, "couplings_removed": couplings_removed}
 
 
 def _number(expression):
@@ -116,7 +116,7 @@ class SubmergedBemAuv(VehicleModel3D):
         ParameterDescription("height", unset()),  # m, height of the hull section
         ParameterDescription("omega_p", unset()),  # rad/s, peak frequency of the spectrum that weights the tables (Fossen 2025)
         ParameterDescription("spectrum_gamma", unset()),  # JONSWAP peak factor (DNVGL-RP-C205 2017, 3.5.5.3, p. 65)
-        ParameterDescription("coriolis_form", "kirchhoff_full"),  # Fossen 2011, eq. 6.43, p. 120 (every term kept)
+        ParameterDescription("coriolis_form", "full"),  # Fossen 2011, eq. 6.43, p. 120 (every term kept)
         ParameterDescription("kinematics_form", "euler"),  # Fossen 2011, eq. 2.40, p. 26, or eq. 2.69, p. 30
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225
     ]

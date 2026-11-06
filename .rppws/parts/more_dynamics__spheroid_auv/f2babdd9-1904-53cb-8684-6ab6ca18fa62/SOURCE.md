@@ -6,7 +6,7 @@ A named part of `more_dynamics::SpheroidAuv`, a sibling of "REMUS 100 (published
 
 | Selector | Value | Why |
 |---|---|---|
-| `coriolis_form` | `kirchhoff_full` | every term of the added-mass Coriolis matrix, the Munk moment of a slender body included (Fossen 2011, eqs. 6.43 and 6.52, pp. 120-121); kept only with the body lift and the geometric fin slope below, and only with the straight-line stability gate green (`tests/vehicle_models/test_spheroid_auv_fidelity_options.py`) |
+| `coriolis_form` | `full` | every term of the added-mass Coriolis matrix, the Munk moment of a slender body included (Fossen 2011, eqs. 6.43 and 6.52, pp. 120-121); kept only with the body lift and the geometric fin slope below, and only with the straight-line stability gate green (`tests/vehicle_models/test_spheroid_auv_fidelity_options.py`) |
 | `body_lift_form` (hull loads) | `point_force_both_planes` | Prestero 2001, eqs. 4.27-4.36, pp. 30-31; the moment has the sign of the cross product |
 | `body_lift_slope_method` (hull loads) | `slender_body_hoerner` | Prestero 2001, eqs. 4.30-4.32, p. 30; l/d = 8.42 is inside the stated 6.7 to 10 |
 | `pressure_centre_fraction` (hull loads) | 0.65 | Prestero 2001, eq. 4.35, p. 31 (Hoerner's range 0.6 to 0.7) |

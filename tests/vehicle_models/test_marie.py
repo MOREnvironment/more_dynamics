@@ -69,11 +69,19 @@ def _floating_rows(path):
             for cells in (line.split(",") for line in lines[1:])]
 
 
+def _speed_rows(path):
+    """Rows of the steady surge-speed reference: ``rpm``, ``surge_speed_mps``, ``thrust_n``; the last row is the largest shaft speed."""
+    lines = path.read_text().splitlines()
+    names = lines[0].split(",")
+    return [dict(zip(names, (float(c) for c in line.split(",")))) for line in lines[1:]]
+
+
 class Dataset:
     def __init__(self, name, stem):
         self.name = name
         self.parameters = json.loads((DATA_DIR / f"{stem}_parameters.json").read_text())
         self.rows = _floating_rows(DATA_DIR / f"{stem}_floating_reference.csv")
+        self.speeds = _speed_rows(DATA_DIR / f"{stem}_surge_speed_reference.csv")
         self.scale = SCALE if stem == "scaled_torpedo" else 1.0
 
     def values(self, group):
@@ -102,13 +110,16 @@ each_part = pytest.mark.parametrize("part", PARTS, ids=[IDS[p] for p in PARTS])
 _CACHE = {}
 
 
-def vehicle(part=MARIE, *, overrides=None, hydrostatics=None, hydrodynamics=None, fin=None):
-    """The initialised vehicle of a dataset; the keyword dictionaries are test-side parameter overrides."""
-    key = json.dumps([part, overrides, hydrostatics, hydrodynamics, fin], sort_keys=True)
+def vehicle(part=MARIE, *, overrides=None, hydrostatics=None, hydrodynamics=None, fin=None, propulsor=True, propulsor_overrides=None):
+    """The initialised vehicle of a dataset (four fins, then its propulsor, whose drive command follows the fins' in the input vector);
+    the keyword dictionaries are test-side parameter overrides."""
+    key = json.dumps([part, overrides, hydrostatics, hydrodynamics, fin, propulsor, propulsor_overrides], sort_keys=True)
     if key in _CACHE:
         return _CACHE[key]
     data, p = DATA[part], vc.plugins()
     actuators = [(p.Fin, {**data.fin_values(k), **(fin or {})}) for k in range(4)]
+    if propulsor:
+        actuators.append((p.Propulsor, {**data.values("propulsor"), **(propulsor_overrides or {})}))
     vessel = vc.build_context(p.SubmergedBemAuv, {**data.values("vehicle"), **(overrides or {})},
                               site=(p.Site, data.values("site")),
                               hydrostatics=(p.SubmergedRestoring, {**data.values("hydrostatics"), **(hydrostatics or {})}),
@@ -194,10 +205,10 @@ def rigid_body(data):
 # 1. Builds, the data files, generality
 # --------------------------------------------------------------------------------------------------------
 @each_part
-def test_the_named_part_builds_with_four_fins(part):
+def test_the_named_part_builds_with_four_fins_and_one_propulsor(part):
     vessel = vehicle(part)
     assert type(vessel).__name__ == "SubmergedBemAuv"
-    assert vc.input_size(vessel) == CURRENT_INPUTS + 4            # the current, four fin commands
+    assert vc.input_size(vessel) == CURRENT_INPUTS + 4 + 1        # the current, four fin commands, the shaft speed
     assert vc.graph_of(vessel).step.size1_in(0) == 12             # the fins follow their command: no servo state
 
 
@@ -406,23 +417,22 @@ def _lagrangian_coriolis(a, nu):
 
 
 @each_part
-def test_the_part_selects_the_munk_shortcut_and_the_full_form_is_the_lagrangian_matrix(part):
-    """The part's form is ``munk_couplings_removed`` until a straight-line stability check of the hull with its fins
-    decides; the full form (the type's default) is every term of eq. 6.43, the Munk moment of eq. 6.52 (p. 121)
-    included, and the shortcut the same matrix with the pitch-heave, pitch-surge, yaw-surge and yaw-sway entries and
-    their transposes zero."""
+def test_the_part_selects_the_full_form_and_the_couplings_removed_form_is_the_lagrangian_matrix_without_four_couplings(part):
+    """The part's form is ``full``: every term of eq. 6.43, the Munk moment of eq. 6.52 (p. 121) included (the straight-line
+    stability of the hull with its fins is gated in section 7); ``couplings_removed`` is the same matrix with the
+    pitch-heave, pitch-surge, yaw-surge and yaw-sway entries and their transposes zero."""
     data = DATA[part]
-    assert data.values("vehicle")["coriolis_form"] == "munk_couplings_removed"
+    assert data.values("vehicle")["coriolis_form"] == "full"
     nu = np.r_[1.5, 0.1, -0.05, 0.02, 0.03, -0.04]
     x = state(eta=[0, 0, 20.0, 0, 0, 0], nu=nu)
-    full = vehicle(part, overrides={"coriolis_form": "kirchhoff_full"})
+    full = vehicle(part)
     a = vc.matrix(signal(full, "added_mass_matrix", x))
     expected = _lagrangian_coriolis(a, nu)
     assert np.abs(vc.matrix(signal(full, "added_mass_coriolis_matrix", x)) - expected).max() <= G1 * np.abs(expected).max()
     for i, j in ((4, 2), (4, 0), (5, 0), (5, 1)):
         expected[i, j] = expected[j, i] = 0.0
-    shortcut = vc.matrix(signal(vehicle(part), "added_mass_coriolis_matrix", x))
-    assert np.abs(shortcut - expected).max() <= G1 * np.abs(expected).max()
+    removed = vc.matrix(signal(vehicle(part, overrides={"coriolis_form": "couplings_removed"}), "added_mass_coriolis_matrix", x))
+    assert np.abs(removed - expected).max() <= G1 * np.abs(expected).max()
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -594,6 +604,127 @@ def test_popup_from_ten_metres_with_no_control_input_surfaces_and_settles_at_the
 
 
 # --------------------------------------------------------------------------------------------------------
+# 5b. Propulsor and the steady surge speed
+# --------------------------------------------------------------------------------------------------------
+PROPULSOR_ACTUATOR = 4                 # the fins are actuators 0 to 3, the propulsor follows
+SPEED_REFERENCE = 1e-9                 # m/s, the vehicle's steady speed against a second implementation of the plant and the power-law propeller (measured 2e-15)
+BALANCE = 2e-4                         # m/s, against the axial force balance that leaves out the pitch coupling of the matrices (measured 1.2e-4)
+
+
+def _neutral(part, **extra):
+    """Net buoyancy zero (``displaced_volume = m / rho``, the hull fully below the surface): the heave and pitch rows of a level run vanish."""
+    data = DATA[part]
+    site = data.values("site")
+    return vehicle(part, hydrostatics={"buoyancy_method": "from_volume",
+                                       "displaced_volume": data.values("vehicle")["body_mass"] / site["water_density"]}, **extra)
+
+
+def _steady_speed(part, rpm):
+    """Speed at which the surge acceleration of the vehicle vanishes at the shaft speed ``rpm``: neutral hull, deep, level, fins at zero,
+    still water (open loop the hull is unstable in pitch: the speed is solved, not integrated)."""
+    from scipy import optimize
+    vessel = _neutral(part)
+    dynamics = vc.graph_of(vessel).step
+    u = inputs(vessel, [0, 0, 0, 0, rpm])
+
+    def surge_acceleration(speed):
+        return float(np.asarray(dynamics(state(eta=[0, 0, 20.0, 0, 0, 0], nu=[speed, 0, 0, 0, 0, 0]), u)).ravel()[6])
+
+    return optimize.brentq(surge_acceleration, 1e-3, 10.0, xtol=1e-13, rtol=1e-14)
+
+
+def _power_law_thrust(values, rpm):
+    """``T = k |n|^p`` ahead, ``-r_a k |n|^p`` astern, ``n`` the shaft speed in rev/s ranged to the command limits (Fossen 2011, eq. 12.265,
+    p. 411, for ``p = 2``): second implementation."""
+    n = min(max(rpm, values["min_command"]), values["max_command"]) / 60.0
+    magnitude = values["power_law_coefficient"] * abs(n) ** values["power_law_exponent"]
+    return magnitude if n >= 0.0 else -values["astern_thrust_ratio"] * magnitude
+
+
+def _axial_balance_speed(part, rpm):
+    """Speed at which the power-law thrust equals the hull's axial force of the closed form (damping with its time constant and speed
+    fade, parasitic drag): ``T(n) = (M_11 / T_1) exp(-k_u U) U + 1/2 rho c_d pi (H/2)^2 U^2``."""
+    from scipy import optimize
+    data = DATA[part]
+    v, d, site = data.values("vehicle"), data.values("hydrodynamics"), data.values("site")
+    m11 = v["body_mass"] + reduction(data, "added_mass")[0, 0]
+    thrust = _power_law_thrust(data.values("propulsor"), rpm)
+    drag = lambda speed: ((m11 / d["T_1236"][0]) * math.exp(-d["surge_damping_blend"] * speed) * speed          # noqa: E731
+                          + 0.5 * site["water_density"] * d["c_d"] * math.pi * (v["height"] / 2) ** 2 * speed ** 2)
+    return optimize.brentq(lambda speed: thrust - drag(speed), 1e-6, 10.0, xtol=1e-14, rtol=1e-14)
+
+
+def _speed_cases():
+    return [(part, index) for part in PARTS for index in range(len(DATA[part].speeds) - 1)]
+
+
+@pytest.mark.parametrize("part,index", _speed_cases(), ids=[f"{IDS[p]}-{i}" for p, i in _speed_cases()])
+def test_steady_surge_speed_equals_the_second_implementation_and_the_axial_force_balance(part, index):
+    """At each shaft speed of the reference the vehicle's steady surge speed (surge acceleration zero, the 6 x 6 dynamics) equals the speed
+    of a second implementation of the plant and the power-law propeller (``*_surge_speed_reference.csv``, the second implementation of the whole surge row)
+    to ``SPEED_REFERENCE``; it also equals the root of the thrust against the hull's axial force in closed form to ``BALANCE``, which leaves
+    out the pitch coupling of the mass and damping matrices (the speeds are printed)."""
+    row = DATA[part].speeds[index]
+    speed = _steady_speed(part, row["rpm"])
+    balance = _axial_balance_speed(part, row["rpm"])
+    print(f"{part}: {row['rpm']:.0f} rpm: vehicle {speed:.6f} m/s, reference {row['surge_speed_mps']:.6f} m/s, axial balance {balance:.6f} m/s")
+    assert speed == pytest.approx(row["surge_speed_mps"], abs=SPEED_REFERENCE)
+    assert speed == pytest.approx(balance, abs=BALANCE)
+
+
+@each_part
+def test_steady_surge_at_the_largest_shaft_speed_equals_the_second_implementation_and_the_axial_force_balance(part):
+    """The largest shaft speed of the command range: the speed is the reference's and the axial balance's, and a command beyond the limit
+    gives the same speed."""
+    data = DATA[part]
+    row = data.speeds[-1]
+    assert row["rpm"] == data.values("propulsor")["max_command"]
+    speed = _steady_speed(part, row["rpm"])
+    print(f"{part}: {row['rpm']:.0f} rpm: vehicle {speed:.6f} m/s, reference {row['surge_speed_mps']:.6f} m/s")
+    assert speed == pytest.approx(row["surge_speed_mps"], abs=SPEED_REFERENCE)
+    assert speed == pytest.approx(_axial_balance_speed(part, row["rpm"]), abs=BALANCE)
+    assert _steady_speed(part, 1.5 * row["rpm"]) == pytest.approx(speed, abs=1e-9)
+
+
+def _propulsor_wrench(vessel, x, rpm):
+    return vessel.signals(x, inputs(vessel, [0, 0, 0, 0, rpm]))[f"actuators.{PROPULSOR_ACTUATOR}.generated_force"]
+
+
+@each_part
+def test_zero_shaft_speed_gives_no_wrench(part):
+    vessel = vehicle(part)
+    x = state(eta=[0, 0, 20.0, 0, 0, 0], nu=[1.0, 0, 0, 0, 0, 0])
+    assert np.abs(_propulsor_wrench(vessel, x, 0.0)).max() == 0.0
+
+
+@each_part
+def test_propulsor_wrench_is_the_power_law_along_the_shaft_at_the_declared_position_with_the_reaction_torque(part):
+    """``tau = [T e_x; r x T e_x - s_q c T e_x]`` with ``T = k |n|^p`` (second implementation), ``c T`` the torque about the shaft axis that
+    reaches the hull (scaled by the unit's ``shaft_torque_scale`` ``s_q``; the hull feels it with the sign of the couple), ``r`` the
+    declared position; the command is ranged to the largest shaft speed; astern the thrust is ``-r_a`` times the ahead thrust at the same
+    speed and the torque turns over with it."""
+    values = DATA[part].values("propulsor")
+    vessel = vehicle(part)
+    x = state(eta=[0, 0, 20.0, 0, 0, 0])
+    top = values["max_command"]
+    r = np.asarray(values["position"], float)
+
+    def expected(rpm):
+        thrust = _power_law_thrust(values, rpm)
+        force = np.array([thrust, 0.0, 0.0])
+        couple = values["shaft_torque_scale"] * values["reaction_torque_per_thrust"] * thrust
+        return np.r_[force, np.cross(r, force) - np.array([couple, 0.0, 0.0])]
+
+    for rpm in (0.13 * top, 0.5 * top, top, -0.5 * top):
+        wrench = _propulsor_wrench(vessel, x, rpm)
+        assert np.abs(wrench - expected(rpm)).max() <= G1 * max(abs(expected(rpm)[0]), 1.0)
+    ahead, astern = _propulsor_wrench(vessel, x, 0.5 * top), _propulsor_wrench(vessel, x, -0.5 * top)
+    assert ahead[0] > 0.0 > astern[0] and ahead[3] < 0.0 < astern[3]               # sign: the reaction turns over with the thrust
+    assert astern[0] == pytest.approx(-values["astern_thrust_ratio"] * ahead[0], rel=1e-12)
+    assert _propulsor_wrench(vessel, x, 2.0 * top)[0] == pytest.approx(_power_law_thrust(values, top), rel=1e-9)
+
+
+# --------------------------------------------------------------------------------------------------------
 # 6. Fins: layout, lift, limits
 # --------------------------------------------------------------------------------------------------------
 def _fin_wrench(vessel, k, deflection, speed):
@@ -649,7 +780,7 @@ def test_fin_deflection_limit_is_enforced_on_the_command(part):
 
 
 # --------------------------------------------------------------------------------------------------------
-# 7. Straight-line stability (reported: the part's Coriolis form is the owner's choice after this check)
+# 7. Straight-line stability (the part's Coriolis form is the full one: gated)
 # --------------------------------------------------------------------------------------------------------
 def _sway_yaw_roots(vessel, speed, h=1e-6):
     """Roots of the 2 x 2 sway-yaw linearisation at straight level flight (Fossen 2011, eqs. 12.17-12.21, p. 351), by
@@ -665,16 +796,22 @@ def _sway_yaw_roots(vessel, speed, h=1e-6):
     return np.linalg.eigvals(a)
 
 
+STABILITY_SPEEDS = (1.0, 1.5, 2.0)      # m/s at scale 1 (times sqrt(scale): Froude similitude)
+
+
 @each_part
-def test_straight_line_sway_yaw_roots_with_both_coriolis_forms_are_reported(part):
-    """Reported, not gated: the largest real part of the sway-yaw roots at the cruise speed with the fins fixed. The
-    Munk moment destabilises (the full form's largest root lies to the right of the shortcut's)."""
-    speed = 1.5 * DATA[part].scale ** 0.5
-    full = _sway_yaw_roots(vehicle(part, overrides={"coriolis_form": "kirchhoff_full"}), speed)
-    shortcut = _sway_yaw_roots(vehicle(part), speed)
-    print(f"{part}: sway-yaw roots at {speed:.2f} m/s: full {np.round(full, 4)}, shortcut {np.round(shortcut, 4)}")
-    assert np.all(np.isfinite(full)) and np.all(np.isfinite(shortcut))
-    assert full.real.max() > shortcut.real.max()
+@pytest.mark.parametrize("speed", STABILITY_SPEEDS)
+def test_the_part_with_its_fins_is_straight_line_stable_in_sway_yaw_under_the_full_form(part, speed):
+    """Gate: with every term of the added-mass Coriolis matrix (the Munk moment, destabilising for a slender hull) and the fins
+    at zero command, both sway-yaw roots of the level straight run lie in the left half plane at 1, 1.5 and 2 m/s (times
+    sqrt(scale)). The largest real part is printed; the roots of the part with ``couplings_removed`` are printed beside."""
+    speed *= DATA[part].scale ** 0.5
+    full = _sway_yaw_roots(vehicle(part), speed)
+    removed = _sway_yaw_roots(vehicle(part, overrides={"coriolis_form": "couplings_removed"}), speed)
+    print(f"{part}: sway-yaw roots at {speed:.2f} m/s: full {np.round(full, 4)}, couplings_removed {np.round(removed, 4)}")
+    assert np.all(np.isfinite(full)) and np.all(np.isfinite(removed))
+    assert full.real.max() < 0.0, full
+    assert full.real.max() > removed.real.max()        # the Munk moment destabilises: the full form is the less stable of the two
 
 
 # --------------------------------------------------------------------------------------------------------

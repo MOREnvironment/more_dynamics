@@ -29,7 +29,7 @@ tables and the comment beside each value (source and kind); a part's `SOURCE.md`
 | `body_center_of_gravity` | [0, 0, 0.02] | m | remus100.m:138 r_bG | document |
 | `roll_added_inertia_ratio` | 0.3 | 1 | remus100.m:137 r44 | document |
 | `added_mass_form` | "lamb_spheroid" | - | imlay61.m 31-60 | selector |
-| `coriolis_form` | "munk_couplings_removed" | - | remus100.m 208-211 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md) | selector |
+| `coriolis_form` | "couplings_removed" | - | remus100.m 208-211 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md) | selector |
 | `current_form` | "none" | - | still water | selector |
 | `body_mass` | 31.9 | kg | remus100.m:3 | document |
 
@@ -144,7 +144,7 @@ command), translational inflow, no flow angle, no interference, quadratic-drag s
 | `radii_of_gyration` | [0.4, 0.25, 0.25] | 1 | otter.m 102-104 | document |
 | `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | otter.m 161-166 | document |
 | `added_mass_form` | "scaled_derivatives_loaded_surge" | - | otter.m 160-168, surge term from m + mP (line 162) | selector |
-| `coriolis_form` | "kirchhoff_full" | - | m2c.m 33-48 (every term kept) | selector |
+| `coriolis_form` | "full" | - | m2c.m 33-48 (every term kept) | selector |
 | `current_form` | "none" | - | still water | selector |
 
 Actuators (linked named parts, in this order): `Otter port thruster`, `Otter starboard thruster` (two inputs named
@@ -205,7 +205,7 @@ Actuators (linked named parts, in this order): `Otter port thruster`, `Otter sta
 | `added_mass_coefficients` | [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7] | 1 | A-43 M11 (open: library yaw is -1.2) | estimate |
 | `added_mass_form` | "scaled_derivatives" | - | A-43 M11 | selector |
 | `added_mass_mass_basis` | "displaced" | - | E-101 Q5 a | owner decision |
-| `coriolis_form` | "kirchhoff_full" | - | every added-mass Coriolis term kept | selector |
+| `coriolis_form` | "full" | - | every added-mass Coriolis term kept | selector |
 | `current_form` | "none" | - | this part is gated in still water; the G1 references hold current fixed | selector |
 
 ## Grethe hydrostatics (`more_dynamics::SurfaceRestoring`)
@@ -280,7 +280,7 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `steering` | "servo_lag_rate_angle" | - | selector | the steering part: `fixed`, `servo_ideal`, `servo_no_limits`, `servo_lag_rate_angle`, `servo_output_saturated`, `jet_nozzle_clamp` |
 | `mounting` | "steered_rotation" | - | selector | the mounting part: `fixed_euler`, `fixed_direction`, `azimuth`, `jet_nozzle_direction`, `steered_rotation` |
 | `inflow` | "none" | - | selector | the inflow part: `none`, `speed_magnitude`, `surge_component`, `horizontal_speed_floored` |
-| `law` | "normalized_linear" | - | selector | the law part: `open_water_bollard`, `open_water_linearized`, `open_water_linearized_given`, `open_water_polynomial`, `open_water_signed_advance`, `quadratic_asymmetric`, `normalized_linear`, `jet_bollard_quadratic`, `jet_bilinear_speed`, `jet_momentum_flux_given`, `jet_momentum_flux_bollard_point`, `jet_pump_system_match`, `thrust_power_limited` |
+| `law` | "normalized_linear" | - | selector | the law part: `open_water_bollard`, `open_water_linearized`, `open_water_linearized_given`, `open_water_polynomial`, `open_water_signed_advance`, `quadratic_asymmetric`, `power_law`, `normalized_linear`, `jet_bollard_quadratic`, `jet_bilinear_speed`, `jet_momentum_flux_given`, `jet_momentum_flux_bollard_point`, `jet_pump_system_match`, `thrust_power_limited` |
 | `housing` | "none" | - | selector | the housing part: `none`, `leg_normal_force` |
 | `steering_convention` | "port_positive" | - | mounting: azimuth | `port_positive` or `starboard_positive`: which way the boat turns for a positive angle when the unit is aft of the CO (selector; refused for a unit at or ahead of the CO) |
 | `shaft_torque_scale` | unset | 1 | skeleton | share of the shaft torque that reacts on the body (physical: 1) |
@@ -319,6 +319,10 @@ One propulsor: six sockets, each holding the part its selector names (`models/pr
 | `reverse_torque_factor` | unset | 1 | law: open_water_signed_advance | factor on K_Q for n < 0 |
 | `positive_thrust_coefficient` | unset | N*s^2/rad^2 | law: quadratic_asymmetric | k_pos: T = k_pos omega |omega| for omega > 0 |
 | `negative_thrust_coefficient` | unset | N*s^2/rad^2 | law: quadratic_asymmetric | k_neg: T = k_neg omega |omega| for omega <= 0 |
+| `power_law_coefficient` | unset | N/(rev/s)^p | law: power_law | k of T = k abs(n)^p: the net thrust at a shaft speed of 1 rev/s ahead, after the thrust deduction |
+| `power_law_exponent` | unset | 1 | law: power_law | p of T = k abs(n)^p (2: the quadratic law, 1: linear) |
+| `astern_thrust_ratio` | unset | 1 | law: power_law | r_a: the astern thrust at -n as a fraction of the ahead thrust at n |
+| `reaction_torque_per_thrust` | unset | N*m/N | law: power_law | c of Q = c T: the torque about the thrust axis that reaches the hull per unit of net thrust (negative: the opposite hand) |
 | `max_thrust` | unset | N | law: normalized_linear | thrust at an effort of 1 |
 | `thrust_coefficient` | unset | 1 | law: normalized_linear | scale of the thrust |
 | `bollard_thrust_coefficient` | unset | N*s^2/rev^2 | law: jet_bollard_quadratic | k of T = k n^2 at the bollard |

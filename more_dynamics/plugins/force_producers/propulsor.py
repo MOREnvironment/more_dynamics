@@ -15,7 +15,7 @@ first-order lag, or a thrust command in newtons handed on as it is or through a 
 ``mounting`` (a fixed shaft by Euler angles or by a direction, an azimuth about the body z axis, a steered
 rotation, or the direction formula of the shared jet nozzle), ``inflow`` (none, the speed magnitude, the surge
 component, the horizontal speed bounded below), ``law`` (the open-water propeller laws, the quadratic law of
-two thrusters, the waterjet laws, the normalised linear law, the thrust command limited by the power delivered
+two thrusters, the power law of the shaft speed, the waterjet laws, the normalised linear law, the thrust command limited by the power delivered
 over the speed), ``housing`` (none, or the normal force of an outboard leg). The drive and the law must pass
 the same unit (rev/s for a shaft speed, 1 for a normalised effort, N for a thrust); a pair that does not is
 refused when the plugin is initialised, naming both.
@@ -54,8 +54,8 @@ from more_dynamics.models.propulsor.inflow import (horizontal_speed_floored, non
 from more_dynamics.models.propulsor.law import (jet_bilinear_speed, jet_bollard_quadratic, jet_momentum_flux,
                                                 jet_pump_system_match, normalized_linear, open_water_bollard,
                                                 open_water_linearized, open_water_polynomial,
-                                                open_water_signed_advance, quadratic_asymmetric,
-                                                thrust_power_limited)
+                                                open_water_signed_advance, power_law,
+                                                quadratic_asymmetric, thrust_power_limited)
 from more_dynamics.models.propulsor.mounting import (azimuth, fixed_direction, fixed_euler, jet_nozzle_direction,
                                                      steered_rotation)
 from more_dynamics.models.propulsor.steering import fixed, jet_nozzle_clamp
@@ -97,7 +97,7 @@ FORMS = {
             "open_water_linearized_given": _form(open_water_linearized, open_water_coefficients="given"),
             "open_water_polynomial": _form(open_water_polynomial, open_water_coefficients="polynomial"),
             "open_water_signed_advance": _form(open_water_signed_advance),
-            "quadratic_asymmetric": _form(quadratic_asymmetric), "normalized_linear": _form(normalized_linear),
+            "quadratic_asymmetric": _form(quadratic_asymmetric), "power_law": _form(power_law), "normalized_linear": _form(normalized_linear),
             "jet_bollard_quadratic": _form(jet_bollard_quadratic), "jet_bilinear_speed": _form(jet_bilinear_speed),
             "jet_momentum_flux_given": _form(jet_momentum_flux, flow_coefficient_method="given"),
             "jet_momentum_flux_bollard_point": _form(jet_momentum_flux, flow_coefficient_method="from_bollard_point"),
@@ -175,6 +175,10 @@ class Propulsor(ForceProducer):
         ParameterDescription("reverse_torque_factor", unset()),  # 1: factor on K_Q for n < 0
         ParameterDescription("positive_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varad^2: k_pos: T = k_pos omega |omega| for omega > 0
         ParameterDescription("negative_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varad^2: k_neg: T = k_neg omega |omega| for omega <= 0
+        ParameterDescription("power_law_coefficient", unset()),  # N/(rev/s)^p: k of T = k |n|^p
+        ParameterDescription("power_law_exponent", unset()),  # 1: exponent p of the shaft speed
+        ParameterDescription("astern_thrust_ratio", unset()),  # 1: astern thrust at -n as a fraction of the ahead thrust at n
+        ParameterDescription("reaction_torque_per_thrust", unset()),  # N*m/N: torque about the axis that reaches the hull per unit of thrust
         ParameterDescription("max_thrust", unset()),  # N: thrust at an effort of 1, or maximum thrust of the unit
         ParameterDescription("thrust_coefficient", unset()),  # 1: scale of the thrust
         ParameterDescription("bollard_thrust_coefficient", unset()),  # N*s^2/(rev*m): b2 of T = b1 n^2 + b2 n Varev^2: k of T = k n^2 at the bollard

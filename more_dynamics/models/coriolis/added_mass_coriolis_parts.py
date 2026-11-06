@@ -33,13 +33,13 @@ KIRCHHOFF_FULL_PARAMETERS = ()        # M_A, nu_r are both couplings/kinematic; 
 MUNK_COUPLINGS_REMOVED_PARAMETERS = ()
 
 
-def kirchhoff_full():
+def full():
     """The physics form: ``C_A = m2c(M_A, nu_r)`` (m2c.m 33-48), every term
     kept."""
-    return _part("kirchhoff_full", False)
+    return _part("full", False)
 
 
-def munk_couplings_removed():
+def couplings_removed():
     """MSS shortcut: the Munk moment of a slender body removed
     (remus100.m 208-211)."""
-    return _part("munk_couplings_removed", True)
+    return _part("couplings_removed", True)

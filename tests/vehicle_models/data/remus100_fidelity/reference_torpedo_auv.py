@@ -40,8 +40,8 @@ mechanism is one form):
   ``linear_plus_quadratic`` adds ``K = K_p|p| p|p|`` (Prestero 2001,
   eqs. 4.10-4.11, p. 27), the coefficient given only (his eq. 4.11 estimate
   is not reproduced from his own inputs).
-* added-mass Coriolis: ``kirchhoff_full`` (every term, Fossen 2011,
-  eq. 6.43, p. 120) or ``munk_couplings_removed`` (the couplings that carry the
+* added-mass Coriolis: ``full`` (every term, Fossen 2011,
+  eq. 6.43, p. 120) or ``couplings_removed`` (the couplings that carry the
   Munk moment of a slender body, Fossen 2011, eq. 6.52, p. 121, set to zero:
   a shortcut of the published reference model).
 * fin lift slope: ``given``; ``low_aspect_ratio``
@@ -161,9 +161,9 @@ def added_mass_coriolis(form, m_a, nu_r):
     c[:3, 3:] = -skew(p1)
     c[3:, :3] = -skew(p1)
     c[3:, 3:] = -skew(p2)
-    if form == "kirchhoff_full":
+    if form == "full":
         return c
-    if form == "munk_couplings_removed":
+    if form == "couplings_removed":
         for i, j in MUNK_ENTRIES:
             c[i, j] = 0.0
         return c

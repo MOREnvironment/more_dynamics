@@ -91,7 +91,7 @@ def _builder(stage, munk_kept=False, values=None, tmp_path=None, vehicle_params=
     """The vehicle of the stage with the chosen added-mass Coriolis form: the frozen parameter set (built once) or a
     perturbed ``values`` (with the vehicle's own choices in ``vehicle_params``)."""
     def make():
-        return vc.remus(full=stage == FULL, coriolis="kirchhoff_full" if munk_kept else "munk_couplings_removed",
+        return vc.remus(full=stage == FULL, coriolis="full" if munk_kept else "couplings_removed",
                         values=_parameter_set(stage) if values is None else values, vehicle_params=vehicle_params)
     if values is not None:
         return make()
@@ -342,7 +342,7 @@ def test_every_value_of_the_remus_parts_equals_the_frozen_value_and_the_plugins_
     (HULL, HULL_DERIVATIVE_FILE, "tau_ext"),
 ], ids=["stage2", "stage1_actuator_wrench", "stage1_hull"])
 @pytest.mark.parametrize("munk_kept, column", [(False, "xdot"), (True, "xdot_munk")],
-                         ids=["munk_removed", "kirchhoff_full"])
+                         ids=["munk_removed", "full"])
 def test_G1_derivative_equals_remus100_one_value(stage, file, input_kind, munk_kept, column):
     table = _read_csv(file)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])
@@ -456,13 +456,13 @@ def test_one_density_reaches_every_block(stage, tmp_path):
 
 
 @pytest.mark.parametrize("stage", [HULL, FULL], ids=["hull", "full"])
-@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "kirchhoff_full"])
+@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "full"])
 def test_neutrally_buoyant_body_at_rest_stays_at_rest(stage, munk_kept):
     xdot, _ = _evaluate(_builder(stage, munk_kept), np.zeros((1, 12)), np.zeros((1, 3)))
     assert np.abs(xdot).max() <= 1e-12
 
 
-@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "kirchhoff_full"])
+@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "full"])
 def test_energy_never_increases_without_input_or_current(munk_kept):
     p = _parameter_set(HULL)
     weight = _parameter_file()["one_value"]["mass"] * _parameter_file()["gravity"]["g"]
@@ -486,7 +486,7 @@ def test_energy_never_increases_without_input_or_current(munk_kept):
     assert worst <= 1e-9, f"energy grows: dE/dt / scale = {worst:.3g}"
 
 
-@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "kirchhoff_full"])
+@pytest.mark.parametrize("munk_kept", [False, True], ids=["munk_removed", "full"])
 def test_surge_only_motion_produces_no_sway_roll_or_yaw(munk_kept):
     rng = np.random.default_rng(7)
     x = np.zeros((50, 12))
@@ -503,7 +503,7 @@ def test_default_keeps_added_mass_coriolis_when_fins_are_modelled():
     """The generator's default Coriolis part is the physics form, and the user vehicle (fins and propeller) uses it:
     the user tree and the gate tree with ``KirchhoffFull`` give the same derivative."""
     default = plugins().SpheroidAuv.PARAMETERS
-    assert {d.name: d.default_value for d in default}["coriolis_form"] == "kirchhoff_full"
+    assert {d.name: d.default_value for d in default}["coriolis_form"] == "full"
     table = _read_csv(DERIVATIVE_FILE)
     x = _columns(table, "x", 12)[:20]
     u = _columns(table, "ui", 3)[:20]
@@ -517,7 +517,7 @@ def test_a_parameter_the_composition_leaves_out_takes_the_plugin_default():
     """Every plugin declares its parameters with defaults (the frozen REMUS 100 set, cited in the plugin): a
     composition that sets only the two form choices gives the same vehicle."""
     p = plugins()
-    bare = vc.build_context(p.SpheroidAuv, {"coriolis_form": "munk_couplings_removed", "current_form": "full_attitude"},
+    bare = vc.build_context(p.SpheroidAuv, {"coriolis_form": "couplings_removed", "current_form": "full_attitude"},
                             site=(p.Site, vc.remus_site()), hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
                             actuators=[p.PrescribedWrench])
     table = _read_csv(HULL_DERIVATIVE_FILE)
@@ -530,7 +530,7 @@ def test_a_parameter_the_composition_leaves_out_takes_the_plugin_default():
 
 def test_G4_perturbed_weight_through_site_gravity_is_caught_by_G1():
     """The weight is m g with g from the site's latitude: moving the site to the equator changes it, and G1 sees it."""
-    vehicle = vc.remus(coriolis="munk_couplings_removed", values=_parameter_set(HULL), vehicle_params={"latitude": 0.0})
+    vehicle = vc.remus(coriolis="couplings_removed", values=_parameter_set(HULL), vehicle_params={"latitude": 0.0})
     table = _read_csv(DERIVATIVE_FILE)
     current = np.column_stack([table["Vc"], table["betaVc"], table["w_c"]])
     xdot, _ = _evaluate(vehicle, _columns(table, "x", 12), current, tau_ext=_columns(table, "tau", 6))

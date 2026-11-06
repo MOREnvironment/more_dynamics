@@ -20,5 +20,5 @@ class ComponentParameters:
     radii_of_gyration = [0.4, 0.25, 0.25]  # otter_legacy.m 108-110
     added_mass_coefficients = [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]  # otter_legacy.m 167-172
     added_mass_form = "scaled_derivatives_loaded_surge"  # otter_legacy.m 166-174 (surge from m + mP, line 162)
-    coriolis_form = "kirchhoff_full"  # m2c.m 33-48 (every term kept)
+    coriolis_form = "full"  # m2c.m 33-48 (every term kept)
     current_form = "none"  # still water

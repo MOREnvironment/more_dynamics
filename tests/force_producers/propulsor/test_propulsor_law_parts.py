@@ -17,6 +17,8 @@ torque K_Q(J), J = advance speed.
 * ``open_water_bollard``: ``remus100.m`` 175-176, K_T0, K_Q0.
 * ``quadratic_asymmetric``: ``T = k w |w|``, ``w = 2 pi n``, ``k_pos`` ahead,
   ``k_neg`` astern (otter.m 223-229); torque 0.
+* ``power_law``: ``T = k |n|^p`` ahead, ``-r_a k |n|^p`` astern, ``Q = c T``; no advance-speed term (closed forms, the quadratic
+  limit against ``quadratic_asymmetric``, the sign of the torque, finite derivatives at ``n = 0``).
 * ``normalized_linear``: ``T = T_max c effort``, torque 0, indifferent to the
   advance speed and the density (unit "1" input).
 
@@ -214,3 +216,65 @@ def test_G2_normalized_linear_is_the_jet_nozzle_thrust_law_and_indifferent_to_fl
     for effort, va, rho in zip(g.uniform(-1.0, 1.0, 50), g.uniform(-5, 20, 50), g.uniform(900, 1100, 50)):
         t, q = _law(f, effort, va, rho)
         assert abs(t - 800.0 * 0.9 * effort) <= 1e-12 and q == 0.0
+
+
+# --------------------------------------------------------------------------
+# power_law
+# --------------------------------------------------------------------------
+POWER_LAW = {"power_law_coefficient": 0.0084, "power_law_exponent": 2.263, "astern_thrust_ratio": 0.7,
+             "reaction_torque_per_thrust": 0.0029}
+
+
+def test_G2_power_law_is_k_n_to_the_p_ahead_and_the_astern_ratio_astern_with_the_torque_a_fraction_of_the_thrust():
+    f = part("law", "power_law", POWER_LAW)
+    g = rng()
+    for n, va, rho in zip(g.uniform(-40.0, 40.0, N_RANDOM), g.uniform(-3, 3, N_RANDOM), g.uniform(900, 1100, N_RANDOM)):
+        expected = 0.0084 * abs(n) ** 2.263 * (1.0 if n >= 0 else -0.7)
+        t, q = _law(f, n, va, rho)
+        assert abs(t - expected) <= 1e-12 * max(1.0, abs(expected))
+        assert abs(q - 0.0029 * expected) <= 1e-12 * max(1.0, abs(expected))
+    assert _law(f, 18.63, 0.0)[0] == pytest.approx(0.0084 * 18.63 ** 2.263, rel=1e-12)      # a hand-picked point, 1118 rpm
+
+
+def test_G2_power_law_with_exponent_two_is_the_quadratic_law_in_revolutions_per_second():
+    """F = K n |n| (Fossen 2011, eq. 12.265, p. 411) with K = 0.019: ahead k n^2, astern -r_a k n^2; the same force as the quadratic law
+    of the same coefficient (in rad/s: k_pos = K / (2 pi)^2) when the astern ratio is 1."""
+    f = part("law", "power_law", {**POWER_LAW, "power_law_coefficient": 0.019, "power_law_exponent": 2.0, "astern_thrust_ratio": 1.0})
+    q = part("law", "quadratic_asymmetric", {"positive_thrust_coefficient": 0.019 / (2 * np.pi) ** 2,
+                                              "negative_thrust_coefficient": 0.019 / (2 * np.pi) ** 2})
+    for n in (-30.0, -2.5, 0.5, 12.0, 33.0):
+        assert _law(f, n, 0.0)[0] == pytest.approx(0.019 * n * abs(n), rel=1e-12)
+        assert _law(f, n, 0.0)[0] == pytest.approx(_law(q, n, 0.0)[0], rel=1e-12)
+
+
+def test_G2_power_law_torque_turns_over_with_the_thrust_and_with_the_hand_of_the_propeller():
+    for c in (0.0029, -0.0029):
+        f = part("law", "power_law", {**POWER_LAW, "reaction_torque_per_thrust": c})
+        ahead, astern = _law(f, 15.0, 0.0), _law(f, -15.0, 0.0)
+        assert ahead[0] > 0.0 > astern[0] and ahead[1] == pytest.approx(c * ahead[0], rel=1e-12) and astern[1] == pytest.approx(c * astern[0], rel=1e-12)
+        assert np.sign(ahead[1]) == np.sign(c) and np.sign(astern[1]) == -np.sign(c)
+
+
+def test_G2_power_law_is_zero_and_has_finite_derivatives_at_zero_shaft_speed_and_ignores_advance_and_density():
+    import casadi as ca
+    f = part("law", "power_law", POWER_LAW)
+    assert _law(f, 0.0, 1.0, 1000.0) == (0.0, 0.0)
+    assert _law(f, 12.0, -5.0, 1.0) == _law(f, 12.0, 7.0, 1000.0)
+    n = ca.SX.sym("n")
+    out = f(drive_output=n, advance_speed=0.0, water_density=1.0)
+    for name in ("thrust", "torque"):
+        slope = ca.Function("d", [n], [ca.jacobian(out[name], n)])
+        for value in (-3.0, 0.0, 3.0):
+            assert np.isfinite(float(slope(value))), (name, value)
+    assert float(ca.Function("d", [n], [ca.jacobian(out["thrust"], n)])(0.0)) == 0.0
+    p = ca.SX.sym("p")                                                      # the exponent as an input: its derivative exists at n = 0 too
+    open_part = part("law", "power_law")
+    y = open_part(drive_output=0.0, advance_speed=0.0, water_density=1.0, power_law_coefficient=1.0, power_law_exponent=p,
+                  astern_thrust_ratio=1.0, reaction_torque_per_thrust=0.0)["thrust"]
+    assert np.isfinite(float(ca.Function("d", [p], [ca.jacobian(y, p)])(2.0)))
+
+
+@pytest.mark.parametrize("bad", [{"power_law_coefficient": 0.0}, {"power_law_exponent": -1.0}, {"astern_thrust_ratio": -0.1}])
+def test_G2_power_law_refuses_a_value_outside_its_range(bad):
+    with pytest.raises(ValueError):
+        part("law", "power_law", {**POWER_LAW, **bad})

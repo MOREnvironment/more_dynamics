@@ -14,6 +14,6 @@ class ComponentParameters:
     body_center_of_gravity = [0, 0, 0.02]  # m, CO -> CG
     roll_added_inertia_ratio = 0.3  # roll added inertia as a fraction of the roll inertia of the displaced fluid
     added_mass_form = "lamb_spheroid"  # ideal-fluid prolate spheroid
-    coriolis_form = "kirchhoff_full"  # every term of the added-mass Coriolis matrix (Fossen 2011, eq. 6.43, p. 120); the Munk moment is kept and balanced by the body lift and the fins
+    coriolis_form = "full"  # every term of the added-mass Coriolis matrix (Fossen 2011, eq. 6.43, p. 120); the Munk moment is kept and balanced by the body lift and the fins
     current_form = "none"  # still water
     body_mass = 31.9  # kg

@@ -64,7 +64,7 @@ def _flat(forms, part_values=None, scale=0.0):
 
 def _vehicle(actuator_params, extra=()):
     p = vc.plugins()
-    return vc.remus(coriolis="munk_couplings_removed", current="none",
+    return vc.remus(coriolis="couplings_removed", current="none",
                     actuators=[p.PrescribedWrench, (_propulsor(), actuator_params), *extra])
 
 
@@ -192,7 +192,7 @@ def test_the_fixed_propeller_through_the_plugin_equals_the_landed_propeller_plug
     p = vc.plugins()
     forms, values, scale, _ = remus_composition("linearized", open_water_coefficients="given")
     propulsor_vessel = _vehicle(_flat(forms, values, scale))
-    propeller_vessel = vc.remus(coriolis="munk_couplings_removed", current="none",
+    propeller_vessel = vc.remus(coriolis="couplings_removed", current="none",
                                 actuators=[p.PrescribedWrench, (p.Propeller, vc.pick(p.Propeller, vc.remus_values()))])
     g = rng()
     worst = 0.0

@@ -20,5 +20,5 @@ class ComponentParameters:
     added_mass_coefficients = [-1.0, -1.5, -1.0, -0.2, -0.8, -1.7]  # estimate: A-43 M11 (open: library yaw is -1.2)
     added_mass_form = "scaled_derivatives"  # A-43 M11
     added_mass_mass_basis = "displaced"  # owner decision: E-101 Q5 a
-    coriolis_form = "kirchhoff_full"  # every added-mass Coriolis term kept
+    coriolis_form = "full"  # every added-mass Coriolis term kept
     current_form = "none"  # this part is gated in still water; the G1 references hold current fixed

@@ -12,7 +12,7 @@ revision `6e78e98`) as cited in the comment beside it, plus `generate_catamaran_
 |---|---|---|
 | `site_form` | `given` | the part's own `Site` subcomponent (`site` slot): MSS gives `gravity`/`water_density` directly, no site derivation |
 | `added_mass_form` | `scaled_derivatives_loaded_surge` | MSS's scaled-derivative added mass, surge term from the loaded mass `m + mP` (`otter_legacy.m` 168, `Xudot = -addedMassSurge(m+mP,L,rho)`; F-MSS-22 fixed upstream) |
-| `coriolis_form` | `kirchhoff_full` | every added-mass Coriolis term kept |
+| `coriolis_form` | `full` | every added-mass Coriolis term kept |
 | `current_form` | `none` | this part is gated in still water |
 
 The part's hull-loads subcomponent selects `manoeuvring_damping = time_constants_surge_blend`

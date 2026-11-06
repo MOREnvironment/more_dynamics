@@ -79,7 +79,7 @@ def test_remus_100_from_the_workspace_equals_the_plugins_on_the_part_values():
     p = vc.plugins()
     built = _build("remus100_published_reference")
     site = vc.reference_part("REMUS 100 (published reference) site")
-    reference = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
+    reference = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "couplings_removed"},
                                  site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
                                                 "water_density": site["water_density"]}),
                                  hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,
@@ -103,7 +103,7 @@ def test_remus_100_with_four_fins_and_the_propulsor_equals_the_fin_pairs_and_the
     p = vc.plugins()
     built = _build("remus100_published_reference")
     site = vc.reference_part("REMUS 100 (published reference) site")
-    earlier = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "munk_couplings_removed"},
+    earlier = vc.build_context(p.SpheroidAuv, {"current_form": "none", "coriolis_form": "couplings_removed"},
                                site=(p.Site, {"site_form": "latitude", "latitude": site["latitude"],
                                               "water_density": site["water_density"]}),
                                hydrostatics=p.SubmergedRestoring, hydrodynamics=p.AuvHullLoads,

@@ -50,7 +50,7 @@ def test_input_list_of_each_vehicle(make, names):
 def test_every_input_of_a_child_is_connected_by_name():
     """The hydrodynamics read the matrices of the vehicle, the weight and the centres of the hydrostatics, and the
     site's density, each by the name in their description."""
-    vessel = vc.remus(coriolis="munk_couplings_removed")
+    vessel = vc.remus(coriolis="couplings_removed")
     known = vessel.signals(REMUS_STATE, np.zeros(9))
     for name in ("pose", "velocity", "relative_velocity", "mass_matrix", "rigid_body_mass_matrix",
                  "added_mass_matrix", "water_density", "gravity", "weight", "center_of_buoyancy", "span",
@@ -69,7 +69,7 @@ def test_the_output_is_the_twelve_states_of_hull_vessel():
 
 def test_the_mass_matrix_equals_the_frozen_reference():
     import csv
-    vessel = vc.remus(coriolis="munk_couplings_removed")
+    vessel = vc.remus(coriolis="couplings_removed")
     mass = vc.matrix(vessel.signals(np.zeros(12), np.zeros(9))["mass_matrix"])
     with open(vc.DATA / "remus100" / "remus100_mass_matrix_consistent.csv", newline="") as handle:
         table = np.asarray(list(csv.reader(handle))[1:], float)
@@ -78,7 +78,7 @@ def test_the_mass_matrix_equals_the_frozen_reference():
 
 
 def test_gradient_through_a_current_input_equals_a_central_difference():
-    vessel = vc.remus(coriolis="munk_couplings_removed")
+    vessel = vc.remus(coriolis="couplings_removed")
     graph = vc.graph_of(vessel)
     x = vc.mss_to_ours(np.array([1.2, 0.1, -0.03, 0.01, -0.02, 0.04, 0.0, 0.0, 2.0, 0.1, -0.2, 0.3]))
     u = np.array([0.3, 0.5, 0.0, 5.0, 0.0, -2.0, 0.0, 0.1, 0.2])
@@ -109,10 +109,10 @@ def test_refuses_an_unknown_form_and_names_the_choices(parameter, value):
 
 
 def test_the_coriolis_form_changes_only_the_added_mass_coriolis_term():
-    """``munk_couplings_removed`` is the MSS shortcut, ``kirchhoff_full`` the physics form: only the acceleration
+    """``couplings_removed`` is the MSS shortcut, ``full`` the physics form: only the acceleration
     differs, the kinematics are the same."""
-    a = vc.remus(coriolis="munk_couplings_removed")
-    b = vc.remus(coriolis="kirchhoff_full")
+    a = vc.remus(coriolis="couplings_removed")
+    b = vc.remus(coriolis="full")
     x, u = REMUS_STATE, np.zeros(9)
     fa, fb = (np.asarray(vc.graph_of(v).step(x, u)).ravel() for v in (a, b))
     assert np.array_equal(fa[:6], fb[:6])  # eta_dot = J(eta) nu does not read the Coriolis term

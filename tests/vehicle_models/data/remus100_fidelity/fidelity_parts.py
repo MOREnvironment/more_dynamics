@@ -70,7 +70,7 @@ def _propeller(v):
 
 
 def _published_forms(v):
-    return {"coriolis_form": "munk_couplings_removed", "body_lift_form": "vertical_plane_wing",
+    return {"coriolis_form": "couplings_removed", "body_lift_form": "vertical_plane_wing",
             "hull_drag_form": "wing_drag", "roll_damping_form": "linear"}
 
 
@@ -124,7 +124,7 @@ def published_forms():
 
 
 def munk_kept_alone():
-    return {**published_forms(), "coriolis_form": "kirchhoff_full"}
+    return {**published_forms(), "coriolis_form": "full"}
 
 
 def geometric_fin_slope_effective_angle():

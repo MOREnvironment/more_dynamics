@@ -150,10 +150,10 @@ def test_G1_added_mass_today_scales_with_the_hull_mass_not_the_displaced_mass():
         assert loaded[i, i] == pytest.approx(float(rows[300.0][f"M_A_{i + 1}{i + 1}"]), rel=G1_TOLERANCE)
 
 
-def test_G1_coriolis_matches_kirchhoff_full_and_the_munk_couplings_removed_form():
+def test_G1_coriolis_matches_full_and_the_couplings_removed_form():
     rows = _read_csv("grethe_coriolis.csv")
-    vessel = _grethe(vehicle_params={"coriolis_form": "kirchhoff_full"})
-    vessel_munk = _grethe(vehicle_params={"coriolis_form": "munk_couplings_removed"})
+    vessel = _grethe(vehicle_params={"coriolis_form": "full"})
+    vessel_munk = _grethe(vehicle_params={"coriolis_form": "couplings_removed"})
     for row in rows:
         nu = _row_floats(row, "nu", 6)
         state = np.r_[np.zeros(6), nu]

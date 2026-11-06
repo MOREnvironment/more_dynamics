@@ -13,7 +13,7 @@ class ComponentParameters:
     body_center_of_gravity = [0, 0, 0.02]  # remus100.m:138 r_bG
     roll_added_inertia_ratio = 0.3  # remus100.m:137 r44
     added_mass_form = "lamb_spheroid"  # imlay61.m 31-60
-    coriolis_form = "munk_couplings_removed"  # remus100.m 208-211 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md)
+    coriolis_form = "couplings_removed"  # remus100.m 208-211 (MSS omits the Munk-moment couplings of the added-mass Coriolis: its reduced model keeps no measured manoeuvring derivatives to balance them; with every term kept this part spins open-loop, SOURCE.md)
     current_form = "yaw_rate_terms"  # remus100.m 118-123: the current rotated by the yaw only, the yaw rate in its derivative
     kinematics_form = "unit_quaternion"  # Fossen 2011, eq. 2.69, p. 30 (13 states: position, unit quaternion, velocity)
     body_mass = 31.9  # document: remus100.m:3

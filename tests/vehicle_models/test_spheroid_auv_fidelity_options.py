@@ -363,7 +363,7 @@ def test_turn_tolerance_is_met_where_the_forms_exist(case):
 # ---------------------------------------------------------------------------------------------
 def test_published_part_removes_the_munk_couplings():
     root, _ = _part_tree(PUBLISHED_PART)
-    assert root["coriolis_form"] == "munk_couplings_removed"
+    assert root["coriolis_form"] == "couplings_removed"
 
 
 def test_published_part_declares_every_form_by_name():
@@ -652,7 +652,7 @@ def test_every_named_part_keeping_the_munk_moment_is_straight_line_stable():
             if record.get("PluginName") != "more_dynamics::SpheroidAuv":
                 continue
             root, _ = _part_tree(record["Name"])
-            if root.get("coriolis_form", "kirchhoff_full") != "kirchhoff_full":
+            if root.get("coriolis_form", "full") != "full":
                 continue
             assert record["Name"] in CRUISE, f"{record['Name']!r} keeps the Munk moment: give its cruise state here"
             configuration_key, part = CRUISE[record["Name"]]
@@ -735,7 +735,7 @@ SYNTHETIC = {   # a synthetic torpedo, labelled synthetic: no identified second 
     "roll_added_inertia_ratio": 0.2, "latitude": 1.0, "water_density": 1020.0, "kinematic_viscosity": 1.1e-6,
     "center_of_buoyancy": [0, 0, 0], "time_constants": [15, 15, 2], "damping_ratios": [0.4, 0.6],
     "oswald_efficiency": 0.4, "planform_fraction": 0.65, "hull_frontal_drag_coefficient": 0.35,
-    "coriolis_form": "kirchhoff_full", "body_lift_form": "point_force_both_planes",
+    "coriolis_form": "full", "body_lift_form": "point_force_both_planes",
     "body_lift_slope_method": "slender_body_hoerner", "body_lift_slope_per_degree": 0.003,   # Hoerner's constant (Prestero 2001, eq. 4.31), not a vehicle number
     "pressure_centre_method": "fraction_of_length_from_nose", "pressure_centre_fraction": 0.62,
     "hull_drag_form": "quadratic_axial", "roll_damping_form": "linear",

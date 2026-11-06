@@ -180,7 +180,7 @@ def remus_site(values=None):
             "kinematic_viscosity": v["kinematic_viscosity"]}
 
 
-def remus(*, full=False, coriolis="kirchhoff_full", current="full_attitude", values=None, actuators=None,
+def remus(*, full=False, coriolis="full", current="full_attitude", values=None, actuators=None,
           vehicle_params=None):
     """REMUS 100: the hull alone (a prescribed wrench, ``full=False``) or with the fin pairs and the propeller.
     ``values`` replaces the frozen parameter set (a perturbed set in a test)."""

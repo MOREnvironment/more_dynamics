@@ -147,7 +147,7 @@ def test_the_plugin_layer_holds_no_trace_of_the_retired_part_base():
 # --------------------------------------------------------------------------
 def _hull_with_fin(fin_params=None):
     p = vc.plugins()
-    return vc.remus(coriolis="munk_couplings_removed", current="none",
+    return vc.remus(coriolis="couplings_removed", current="none",
                     actuators=[p.PrescribedWrench, (p.Fin, fin_params or {})])
 
 
@@ -288,8 +288,8 @@ def _wrench(vessel, commands, nu_r, keys):
 
 def test_the_rudder_and_stern_plane_as_two_fins_equal_the_fin_pairs_plugin_on_the_mss_rows():
     values = vc.remus_values()
-    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=_pairs(values))
-    fins = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=_two_ideal_fins(values))
+    pairs = vc.remus(coriolis="couplings_removed", current="none", actuators=_pairs(values))
+    fins = vc.remus(coriolis="couplings_removed", current="none", actuators=_two_ideal_fins(values))
     assert vc.input_names(pairs) == ["fin_deflection_command"] and vc.input_names(fins) == [
         "fin_angle_command", "fin_angle_command"]
     _, commands, nu_r, _ = _rows()
@@ -305,9 +305,9 @@ def test_the_two_fins_equal_the_matlab_wrench_of_the_mss_rows_with_the_mss_fin_p
     values = {**vc.remus_values(), "rudder_position": mss_constant(ref, "x_r"),
               "stern_plane_position": mss_constant(ref, "x_s")}
     assert values["water_density"] == mss_constant(ref, "rho")
-    pairs = vc.remus(coriolis="munk_couplings_removed", current="none", values=values,
+    pairs = vc.remus(coriolis="couplings_removed", current="none", values=values,
                      actuators=_pairs(values, fin_positions_method="given"))  # the rows' own positions, not -a
-    fins = vc.remus(coriolis="munk_couplings_removed", current="none", values=values,
+    fins = vc.remus(coriolis="couplings_removed", current="none", values=values,
                     actuators=_two_ideal_fins(values))
     assert max_diff(_wrench(pairs, commands, nu_r, ["actuators.0.generated_force"]), expected) <= G1_TOLERANCE
     assert max_diff(_wrench(fins, commands, nu_r, ["actuators.0.generated_force", "actuators.1.generated_force"]),
@@ -318,7 +318,7 @@ def test_two_lag_fins_stack_their_states_and_equal_the_model_layer_set():
     p = vc.plugins()
     first = {}
     second = {"fin_position": [-0.7, 0.0, 0.0], "lift_axis": [0.0, 0.0, -1.0]}
-    vessel = vc.remus(coriolis="munk_couplings_removed", current="none", actuators=[(p.Fin, first), (p.Fin, second)])
+    vessel = vc.remus(coriolis="couplings_removed", current="none", actuators=[(p.Fin, first), (p.Fin, second)])
     assert [(d.name, d.size) for d in vessel.graph().stateDescription] == [
         ("servo_state", 1), ("servo_state", 1), ("state", 12)]
     forms = {"servo": "lag_rate_angle", "inflow": "rigid_point", "flow_angle": "small_angle",

@@ -125,7 +125,7 @@
       "place": "E-101 Q5 a (not yet a library option, A-64 Section 3.1 gap 6)"
     },
     "coriolis_form": {
-      "value": "kirchhoff_full",
+      "value": "full",
       "unit": "-",
       "kind": "selector",
       "place": "monohull.py 100"

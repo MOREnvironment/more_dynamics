@@ -15,7 +15,7 @@
   },
   "vehicle": {
     "coriolis_form": {
-      "value": "kirchhoff_full",
+      "value": "full",
       "kind": "selector",
       "source": "every added-mass Coriolis term kept (Fossen 2011, eq. 6.43, p. 120); kept only with the point-force body lift and effective-angle fins with the geometric lift slope, and only with the straight-line stability gate green"
     },

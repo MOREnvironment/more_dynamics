@@ -36,8 +36,8 @@ Options, each with its fidelity and what raises it:
 * ``added_mass_form``: ``"lamb_spheroid"`` (the ideal fluid around a prolate
   spheroid, Fossen 2011 ch. 6, imlay61.m). Raise: a Capytaine or identified
   matrix.
-* ``coriolis_form``: ``"kirchhoff_full"`` (every term of ``C_A``, the physics
-  form, default) or ``"munk_couplings_removed"`` (MSS shortcut of
+* ``coriolis_form``: ``"full"`` (every term of ``C_A``, the physics
+  form, default) or ``"couplings_removed"`` (MSS shortcut of
   ``remus100.m`` 207-210, a comparison form).
 * ``current_form``: ``"full_attitude"`` (default: the current constant in NED
   taken into the body axes with the full attitude and rotation rate, Fossen
@@ -90,7 +90,7 @@ from rpp_py.parameter_description import ParameterDescription
 from more_transformations.more_casadi_transformations import check_symmetric_positive_definite, unset
 
 from more_dynamics.models.added_mass.added_mass_parts import lamb_spheroid, lamb_spheroid_parameters
-from more_dynamics.models.coriolis.added_mass_coriolis_parts import kirchhoff_full, munk_couplings_removed
+from more_dynamics.models.coriolis.added_mass_coriolis_parts import full, couplings_removed
 from more_dynamics.models.hull_form.hull_form import (
     PROLATE_SPHEROID_MAIN_DIMENSIONS_PARAMETERS, prolate_spheroid_main_dimensions)
 from more_dynamics.models.rigid_body.rigid_body_parts import (
@@ -104,7 +104,7 @@ from more_dynamics.plugins.shared.vehicle_options import CURRENT_FORMS, current_
 ADDED_MASS_FORMS = {"lamb_spheroid": (lamb_spheroid, lamb_spheroid_parameters)}
 BODY_DENSITY_METHODS = ("computed", "given")
 RIGID_BODY_FORMS = ("homogeneous_spheroid", "given_inertia")
-CORIOLIS_FORMS = {"kirchhoff_full": kirchhoff_full, "munk_couplings_removed": munk_couplings_removed}
+CORIOLIS_FORMS = {"full": full, "couplings_removed": couplings_removed}
 
 
 def _check_given_inertia(context):
@@ -142,7 +142,7 @@ class SpheroidAuv(VehicleModel3D):
         ParameterDescription("inertia_diagonal", unset()),  # kg*m^2, [Ix, Iy, Iz] about the CO, read with "given_inertia"
         ParameterDescription("inertia_products", unset()),  # kg*m^2, [Ixy, Iyz, Ixz] about the CO, read with "given_inertia"
         ParameterDescription("added_mass_form", "lamb_spheroid"),  # imlay61.m 31-59
-        ParameterDescription("coriolis_form", "kirchhoff_full"),  # m2c.m 33-48 (every term kept)
+        ParameterDescription("coriolis_form", "full"),  # m2c.m 33-48 (every term kept)
         ParameterDescription("kinematics_form", "euler"),  # Fossen 2011, eq. 2.40, p. 26 (Euler) or eq. 2.69, p. 30 (unit quaternion)
         ParameterDescription("current_form", "full_attitude"),  # Fossen 2011, eqs. 8.138-8.141, 8.157, pp. 221-225 (the current's full attitude form)
     ]
