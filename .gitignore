@@ -216,5 +216,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local checks against runs of other simulators: never committed (each test skips when its data are absent)
+# Local checks against runs of other simulators and reference data: never committed (each test skips when its data are absent)
 /local_checks/

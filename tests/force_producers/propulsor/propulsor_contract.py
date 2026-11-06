@@ -124,6 +124,8 @@ def _form(module, stem=None, **kwargs):
 FORMS = {
     ("drive", "speed_command_rpm"): _form("propulsor.drive.speed_command", command_unit="rpm"),
     ("drive", "speed_command_rad_s"): _form("propulsor.drive.speed_command", command_unit="rad/s"),
+    ("drive", "speed_command_lag_rpm"): _form("propulsor.drive.speed_command_lag", command_unit="rpm"),
+    ("drive", "speed_command_lag_rad_s"): _form("propulsor.drive.speed_command_lag", command_unit="rad/s"),
     ("drive", "power_limited_speed_command_rpm"): _form("propulsor.drive.power_limited_speed_command",
                                                        command_unit="rpm"),
     ("drive", "normalized_lag"): _form("propulsor.drive.normalized_lag"),
@@ -199,6 +201,10 @@ _OPEN_WATER = {"diameter": POSITIVE("m"), WAGENINGEN: None, "max_advance_number"
 DECLARED = {
     ("drive", "speed_command_rpm"): {"min_command": ANY("rpm"), "max_command": ANY("rpm")},
     ("drive", "speed_command_rad_s"): {"min_command": ANY("rad/s"), "max_command": ANY("rad/s")},
+    ("drive", "speed_command_lag_rpm"): {"min_command": ANY("rpm"), "max_command": ANY("rpm"),
+                                         "speed_time_constant": POSITIVE("s")},
+    ("drive", "speed_command_lag_rad_s"): {"min_command": ANY("rad/s"), "max_command": ANY("rad/s"),
+                                           "speed_time_constant": POSITIVE("s")},
     ("drive", "power_limited_speed_command_rpm"): {
         "min_command": ANY("rpm"), "max_command": ANY("rpm"), "max_power": POSITIVE("W"),
         "efficiency": _decl(S, "1", 0.0, True, 1.0), "thrust_saturation": POSITIVE("N")},
@@ -259,6 +265,7 @@ SKELETON_DECLARED = {"shaft_torque_scale": _decl(S, "1", 0.0)}
 
 # Units of the pair drive / law (a proposal not yet accepted)
 DRIVE_UNITS = {"speed_command_rpm": "rev/s", "speed_command_rad_s": "rev/s",
+               "speed_command_lag_rpm": "rev/s", "speed_command_lag_rad_s": "rev/s",
                "power_limited_speed_command_rpm": "rev/s", "normalized_lag": "1",
                "speed_command_normalized": "rev/s", "thrust_command": "N", "thrust_command_lag": "N"}
 LAW_UNITS = {"normalized_linear": "1", "thrust_power_limited": "N"}   # every other law accepts "rev/s"

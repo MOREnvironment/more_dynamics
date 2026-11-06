@@ -9,7 +9,7 @@ steering command), from outside; ``relative_velocity`` and ``water_density`` are
 name. States: ``drive_state`` then ``servo_state`` (each absent when its part has none).
 
 Selectors (the choices are the keys of ``FORMS``): ``drive`` (a shaft-speed command in rpm or rad/s, the
-same with a shaft-power cap, a normalised command mapped to a shaft speed, a normalised effort with a
+same with a shaft-power cap, the same through a first-order lag of the shaft speed, a normalised command mapped to a shaft speed, a normalised effort with a
 first-order lag, or a thrust command in newtons handed on as it is or through a first-order lag), ``steering``
 (fixed, the servo with its three switches set as four named settings, or the clamped nozzle angle),
 ``mounting`` (a fixed shaft by Euler angles or by a direction, an azimuth about the body z axis, a steered
@@ -47,7 +47,8 @@ from rpp_py.parameter_description import ParameterDescription
 from more_transformations.more_casadi_transformations import check_values, freeze, unset
 from more_dynamics.models.propulsor import propulsor as skeleton
 from more_dynamics.models.propulsor.drive import (normalized_lag, power_limited_speed_command, speed_command,
-                                                  speed_command_normalized, thrust_command, thrust_command_lag)
+                                                  speed_command_lag, speed_command_normalized, thrust_command,
+                                                  thrust_command_lag)
 from more_dynamics.models.propulsor.housing import leg_normal_force, none as housing_none
 from more_dynamics.models.propulsor.inflow import (horizontal_speed_floored, none as inflow_none, speed_magnitude,
                                                     surge_component)
@@ -79,6 +80,8 @@ def _form(module, stem=None, **kwargs):
 FORMS = {
     "drive": {"speed_command_rpm": _form(speed_command, command_unit="rpm"),
               "speed_command_rad_s": _form(speed_command, command_unit="rad/s"),
+              "speed_command_lag_rpm": _form(speed_command_lag, command_unit="rpm"),
+              "speed_command_lag_rad_s": _form(speed_command_lag, command_unit="rad/s"),
               "power_limited_speed_command_rpm": _form(power_limited_speed_command, command_unit="rpm"),
               "speed_command_normalized": _form(speed_command_normalized),
               "normalized_lag": _form(normalized_lag),
@@ -142,6 +145,7 @@ class Propulsor(ForceProducer):
         ParameterDescription("shaft_torque_scale", unset()),  # 1: share of the shaft torque that reacts on the body
         ParameterDescription("min_command", unset()),  # rpm or rad/s as the drive says: lowest shaft-speed command
         ParameterDescription("max_command", unset()),  # rpm or rad/s as the drive says: highest shaft-speed command
+        ParameterDescription("speed_time_constant", unset()),  # s: time constant of the shaft-speed lag
         ParameterDescription("max_power", unset()),  # W: electrical input power limit P_max
         ParameterDescription("efficiency", unset()),  # 1: drive efficiency eta: the shaft power cap is eta P_max
         ParameterDescription("thrust_saturation", unset()),  # N: thrust limit of the unit

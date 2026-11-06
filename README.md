@@ -160,6 +160,7 @@ The `Propulsor` plugin (`plugins/force_producers/propulsor.py`, parts in `models
 | Socket | Selector value | Fidelity | Source | Assumptions | Raised to the next level by |
 |---|---|---|---|---|---|
 | drive | `speed_command_rpm`, `speed_command_rad_s` | lowest: the shaft follows its command at once, limited | published simulator models | no motor or battery dynamics | a logged step of shaft speed (first-order lag), then the motor envelope |
+| drive | `speed_command_lag_rpm`, `speed_command_lag_rad_s` | the shaft speed is a state with a first-order lag toward the command, ranged | first-order actuator model (Fossen 2011, eq. 13.154, p. 446) | one time constant, no motor or battery dynamics, the load does not slow the shaft | a logged step of shaft speed (time constant), then the motor envelope |
 | drive | `power_limited_speed_command_rpm` | construction of an outboard block, kept as a labelled comparison | outboard block | a power cap `eta P_max` and a thrust cap, no source for either | the vendor's motor data or a logged power at full throttle |
 | drive | `speed_command_normalized` | as the plain speed drive, command in `[-1, 1]` | the allocator's signed normalisation | limits ahead and astern are the unit's own | the same logged step |
 | drive | `normalized_lag` | comparison: an effort in `[-1, 1]` with separate rise and fall times | a shared jet-nozzle plugin | the thrust follows the effort linearly | logged thrust steps (rise and fall times) |
