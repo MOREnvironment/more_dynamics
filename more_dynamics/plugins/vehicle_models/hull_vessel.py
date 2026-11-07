@@ -5,6 +5,7 @@ from rpp_schema.more_dynamics.IODescription import IODescription
 from rpp_schema.more_dynamics.StateDescription import StateDescription
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_common.casadi_graph import RppCasadiGraph, graph_to_bytes
 from more_dynamics.models.hull_vessel import (
@@ -56,7 +57,7 @@ class HullVessel(VehicleModel3D):
         self.current_state_idx = 0
         self.current_output_idx = 0
 
-    def initialize(self, context: ComponentContext):
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         hydrostatics = context.get_component("hydrostatics")
         self._hydrostatics_graph = RppCasadiGraph(hydrostatics.graph())
         if self._hydrostatics_graph.num_inputs != 6:
@@ -120,6 +121,7 @@ class HullVessel(VehicleModel3D):
             mass_properties=self._mass_properties,
             include_coriolis=self._include_coriolis,
         )
+        return CallbackResult()
 
     def step(self, state: VehicleModel3D.Odometry3D,
             command: List[VehicleModel3D.Command], t: float, dt: float, **kwargs) -> VehicleModel3D.Odometry3D:

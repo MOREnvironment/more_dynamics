@@ -3,6 +3,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 from rpp_schema.more_dynamics.IODescription import IODescription
 from rpp_schema.more_dynamics.StateDescription import StateDescription
 
@@ -35,7 +36,7 @@ class JetNozzle(ForceProducer):
         self.min_angle = 0.0
         self.max_angle = 0.0
 
-    def initialize(self, context: ComponentContext):
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         self.location = context.get_parameter("location")
         self.yaw_bias = context.get_parameter("yaw_bias")
         self.trim_angle = context.get_parameter("trim_angle")
@@ -46,6 +47,7 @@ class JetNozzle(ForceProducer):
         self.nozzle_velocity_radpersec = context.get_parameter("nozzle_velocity_radpersec")
         self.min_angle = context.get_parameter("min_angle")
         self.max_angle = context.get_parameter("max_angle")
+        return CallbackResult()
 
     def graph(self) -> ForceProducer.CasadyPayload:
         payload = ForceProducer.CasadyPayload()

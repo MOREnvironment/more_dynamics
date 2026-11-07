@@ -3,6 +3,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import HydrostaticsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 from rpp_schema.more_dynamics.IODescription import IODescription
 
 from more_dynamics.models.hydrostatics import (
@@ -31,7 +32,7 @@ class LinearSurfaceHydrostatics(HydrostaticsModel):
         self._properties = None
         self._model = None
 
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         self._properties = preprocess_linear_surface_hydrostatics(
             length=context.get_parameter("length"),
             beam=context.get_parameter("beam"),
@@ -50,11 +51,12 @@ class LinearSurfaceHydrostatics(HydrostaticsModel):
             reference_point=context.get_parameter("reference_point"),
         )
         self._model = linear_surface_hydrostatics_casadi(self._properties)
+        return CallbackResult()
 
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:
             raise RuntimeError(
-                "LinearSurfaceHydrostatics must be initialized before graph()"
+                "LinearSurfaceHydrostatics must be configured before graph()"
             )
 
         payload = HydrostaticsModel.CasadyPayload()

@@ -3,6 +3,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 from rpp_schema.more_dynamics.IODescription import IODescription
 
 from more_common.casadi_graph import graph_to_bytes
@@ -30,17 +31,18 @@ class LinearSurfaceHydrodynamics(HydrodynamicsModel):
     def __init__(self) -> None:
         self._model = None
 
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         damping_coefficients = context.get_parameter("damping_coefficients")
         properties = preprocess_linear_surface_hydrodynamics(
             damping_coefficients
         )
         self._model = linear_surface_hydrodynamics_casadi(properties)
+        return CallbackResult()
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._model is None:
             raise RuntimeError(
-                "LinearSurfaceHydrodynamics must be initialized before graph()"
+                "LinearSurfaceHydrodynamics must be configured before graph()"
             )
 
         payload = HydrodynamicsModel.CasadyPayload()
