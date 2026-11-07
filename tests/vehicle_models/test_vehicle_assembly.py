@@ -128,7 +128,7 @@ def test_refuses_an_empty_slot_and_names_it():
                                subcomponents={"site": [vc.child(p.Site)], "hydrodynamics": [vc.child(p.AuvHullLoads)],
                                               "actuators": []})
     with pytest.raises(p.CompositionError, match="slot 'hydrostatics' is empty"):
-        context.initialize()
+        context.configure()
 
 
 def test_refuses_an_empty_site_slot_and_names_it():
@@ -140,7 +140,7 @@ def test_refuses_an_empty_site_slot_and_names_it():
                                subcomponents={"hydrostatics": [vc.child(p.SubmergedRestoring)],
                                               "hydrodynamics": [vc.child(p.AuvHullLoads)], "actuators": []})
     with pytest.raises(p.CompositionError, match="slot 'site' is empty"):
-        context.initialize()
+        context.configure()
 
 
 def test_refuses_a_site_that_does_not_give_the_water_and_the_gravity():
@@ -235,13 +235,13 @@ def _assemble(hydrodynamics, site=None):
     """The Catamaran over the real site (its defaults) and surface restoring and the given hydrodynamics child."""
     p = vc.plugins()
     restoring = vc.child(p.SurfaceRestoring)
-    restoring.initialize()
+    restoring.configure()
     if site is None:
         site = vc.child(p.Site)
-        site.initialize()
+        site.configure()
         site = site.get_instance()
     vehicle = p.Catamaran()
-    vehicle.initialize(_StandIn(p.Catamaran, {"site": site, "hydrostatics": restoring.get_instance(),
+    vehicle.on_configure(_StandIn(p.Catamaran, {"site": site, "hydrostatics": restoring.get_instance(),
                                               "hydrodynamics": hydrodynamics, "actuators": []}))
     return vehicle
 
@@ -502,7 +502,7 @@ def test_lukas_jet_nozzle_is_an_actuator_with_two_states():
     vessel = vc.otter(actuators=[JetNozzle])
     assert [d.name for d in vessel.graph().stateDescription] == ["thrust", "nozzle_angle", "state"]
     nozzle = vc.context_of(JetNozzle)
-    nozzle.initialize()
+    nozzle.configure()
     reference = RppCasadiGraph(nozzle.get_instance().graph())
     state, command = np.array([0.6, 0.2]), np.array([0.8, -0.3])
     x = np.r_[0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 1.0, 0.1, 0.0, 0.0, 0.0, 0.02]

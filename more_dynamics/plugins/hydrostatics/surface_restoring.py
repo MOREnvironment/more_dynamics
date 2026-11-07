@@ -64,6 +64,7 @@ Date:      2026-10-09
 from rpp_plugin_types.more_dynamics import HydrostaticsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -94,7 +95,7 @@ class SurfaceRestoring(HydrostaticsModel):
         self._model = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         hull_count = read_value(context, "hull_count", "1", "number of hulls the restoring is summed over (1 or 2)",
                             placeholder=1)
         if hull_count not in (1, 2):
@@ -113,10 +114,11 @@ class SurfaceRestoring(HydrostaticsModel):
             context, surface_restoring(hull_count, wetted_surface_method=method, block_coefficient_method=bc_method,
                                        payload_trim_form=trim_form),
             declared)
+        return CallbackResult()
 
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("SurfaceRestoring must be initialized before graph()")
+            raise RuntimeError("SurfaceRestoring must be configured before graph()")
         io = PayloadBuilder(HydrostaticsModel.CasadyPayload())
         out = io.call(self._model)
         io.output("restoring_force", -out["g"], "signed generalized force added by the vehicle, BODY, N and N m")

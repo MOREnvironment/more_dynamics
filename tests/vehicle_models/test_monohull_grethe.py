@@ -495,7 +495,7 @@ def _build_named_part(tmp_path, description_path):
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(tmp_path))
     context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description_path), configuration="grethe")
-    context.initialize()
+    context.configure()
     return context.get_component("vessels")[0]
 
 

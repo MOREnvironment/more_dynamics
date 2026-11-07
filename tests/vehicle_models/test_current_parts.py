@@ -59,7 +59,7 @@ def _build(plugin, name):
         manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
         context = ComponentContextBuilder(data_manager=manager).build_component_from_path(
             str(_folder(plugin, name)))
-        context.initialize()
+        context.configure()
     except Exception as exc:  # more_dynamics is not registered here
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
     return context.get_instance()

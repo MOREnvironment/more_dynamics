@@ -107,7 +107,7 @@ def _build(tmp_path, description_path):
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(tmp_path))
     context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description_path), configuration="scenario")
-    context.initialize()
+    context.configure()
     return context.get_component("vessels")
 
 
@@ -147,7 +147,7 @@ def test_the_site_gives_its_three_quantities_in_both_forms():
     for form, values in (("given", {"gravity": 9.5, "water_density": 1000.0, "kinematic_viscosity": 1.1e-06}),
                          ("latitude", {"latitude": 0.0, "water_density": 1000.0, "kinematic_viscosity": 1.1e-06})):
         site = vc.child((p.Site, {"site_form": form, **values}))
-        site.initialize()
+        site.configure()
         from more_common.casadi_graph import RppCasadiGraph
         graph = RppCasadiGraph(site.get_instance().graph())
         assert [d.name for d in graph.payload.outputDescription] == ["water_density", "gravity", "kinematic_viscosity"]
@@ -159,7 +159,7 @@ def test_the_site_gives_its_three_quantities_in_both_forms():
 def test_an_unknown_site_form_is_refused_naming_the_choices():
     p = vc.plugins()
     with pytest.raises(p.CompositionError, match="site_form must be one of"):
-        vc.child((p.Site, {"site_form": "geodetic"})).initialize()
+        vc.child((p.Site, {"site_form": "geodetic"})).configure()
 
 
 def test_the_committed_shared_site_scenario_links_one_site_into_both_boats():
@@ -176,7 +176,7 @@ def test_the_committed_shared_site_scenario_links_one_site_into_both_boats():
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
     context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description), configuration="shared_site")
-    context.initialize()
+    context.configure()
     boats = context.get_component("vessels")
     assert len(boats) == 2
     linked = [entry for entry in (json.loads(p.read_text()) for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")

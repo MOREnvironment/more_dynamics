@@ -63,6 +63,7 @@ import numpy as np
 from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -125,7 +126,7 @@ class SubmergedBemAuv(VehicleModel3D):
         self._assembly = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext):
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         form = context.get_parameter("current_form")
         frequencies = [float(v) for v in read_value(context, "frequencies", "rad/s", "frequencies of the tables",
                                                     placeholder=[1.0, 2.0])]
@@ -160,11 +161,12 @@ class SubmergedBemAuv(VehicleModel3D):
 
         self._assembly = VehicleAssembly(context, "SubmergedBemAuv", compute, own_inputs,
                                          kinematics_form(context, "SubmergedBemAuv", CompositionError))
+        return CallbackResult()
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):
         if self._assembly is None:
-            raise RuntimeError("SubmergedBemAuv must be initialized before graph()")
+            raise RuntimeError("SubmergedBemAuv must be configured before graph()")
         return self._assembly.payload()
 
     def getInputDescriptions(self):

@@ -90,6 +90,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import check_values, unset
 
@@ -157,7 +158,7 @@ class AuvHullLoads(HydrodynamicsModel):
         self._lift_form = self._drag_form = self._slope_method = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         selectors = {}
         for name, allowed in (("planform_area_method", DERIVED_METHODS), ("parasitic_drag_coefficient_method", DERIVED_METHODS),
                               ("body_lift_form", BODY_LIFT_FORMS), ("hull_drag_form", HULL_DRAG_FORMS),
@@ -196,6 +197,7 @@ class AuvHullLoads(HydrodynamicsModel):
         if lift_form == "point_force_both_planes":
             self._point_force_body_lift(context)
         self._cross_flow = cross_flow_strip_circular_cylinder_reynolds()
+        return CallbackResult()
 
     def _point_force_body_lift(self, context):
         """The point-force body lift: its slope and pressure centre each from its method (computed or given)."""
@@ -235,7 +237,7 @@ class AuvHullLoads(HydrodynamicsModel):
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._damping is None:
-            raise RuntimeError("AuvHullLoads must be initialized before graph()")
+            raise RuntimeError("AuvHullLoads must be configured before graph()")
         io = PayloadBuilder(HydrodynamicsModel.CasadyPayload())
         rename = {"beam": "section_beam"}
         damping = io.call(self._damping)

@@ -17,6 +17,7 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -45,13 +46,14 @@ class Propeller(ForceProducer):
         self._model = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         self._model = frozen_block(context, propeller_linearized_open_water(),
                                    propeller_linearized_open_water_parameters())
+        return CallbackResult()
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("Propeller must be initialized before graph()")
+            raise RuntimeError("Propeller must be configured before graph()")
         io = PayloadBuilder(ForceProducer.CasadyPayload())
         out = io.call(self._model, rename={"command": "shaft_speed_command"})
         io.output("generated_force", out["tau"], "propeller wrench about the CO, BODY, N and N m")

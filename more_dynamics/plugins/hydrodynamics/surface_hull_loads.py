@@ -54,6 +54,7 @@ Date:      2026-10-09
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -105,7 +106,7 @@ class SurfaceHullLoads(HydrodynamicsModel):
         self._damping = self._cross_flow = self._surge = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         surge = context.get_parameter("surge_resistance")
         if surge not in SURGE_RESISTANCES:
             raise ValueError(f"surge_resistance must be one of {SURGE_RESISTANCES}, got {surge!r}")
@@ -134,10 +135,11 @@ class SurfaceHullLoads(HydrodynamicsModel):
         if surge in _SURGE_RESISTANCE_FUNCTIONS:
             self._surge = frozen_block(context, _SURGE_RESISTANCE_FUNCTIONS[surge](),
                                        _SURGE_RESISTANCE_PARAMETER_FUNCTIONS[surge]())
+        return CallbackResult()
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._damping is None:
-            raise RuntimeError("SurfaceHullLoads must be initialized before graph()")
+            raise RuntimeError("SurfaceHullLoads must be configured before graph()")
         io = PayloadBuilder(HydrodynamicsModel.CasadyPayload())
         damping = io.call(self._damping, rename={"restoring_matrix": "restoring_matrix_at_flotation"})
         total = damping["tau"]

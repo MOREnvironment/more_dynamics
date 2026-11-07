@@ -24,7 +24,7 @@ class SimulationRos(Node):
             data_manager=_DATA_MANAGER
         )
         self.rpp_context = self.context_builder.build_script_from_path(__file__)
-        self.rpp_context.initialize()
+        self.rpp_context.configure()
         self.vessel: VehicleModel3D = self.rpp_context.get_component("vessel")
 
         self.clock_pub = self.create_publisher(Clock, "/clock", 10)

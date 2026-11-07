@@ -60,7 +60,7 @@ def test_jet_nozzle():
     params.params["location"] = [-1.0, 0.05, 0.1]
     params.params["trim_angle"] = 0.05
     context = ComponentContext(instance=jet_nozzle, params=params)
-    context.initialize()
+    context.configure()
 
     graph = RppCasadiGraph(jet_nozzle.graph())
 

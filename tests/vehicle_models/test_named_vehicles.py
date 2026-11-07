@@ -38,7 +38,7 @@ def _build(configuration):
         from rpp_py.context_builder import ComponentContextBuilder
         context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
             str(DESCRIPTION), configuration=configuration)
-        context.initialize()
+        context.configure()
     except Exception as exc:  # more_dynamics is not registered here
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
     return context.get_component("vessels")[0]

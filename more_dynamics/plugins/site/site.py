@@ -40,6 +40,7 @@ Date:      2026-10-10
 from rpp_plugin_types.more_dynamics import SiteModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -67,16 +68,17 @@ class Site(SiteModel):
         self._model = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         form = context.get_parameter("site_form")
         if form not in SITE_FORMS:
             raise CompositionError(f"Site: site_form must be one of {sorted(SITE_FORMS)}, got {form!r}")
         function, declared = SITE_FORMS[form]
         self._model = frozen_block(context, function(), declared)
+        return CallbackResult()
 
     def graph(self) -> SiteModel.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("Site must be initialized before graph()")
+            raise RuntimeError("Site must be configured before graph()")
         io = PayloadBuilder(SiteModel.CasadyPayload())
         out = io.call(self._model)
         for name in self._model.name_out():

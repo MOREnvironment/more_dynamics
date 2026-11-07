@@ -71,6 +71,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import check_values, freeze, unset
 from more_dynamics.models.fin.flow_angle import none as flow_angle_none, small_angle
@@ -137,7 +138,7 @@ class Fin(ForceProducer):
         self._model = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         selectors = {name: context.get_parameter(name)
                      for name in ("servo_dynamics", "servo_rate_limit", "servo_angle_limit")}
         servo = {"dynamics": selectors["servo_dynamics"], "rate_limit": selectors["servo_rate_limit"],
@@ -164,6 +165,7 @@ class Fin(ForceProducer):
             raise ValueError(f"Fin: parameters {left_open} of its parts are open; "
                              "a fin takes every number from its parameters")
         self._model = model
+        return CallbackResult()
 
     @staticmethod
     def _lift_slope_from_geometry(context) -> float:
@@ -177,7 +179,7 @@ class Fin(ForceProducer):
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("Fin must be initialized before graph()")
+            raise RuntimeError("Fin must be configured before graph()")
         io = PayloadBuilder(ForceProducer.CasadyPayload())
         n = self._model.size1_in("state")
         state = io.state("servo_state", n, [0.0] * n, "servo state") if n else ca.SX.sym("state", 0)

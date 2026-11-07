@@ -17,7 +17,7 @@ A plugin carries no vehicle's numbers: every value of a vehicle, a device or a
 site is declared with ``unset()`` (an empty list, ``more_transformations``) and
 comes from the composition's named part. ``read_declared`` and ``read_value``
 refuse an unset value, and ``refuses_unset`` (the decorator of a plugin's
-``initialize``) turns the refusal into one message that lists every value of
+``on_configure``) turns the refusal into one message that lists every value of
 the component that its selected forms read and the composition left unset,
 with unit and meaning. A convention of this library, no source equation.
 
@@ -90,20 +90,20 @@ def _missing_text(declared):
     return "missing parameter(s): " + ", ".join(f"{d.describe()} ({d.meaning})" for d in declared)
 
 
-def refuses_unset(initialize):
-    """Decorator of a plugin's ``initialize``: when a value its selected forms read is still unset, the error
+def refuses_unset(on_configure):
+    """Decorator of a plugin's ``on_configure``: when a value its selected forms read is still unset, the error
     names the plugin and lists every such value at once (a second pass lists the rest, with a placeholder in
     each, before the plugin refuses; no graph is made)."""
-    @functools.wraps(initialize)
+    @functools.wraps(on_configure)
     def wrapper(self, context):
         try:
-            return initialize(self, context)
+            return on_configure(self, context)
         except UnsetValues as first:
             error = first
         collected = {}
         token = _COLLECTING.set(collected)
         try:
-            initialize(self, context)
+            on_configure(self, context)
         except Exception:  # a placeholder may not fit a later check; only the names are wanted
             pass
         finally:

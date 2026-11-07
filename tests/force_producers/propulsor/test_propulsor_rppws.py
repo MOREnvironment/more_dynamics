@@ -62,7 +62,7 @@ def _builder(workspace):
 
 def _build(workspace, description_path, configuration):
     context = _builder(workspace).build_script_from_description_path(str(description_path), configuration=configuration)
-    context.initialize()
+    context.configure()
     return context.get_component("vessels")[0]
 
 
@@ -76,7 +76,7 @@ def test_a_named_part_names_only_declared_parameters_and_builds_the_plugin(name)
     declared = {d.name for d in cls.PARAMETERS}
     assert set(values) <= declared, sorted(set(values) - declared)
     context = vc.context_of(cls, values, reference=False)
-    context.initialize()
+    context.configure()
     assert context.get_instance().graph().outputDescription[0].name == "generated_force"
 
 
@@ -148,9 +148,9 @@ def test_a_named_part_survives_the_editors_save_and_gives_the_same_propulsor(nam
     assert "#" not in (folder / "params" / "parameters.py").read_text().split("class ComponentParameters")[1]
     cls = _propulsor_class()
     original = vc.context_of(cls, before, reference=False)
-    original.initialize()
+    original.configure()
     saved = vc.context_of(cls, after, reference=False)
-    saved.initialize()
+    saved.configure()
     from more_common.casadi_graph import RppCasadiGraph
     a, b = RppCasadiGraph(original.get_instance().graph()), RppCasadiGraph(saved.get_instance().graph())
     g = rng()

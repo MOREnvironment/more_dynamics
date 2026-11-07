@@ -153,7 +153,7 @@ def _site_outputs(site):
 
 class VehicleAssembly:
     """The assembled vehicle: its payload pieces, a numeric RK4 step and ``signals`` for reading any named
-    quantity back (tests, diagnostics); built once in ``initialize``."""
+    quantity back (tests, diagnostics); built once in ``on_configure``."""
 
     def __init__(self, context: ComponentContext, plugin: str, compute, current_inputs=(),
                  kinematics_form="euler"):

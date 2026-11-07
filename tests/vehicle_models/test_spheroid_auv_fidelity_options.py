@@ -250,7 +250,7 @@ def _workspace_vessel(configuration):
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
     context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
         str(DESCRIPTION), configuration=configuration)
-    context.initialize()
+    context.configure()
     return context.get_component("vessels")[0]
 
 

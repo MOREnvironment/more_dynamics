@@ -145,7 +145,7 @@ def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, ac
                 "hydrostatics": [child(hydrostatics)], "hydrodynamics": [child(hydrodynamics)],
                 "actuators": [child(a) for a in actuators]}
     context = context_of(vehicle_class, params, children, reference=reference)
-    context.initialize()
+    context.configure()
     return context.get_instance()
 
 

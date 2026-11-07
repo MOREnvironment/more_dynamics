@@ -86,6 +86,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import check_symmetric_positive_definite, unset
 
@@ -151,7 +152,7 @@ class SpheroidAuv(VehicleModel3D):
         self._assembly = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext):
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         form = context.get_parameter("current_form")
         density_method = context.get_parameter("body_density_method")
         if density_method not in BODY_DENSITY_METHODS:
@@ -189,11 +190,12 @@ class SpheroidAuv(VehicleModel3D):
 
         self._assembly = VehicleAssembly(context, "SpheroidAuv", compute, own_inputs,
                                          kinematics_form(context, "SpheroidAuv", CompositionError))
+        return CallbackResult()
 
     # -- the plugin type's methods ---------------------------------------------------------------
     def graph(self):
         if self._assembly is None:
-            raise RuntimeError("SpheroidAuv must be initialized before graph()")
+            raise RuntimeError("SpheroidAuv must be configured before graph()")
         return self._assembly.payload()
 
     def getInputDescriptions(self):

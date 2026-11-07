@@ -18,7 +18,7 @@ component, the horizontal speed bounded below), ``law`` (the open-water propelle
 two thrusters, the power law of the shaft speed, the waterjet laws, the normalised linear law, the thrust command limited by the power delivered
 over the speed), ``housing`` (none, or the normal force of an outboard leg). The drive and the law must pass
 the same unit (rev/s for a shaft speed, 1 for a normalised effort, N for a thrust); a pair that does not is
-refused when the plugin is initialised, naming both.
+refused when the plugin is configured, naming both.
 
 ``steering_convention`` (``"port_positive"`` or ``"starboard_positive"``) is read by the azimuth mounting
 only: the name says which way the boat turns for a positive angle when the unit is aft of the CO.
@@ -43,6 +43,7 @@ import casadi as ca
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import check_values, freeze, unset
 from more_dynamics.models.propulsor import propulsor as skeleton
@@ -208,7 +209,7 @@ class Propulsor(ForceProducer):
         self._sizes = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         names = {slot: _select(slot, context.get_parameter(slot)) for slot in skeleton.SLOTS}
         convention = context.get_parameter("steering_convention")
         skeleton.check_units({"drive": FORMS["drive"][names["drive"]][0].DRIVE_OUTPUT_UNIT,
@@ -230,6 +231,7 @@ class Propulsor(ForceProducer):
                        "steering_command": parts["steering"].size1_in("command"),
                        "drive_state": parts["drive"].size1_in("drive_state"),
                        "servo_state": parts["steering"].size1_in("servo_state")}
+        return CallbackResult()
 
     @staticmethod
     def _frozen_part(context, slot, name, convention):
@@ -248,7 +250,7 @@ class Propulsor(ForceProducer):
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("Propulsor must be initialized before graph()")
+            raise RuntimeError("Propulsor must be configured before graph()")
         io = PayloadBuilder(ForceProducer.CasadyPayload())
         sizes = self._sizes
 

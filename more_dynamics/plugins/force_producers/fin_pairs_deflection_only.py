@@ -28,6 +28,7 @@ Date:      2026-10-08
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -57,7 +58,7 @@ class FinPairsDeflectionOnly(ForceProducer):
         self._model = self._positions = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         convention = context.get_parameter("convention")
         if convention != FIN_PAIRS_CONVENTION:
             raise ValueError(f"FinPairsDeflectionOnly: its model has the convention {FIN_PAIRS_CONVENTION!r}, got {convention!r}")
@@ -69,10 +70,11 @@ class FinPairsDeflectionOnly(ForceProducer):
         self._model = frozen_block(context, fin_pairs_deflection_only(),
                                    fin_pairs_deflection_only_parameters(positions_given=given))
         self._positions = None if given else fin_pair_positions()
+        return CallbackResult()
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("FinPairsDeflectionOnly must be initialized before graph()")
+            raise RuntimeError("FinPairsDeflectionOnly must be configured before graph()")
         io = PayloadBuilder(ForceProducer.CasadyPayload())
         positions = {} if self._positions is None else dict(io.call(self._positions).items())
         out = io.call(self._model, rename={"command": "fin_deflection_command"}, given=positions)

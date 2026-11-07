@@ -51,6 +51,7 @@ Date:      2026-10-09
 from rpp_plugin_types.more_dynamics import HydrostaticsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 import casadi as ca
 
@@ -82,11 +83,11 @@ class SubmergedRestoring(HydrostaticsModel):
         self._model = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         method = context.get_parameter("buoyancy_method")
         if method != IMMERSED:
             self._model = frozen_block(context, submerged_restoring(method), submerged_restoring_parameters(method))
-            return
+            return CallbackResult()
         stations = read_value(context, "hull_profile_x", "m", "stations of the hull profile along BODY x",
                               placeholder=[0.0, 1.0])
         slices = int(context.get_parameter("hull_profile_slices"))
@@ -100,10 +101,11 @@ class SubmergedRestoring(HydrostaticsModel):
         if not offset <= tolerance:
             raise ValueError(f"SubmergedRestoring: the centroid of the hull profile is {offset:.3g} m from "
                              f"center_of_buoyancy (hull_profile_cb_tolerance {tolerance:g} m): one centre of buoyancy")
+        return CallbackResult()
 
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("SubmergedRestoring must be initialized before graph()")
+            raise RuntimeError("SubmergedRestoring must be configured before graph()")
         io = PayloadBuilder(HydrostaticsModel.CasadyPayload())
         out = io.call(self._model)
         io.output("restoring_force", -out["g"], "signed generalized force added by the vehicle, BODY, N and N m")

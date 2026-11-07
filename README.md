@@ -91,7 +91,7 @@ def context(cls, parameters=None, children=None):
 remus = context(SpheroidAuv, {"current_form": "yaw_rate_terms"}, {
     "hydrostatics": [context(SubmergedRestoring)], "hydrodynamics": [context(AuvHullLoads)],
     "actuators": [context(FinPairsDeflectionOnly), context(Propeller)]})
-remus.initialize()
+remus.configure()
 vehicle = remus.get_instance()            # vehicle.graph() is one CasADi graph; vehicle.signals(x, u) reads any named quantity
 ```
 

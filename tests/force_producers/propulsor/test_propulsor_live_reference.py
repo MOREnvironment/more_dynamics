@@ -38,7 +38,7 @@ def _his_graph(numbers):
     from more_common.casadi_graph import RppCasadiGraph
     cls = importlib.import_module(MODULE).JetNozzle
     context = vc.context_of(cls, {HIS_NAMES.get(k, k): v for k, v in numbers.items()})
-    context.initialize()
+    context.configure()
     return RppCasadiGraph(context.get_instance().graph())
 
 

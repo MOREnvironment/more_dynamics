@@ -1,6 +1,6 @@
 """Neutral placeholders: the plugins carry no vehicle, device or site number. Every value of a plugin is declared
 unset (``unset()``, an empty list) and the composition gives it; a plugin built with nothing set refuses in
-``initialize`` with one message that names the plugin and lists every value its selected forms read, with unit and
+``on_configure`` with one message that names the plugin and lists every value its selected forms read, with unit and
 meaning; and exactly the listed values are what the build needs.
 
 Per plugin (13 of ours): (1) every declared default is unset, a text selector, a switch or one of the three named
@@ -31,7 +31,7 @@ PLUGIN_NAMES = LEAVES + list(VEHICLES)
 
 def _build_leaf(cls, values):
     context = vc.context_of(cls, values, reference=False)
-    context.initialize()
+    context.configure()
     return context
 
 

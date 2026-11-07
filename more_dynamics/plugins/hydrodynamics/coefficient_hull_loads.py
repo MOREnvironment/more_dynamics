@@ -31,6 +31,7 @@ Date:      2026-10-09
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import unset
 
@@ -56,7 +57,7 @@ class CoefficientHullLoads(HydrodynamicsModel):
         self._hull = self._cross_flow = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         sections = int(read_value(context, "cross_flow_sections", "1", "number of strips of the cross-flow integral",
                                  placeholder=1))
         if sections < 1:
@@ -66,10 +67,11 @@ class CoefficientHullLoads(HydrodynamicsModel):
         cross_flow_declared = tuple(d for d in COMBINED_DRAG_CROSS_FLOW_PARAMETERS if d.name != "cross_flow_sections")
         self._cross_flow = frozen_block(context, cross_flow_strip_combined_drag(sections=sections),
                                         cross_flow_declared)
+        return CallbackResult()
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._hull is None:
-            raise RuntimeError("CoefficientHullLoads must be initialized before graph()")
+            raise RuntimeError("CoefficientHullLoads must be configured before graph()")
         io = PayloadBuilder(HydrodynamicsModel.CasadyPayload())
         rename = {"nu_r": "relative_velocity"}
         hull = io.call(self._hull)

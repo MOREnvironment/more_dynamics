@@ -6,6 +6,7 @@ Date:      2026-10-08
 """
 from rpp_plugin_types.more_dynamics import ForceProducer
 from rpp_py.context import ComponentContext
+from rpp_py.lifecycle import CallbackResult
 
 from more_dynamics.models.shared.prescribed_wrench import prescribed_wrench
 from more_dynamics.plugins.shared.payload_io import PayloadBuilder
@@ -17,12 +18,13 @@ class PrescribedWrench(ForceProducer):
     def __init__(self) -> None:
         self._model = None
 
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         self._model = prescribed_wrench()
+        return CallbackResult()
 
     def graph(self) -> ForceProducer.CasadyPayload:
         if self._model is None:
-            raise RuntimeError("PrescribedWrench must be initialized before graph()")
+            raise RuntimeError("PrescribedWrench must be configured before graph()")
         io = PayloadBuilder(ForceProducer.CasadyPayload())
         out = io.call(self._model, rename={"command": "desired_wrench"})
         io.output("generated_force", out["tau"], "wrench on the vehicle, BODY, N and N m")

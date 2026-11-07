@@ -48,6 +48,7 @@ import numpy as np
 from rpp_plugin_types.more_dynamics import HydrodynamicsModel
 from rpp_py.context import ComponentContext
 from rpp_py.parameter_description import ParameterDescription
+from rpp_py.lifecycle import CallbackResult
 
 from more_transformations.more_casadi_transformations import Parameter, freeze, unset
 
@@ -102,7 +103,7 @@ class BemHullLoads(HydrodynamicsModel):
         self._viscous = self._scaled = self._lift_drag = self._planform = self._drag = self._cross_flow = None
 
     @refuses_unset
-    def initialize(self, context: ComponentContext) -> None:
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
         model = context.get_parameter("cross_flow_model")
         if model not in CROSS_FLOW_MODELS:
             raise ValueError(f"BemHullLoads: cross_flow_model must be one of {sorted(CROSS_FLOW_MODELS)}, got {model!r}")
@@ -122,6 +123,7 @@ class BemHullLoads(HydrodynamicsModel):
             values["smooth_speed_epsilon"] = context.get_parameter("smooth_speed_epsilon")
         self._lift_drag = freeze(hull_lift_drag(smooth_speed=smooth), lift_drag_declared, values)
         self._cross_flow = CROSS_FLOW_MODELS[model]()
+        return CallbackResult()
 
     def check_vehicle(self, known) -> None:
         """Refuse a hull with heave stiffness, and time constants that need a negative viscous damping (the vehicle's
@@ -144,7 +146,7 @@ class BemHullLoads(HydrodynamicsModel):
 
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._viscous is None:
-            raise RuntimeError("BemHullLoads must be initialized before graph()")
+            raise RuntimeError("BemHullLoads must be configured before graph()")
         io = PayloadBuilder(HydrodynamicsModel.CasadyPayload())
         r = io.input("table_reference_point", 3)
         mass = io.input("rigid_body_mass_matrix", (6, 6)) + io.input("added_mass_matrix", (6, 6))
