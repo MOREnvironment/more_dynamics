@@ -158,7 +158,7 @@ def test_the_site_gives_its_three_quantities_in_both_forms():
 
 def test_an_unknown_site_form_is_refused_naming_the_choices():
     p = vc.plugins()
-    with pytest.raises(p.CompositionError, match="site_form must be one of"):
+    with vc.refusing(p.CompositionError, match="site_form must be one of"):
         vc.child((p.Site, {"site_form": "geodetic"})).configure()
 
 

@@ -211,12 +211,12 @@ def test_the_fixed_propeller_through_the_plugin_equals_the_landed_propeller_plug
 @pytest.mark.parametrize("slot, bad", [("drive", "first_order"), ("steering", "rudder"), ("mounting", "swivel"),
                                        ("inflow", "wake"), ("law", "four_quadrant"), ("housing", "leg")])
 def test_an_unknown_selector_value_is_refused_naming_the_socket_and_the_choices(slot, bad):
-    with pytest.raises(ValueError, match=f"Propulsor: {slot} must be one of"):
+    with vc.refusing(ValueError, match=f"Propulsor: {slot} must be one of"):
         _vehicle({slot: bad})
 
 
 def test_a_drive_and_a_law_in_different_units_are_refused_when_the_vehicle_is_built_naming_both():
-    with pytest.raises(ValueError) as error:
+    with vc.refusing(ValueError) as error:
         _vehicle({"drive": "speed_command_rpm", "law": "normalized_linear"})
     text = str(error.value)
     assert "drive" in text and "law" in text and "rev/s" in text and "'1'" in text, text

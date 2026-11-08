@@ -246,17 +246,17 @@ def test_G4_a_wider_waterline_beam_moves_the_cross_flow_force():
 # ---------------------------------------------------------------------------
 
 def test_an_unknown_surge_resistance_is_refused_by_name():
-    with pytest.raises(ValueError, match="surge_resistance"):
+    with vc.refusing(ValueError, match="surge_resistance"):
         _grethe(hydrodynamics_params={"surge_resistance": "bogus"})
 
 
 def test_an_unknown_hull_count_is_refused_by_name():
-    with pytest.raises(ValueError, match="hull_count"):
+    with vc.refusing(ValueError, match="hull_count"):
         _grethe(hydrostatics_params={"hull_count": 3})
 
 
 def test_an_unknown_wetted_surface_method_is_refused_by_name():
-    with pytest.raises(ValueError, match="wetted_surface_method"):
+    with vc.refusing(ValueError, match="wetted_surface_method"):
         _grethe(hydrostatics_params={"wetted_surface_method": "measured"})
 
 

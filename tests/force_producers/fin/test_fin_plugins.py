@@ -118,7 +118,7 @@ def test_the_fin_part_holds_the_printed_numbers_it_cites_and_the_plugin_none():
 ])
 def test_a_form_waiting_on_a_source_refuses_to_initialise_saying_so(slot, form, source):
     fin = _classes()["Fin"]
-    with pytest.raises(NotImplementedError, match=f"waits on source: {source}"):
+    with vc.refusing(NotImplementedError, match=f"waits on source: {source}"):
         vc.context_of(fin, {slot: form}).configure()
 
 
@@ -126,7 +126,7 @@ def test_a_form_waiting_on_a_source_refuses_to_initialise_saying_so(slot, form, 
                                         ("interference", "none_such")])
 def test_a_fin_refuses_an_unknown_form_and_names_the_choices(slot, form):
     fin = _classes()["Fin"]
-    with pytest.raises(ValueError, match=f"Fin: {slot} must be one of"):
+    with vc.refusing(ValueError, match=f"Fin: {slot} must be one of"):
         vc.context_of(fin, {slot: form}).configure()
 
 

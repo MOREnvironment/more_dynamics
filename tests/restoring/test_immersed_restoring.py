@@ -102,7 +102,7 @@ def test_the_plugin_refuses_a_table_whose_centroid_is_not_the_centre_of_buoyancy
               "displaced_volume": 0.05, "hull_profile_x": [-1.0, 1.0], "hull_profile_radius": [0.1, 0.1],
               "hull_axis_origin": [0.0, 0.0, 0.0], "hull_profile_slices": 10, "hull_profile_cb_tolerance": 1e-3}
     context = vc.context_of(p.SubmergedRestoring, values, reference=False)
-    with pytest.raises(ValueError, match="centroid of the hull profile"):
+    with vc.refusing(ValueError, match="centroid of the hull profile"):
         context.configure()
     context = vc.context_of(p.SubmergedRestoring, {**values, "center_of_buoyancy": [0.0, 0.0, 0.0]}, reference=False)
     context.configure()

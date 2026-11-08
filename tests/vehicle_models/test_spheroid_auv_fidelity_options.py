@@ -430,7 +430,7 @@ def test_slender_body_slope_is_refused_outside_its_stated_range(ratio, accepted)
     if accepted:
         _vehicle(part, _hull_options(part))
         return
-    with pytest.raises(p.CompositionError, match=r"l/d = .*given"):
+    with vc.refusing(p.CompositionError, match=r"l/d = .*given"):
         _vehicle(part, _hull_options(part))
 
 
@@ -506,7 +506,7 @@ def test_quadratic_roll_damping_adds_only_k_pp_p_abs_p():
 
 def test_a_quadratic_roll_coefficient_that_adds_energy_is_refused():
     part = fp.published_forms()
-    with pytest.raises(ValueError, match="roll_quadratic_damping"):
+    with vc.refusing(ValueError, match="roll_quadratic_damping"):
         _hull_alone(part, {"roll_damping_form": "linear_plus_quadratic", "roll_quadratic_damping": 0.13})
 
 
@@ -544,7 +544,7 @@ def test_fin_lift_slope_from_geometry_is_the_closed_form_of_prestero_eqs_4_38_an
 
 @pytest.mark.parametrize("form", ["helmbold", "lifting_line"])
 def test_the_lift_slope_forms_that_wait_on_their_sources_are_refused(form):
-    with pytest.raises(NotImplementedError, match="waits on source"):
+    with vc.refusing(NotImplementedError, match="waits on source"):
         _vehicle(fp.estimated(), actuators=[_fin(fp.estimated()["fins"][0], {**_geometric_slope_selectors(),
                                                                              "lift_slope_form": form})])
 
@@ -587,7 +587,7 @@ def test_given_inertia_places_the_products_of_inertia_with_the_sign_of_the_tenso
 
 def test_given_inertia_that_is_not_positive_definite_is_refused():
     part = fp.published_forms()
-    with pytest.raises(ValueError):
+    with vc.refusing(ValueError):
         _vehicle(part, vehicle_options={"rigid_body_form": "given_inertia", "inertia_diagonal": [1.0, 1.0, 1.0],
                                         "inertia_products": [0.0, 0.0, 5.0]})
 
@@ -717,7 +717,7 @@ def test_fin_pairs_deflection_only_refuses_another_convention():
     p = vc.plugins()
     part = fp.published_forms()
     params = {**vc.pick(p.FinPairsDeflectionOnly, part), "convention": "port_up_positive"}
-    with pytest.raises(ValueError, match="convention"):
+    with vc.refusing(ValueError, match="convention"):
         _vehicle(part, actuators=[(p.FinPairsDeflectionOnly, params), (p.Propeller, vc.pick(p.Propeller, part))])
 
 

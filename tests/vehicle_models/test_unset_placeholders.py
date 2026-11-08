@@ -51,7 +51,7 @@ def _build(cls, values):
 def _refusal(cls, values):
     """The listed parameter names of the refusal, and its message."""
     UnsetValues = vc.plugins().UnsetValues
-    with pytest.raises(UnsetValues) as caught:
+    with vc.refusing(UnsetValues) as caught:
         _build(cls, values)
     message = str(caught.value)
     assert message.startswith(f"{cls.__name__}: not set in the composition -- missing parameter(s): "), message
@@ -95,10 +95,10 @@ def test_the_listed_values_are_exactly_what_the_build_needs(name):
 
 
 def test_a_vehicle_whose_child_is_unset_refuses_in_the_child_before_the_vehicle_is_built():
-    """rpp initialises children first: the unset child's own refusal names the child, and the vehicle's
+    """rpp configures children first: the unset child's own refusal names the child, and the vehicle's
     ``graph()`` is never asked for."""
     p = vc.plugins()
-    with pytest.raises(p.UnsetValues, match="^SurfaceHullLoads: not set in the composition"):
+    with vc.refusing(p.UnsetValues, match="^SurfaceHullLoads: not set in the composition"):
         vc.build_context(p.Catamaran, hydrostatics=p.SurfaceRestoring,
                          hydrodynamics=vc.context_of(p.SurfaceHullLoads, reference=False))
 

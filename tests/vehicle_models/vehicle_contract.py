@@ -17,6 +17,8 @@ Date:      2026-10-09
 """
 
 import json
+import re
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -26,6 +28,22 @@ import pytest
 DATA = Path(__file__).resolve().parent / "data"
 REGISTER_MESSAGE = ("rpp's generated plugin types for more_dynamics are not available: run "
                     "`rpp library register ./more_dynamics --link` (workspace/ as the working folder)")
+
+
+@contextmanager
+def refusing(expected, match=None):
+    """A plugin's refusal as the lifecycle reports it: ``context.configure()`` raises ``LifecycleError`` carrying the
+    refusal's text, and the plugin's own exception is its cause; ``expected`` and ``match`` are checked on the cause."""
+    from rpp_py.lifecycle import LifecycleError
+    holder = SimpleNamespace(value=None)
+    with pytest.raises(LifecycleError) as caught:
+        yield holder
+    cause = holder.value = caught.value.__cause__
+    assert isinstance(cause, expected), (type(cause), str(caught.value))
+    if match is not None:
+        assert re.search(match, str(cause)), (match, str(cause))
+
+
 KINEMATIC_VISCOSITY = 1e-6  # cylinderDrag.m 78-80, nu_water = 1e-6 m^2/s
 CURRENT_NAMES = ("current_speed", "current_direction", "current_vertical_speed")
 SITE_NAMES = ("site_form", "latitude", "gravity", "water_density", "kinematic_viscosity")  # the site's, not the vehicle's
