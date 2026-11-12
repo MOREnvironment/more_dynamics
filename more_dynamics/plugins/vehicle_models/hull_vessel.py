@@ -4,6 +4,7 @@ from rpp_plugin_types.more_dynamics import VehicleModel3D
 from rpp_schema.more_dynamics.IODescription import IODescription
 from rpp_schema.more_dynamics.StateDescription import StateDescription
 from rpp_py.context import ComponentContext
+from rpp_py.lifecycle import CallbackResult
 from rpp_py.parameter_description import ParameterDescription
 
 from more_common.casadi_graph import RppCasadiGraph, graph_to_bytes
@@ -56,8 +57,8 @@ class HullVessel(VehicleModel3D):
         self.current_state_idx = 0
         self.current_output_idx = 0
 
-    def initialize(self, context: ComponentContext):
-        hydrostatics = context.get_component("hydrostatics")
+    def on_configure(self, context: ComponentContext) -> CallbackResult:
+        hydrostatics = context.get_subcomponent_instance("hydrostatics")
         self._hydrostatics_graph = RppCasadiGraph(hydrostatics.graph())
         if self._hydrostatics_graph.num_inputs != 6:
             raise ValueError("hydrostatics graph must accept a 6-value pose")
@@ -69,7 +70,7 @@ class HullVessel(VehicleModel3D):
             raise ValueError("hydrostatics graph must not declare states")
         if self._hydrostatics_graph.step is not None:
             raise ValueError("hydrostatics graph must not define dynamics")
-        hydrodynamics = context.get_component("hydrodynamics")
+        hydrodynamics = context.get_subcomponent_instance("hydrodynamics")
         self._hydrodynamics_graph = RppCasadiGraph(hydrodynamics.graph())
         if self._hydrodynamics_graph.num_inputs != 6:
             raise ValueError("hydrodynamics graph must accept a 6-value velocity")
@@ -81,10 +82,10 @@ class HullVessel(VehicleModel3D):
             raise ValueError("hydrodynamics graph must not declare states")
         if self._hydrodynamics_graph.step is not None:
             raise ValueError("hydrodynamics graph must not define dynamics")
-        for actuator in context.get_component("actuators"):
+        for actuator in context.enumerate_subcomponent_instances("actuators"):
             self.actuators.append(actuator)
             self._actuator_graphs.append(self._get_actuator_graph(actuator))
-        for sensor in context.get_component("sensors"):
+        for sensor in context.enumerate_subcomponent_instances("sensors"):
             self.sensors.append(sensor)
             self._sensor_graphs.append(self._get_sensor_graph(sensor))
 
@@ -120,6 +121,12 @@ class HullVessel(VehicleModel3D):
             mass_properties=self._mass_properties,
             include_coriolis=self._include_coriolis,
         )
+
+        return CallbackResult()
+
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()
 
     def step(self, state: VehicleModel3D.Odometry3D,
             command: List[VehicleModel3D.Command], t: float, dt: float, **kwargs) -> VehicleModel3D.Odometry3D:
