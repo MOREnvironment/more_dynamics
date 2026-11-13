@@ -136,6 +136,12 @@ def _split(descriptions, vector, label, plugin):
     return out
 
 
+def _single_child(context, slot):
+    """The instance loaded in a single slot, or ``None`` when the slot is empty."""
+    children = list(context.enumerate_subcomponent_instances(slot))
+    return children[0] if children else None
+
+
 def _site_outputs(site):
     """``({name: expression}, plugin name)`` of the ``site`` slot: a graph with no input and no state whose outputs
     include ``water_density``, ``gravity`` and ``kinematic_viscosity`` (each one value)."""
@@ -161,14 +167,14 @@ class VehicleAssembly:
         self.kinematics_form = kinematics_form
         quaternion = kinematics_form == "unit_quaternion"
         n_vessel = 13 if quaternion else 12
-        site = context.get_component("site")
-        hydrostatics = context.get_component("hydrostatics")
-        hydrodynamics = context.get_component("hydrodynamics")
+        site = _single_child(context, "site")
+        hydrostatics = _single_child(context, "hydrostatics")
+        hydrodynamics = _single_child(context, "hydrodynamics")
         for slot, child in (("site", site), ("hydrostatics", hydrostatics), ("hydrodynamics", hydrodynamics)):
-            if child == []:
+            if child is None:
                 raise CompositionError(f"{plugin}: slot {slot!r} is empty: a vehicle needs a {slot} model")
         site_values, site_plugin = _site_outputs(site)
-        actuators = list(context.get_component("actuators"))
+        actuators = list(context.enumerate_subcomponent_instances("actuators"))
 
         self._max_step = float(context.get_parameter("integration_max_step"))
         if not self._max_step > 0.0:
