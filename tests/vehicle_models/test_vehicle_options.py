@@ -180,7 +180,7 @@ def test_the_given_methods_read_their_values_and_the_computed_ones_ignore_them()
     assert np.abs(lift({"parasitic_drag_coefficient_method": "given", "parasitic_drag_coefficient": 0.5})
                   - reference).max() > 1e-3
     for name in ("planform_area_method", "parasitic_drag_coefficient_method"):
-        with pytest.raises(ValueError, match=name):
+        with vc.refusing(ValueError, match=name):
             lift({name: "measured"})
 
 
@@ -198,7 +198,7 @@ def test_the_body_density_method_given_reads_the_density_and_computed_reads_the_
 
 def test_fin_positions_method_refuses_an_unknown_method():
     p = vc.plugins()
-    with pytest.raises(ValueError, match="fin_positions_method"):
+    with vc.refusing(ValueError, match="fin_positions_method"):
         _remus(actuators=[(p.FinPairsDeflectionOnly, {"fin_positions_method": "measured"})])
 
 
@@ -316,7 +316,7 @@ def test_the_given_wetted_surface_is_read_and_the_method_refuses_an_unknown_one(
 
     assert surface({"wetted_surface_method": "given", "wetted_surface": 3.0}) == 3.0
     assert surface({"wetted_surface": 3.0}) == pytest.approx(1.77, rel=1e-14)  # computed ignores the typed value
-    with pytest.raises(ValueError, match="wetted_surface_method"):
+    with vc.refusing(ValueError, match="wetted_surface_method"):
         surface({"wetted_surface_method": "measured"})
 
 

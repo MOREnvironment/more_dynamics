@@ -40,7 +40,8 @@ def refusing(expected, match=None):
     holder = SimpleNamespace(value=None)
     with pytest.raises(LifecycleError) as caught:
         yield holder
-    cause = holder.value = caught.value.__cause__
+    cause = caught.value.__cause__
+    holder.value = cause if cause is not None else caught.value
     if cause is None:
         if match is not None:
             assert re.search(match, str(caught.value)), (match, str(caught.value))

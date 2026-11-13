@@ -241,7 +241,7 @@ def test_G4_a_moved_payload_moves_the_trim():
 
 def test_an_unknown_payload_trim_form_is_refused_naming_the_choices():
     p = vc.plugins()
-    with pytest.raises(ValueError, match="payload_trim_form must be one of"):
+    with vc.refusing(ValueError, match="payload_trim_form must be one of"):
         vc.otter(hydrostatics=(p.SurfaceRestoring, {**vc.pick(p.SurfaceRestoring, vc.OTTER), "hull_count": 2,
                                                     "payload_trim_form": "heave_only"}))
 

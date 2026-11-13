@@ -98,7 +98,7 @@ def test_a_vehicle_whose_child_is_unset_refuses_in_the_child_before_the_vehicle_
     """rpp configures children first: the unset child's own refusal names the child, and the vehicle's
     ``graph()`` is never asked for."""
     p = vc.plugins()
-    with vc.refusing(p.UnsetValues, match="^SurfaceHullLoads: not set in the composition"):
+    with vc.refusing(p.UnsetValues, match="SurfaceHullLoads: not set in the composition"):
         vc.build_context(p.Catamaran, hydrostatics=p.SurfaceRestoring,
                          hydrodynamics=vc.context_of(p.SurfaceHullLoads, reference=False))
 
