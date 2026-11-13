@@ -123,6 +123,10 @@ class HullVessel(VehicleModel3D):
         )
         return CallbackResult()
 
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()
+
     def step(self, state: VehicleModel3D.Odometry3D,
             command: List[VehicleModel3D.Command], t: float, dt: float, **kwargs) -> VehicleModel3D.Odometry3D:
         forces = []

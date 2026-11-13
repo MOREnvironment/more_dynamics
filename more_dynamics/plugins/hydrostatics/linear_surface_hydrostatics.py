@@ -53,6 +53,10 @@ class LinearSurfaceHydrostatics(HydrostaticsModel):
         self._model = linear_surface_hydrostatics_casadi(self._properties)
         return CallbackResult()
 
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()
+
     def graph(self) -> HydrostaticsModel.CasadyPayload:
         if self._model is None:
             raise RuntimeError(

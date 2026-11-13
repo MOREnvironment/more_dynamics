@@ -49,6 +49,10 @@ class JetNozzle(ForceProducer):
         self.max_angle = context.get_parameter("max_angle")
         return CallbackResult()
 
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()
+
     def graph(self) -> ForceProducer.CasadyPayload:
         payload = ForceProducer.CasadyPayload()
         payload = self._graph_io(payload)

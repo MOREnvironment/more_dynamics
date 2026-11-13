@@ -20,3 +20,7 @@ class Thruster(ForceProducer):
     def on_configure(self, context: ComponentContext) -> CallbackResult:
         pass
         return CallbackResult()
+
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()

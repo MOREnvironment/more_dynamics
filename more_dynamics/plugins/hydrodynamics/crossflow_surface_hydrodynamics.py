@@ -45,6 +45,10 @@ class CrossflowSurfaceHydrodynamics(HydrodynamicsModel):
         self._model = crossflow_surface_hydrodynamics_casadi(properties)
         return CallbackResult()
 
+    def on_cleanup(self) -> CallbackResult:
+        self.__init__()
+        return CallbackResult()
+
     def graph(self) -> HydrodynamicsModel.CasadyPayload:
         if self._model is None:
             raise RuntimeError(
