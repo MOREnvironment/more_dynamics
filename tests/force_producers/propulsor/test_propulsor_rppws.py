@@ -1,5 +1,5 @@
 """The ``Propulsor`` built through rpp: its named parts of the library's ``.rppws`` and vehicles whose actuators are
-those parts, built by rpp's own ``ComponentContextBuilder`` (not assembled by hand as the other propulsor tests do).
+those parts, built by rpp's own ``ComponentRuntimeBuilder`` (not assembled by hand as the other propulsor tests do).
 
 * Every named part of ``more_dynamics::Propulsor`` loads with rpp's parameter store, names only parameters the plugin
   declares, and builds the plugin.
@@ -50,20 +50,20 @@ def _part_dir(name):
 
 def _builder(workspace):
     try:
-        from rpp_py.context_builder import ComponentContextBuilder
+        from rpp_py.context_builder import ComponentRuntimeBuilder
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
     except Exception as exc:  # pragma: no cover - environment without rpp
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
     vc.plugins()
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(workspace))
-    return ComponentContextBuilder(data_manager=data_manager)
+    return ComponentRuntimeBuilder(data_manager=data_manager)
 
 
 def _build(workspace, description_path, configuration):
-    context = _builder(workspace).build_script_from_description_path(str(description_path), configuration=configuration)
-    context.configure()
-    return context.get_component("vessels")[0]
+    runtime = _builder(workspace).build_script_from_description_path(str(description_path), configuration=configuration)
+    vessels = vc.vessels_of(runtime)
+    return vessels[0]
 
 
 # --------------------------------------------------------------------------
@@ -76,8 +76,8 @@ def test_a_named_part_names_only_declared_parameters_and_builds_the_plugin(name)
     declared = {d.name for d in cls.PARAMETERS}
     assert set(values) <= declared, sorted(set(values) - declared)
     context = vc.context_of(cls, values, reference=False)
-    context.configure()
-    assert context.get_instance().graph().outputDescription[0].name == "generated_force"
+    vc.configure(context)
+    assert vc.instance_of(context).graph().outputDescription[0].name == "generated_force"
 
 
 @pytest.mark.parametrize("name", PARTS)
@@ -148,14 +148,14 @@ def test_a_named_part_survives_the_editors_save_and_gives_the_same_propulsor(nam
     assert "#" not in (folder / "params" / "parameters.py").read_text().split("class ComponentParameters")[1]
     cls = _propulsor_class()
     original = vc.context_of(cls, before, reference=False)
-    original.configure()
+    vc.configure(original)
     saved = vc.context_of(cls, after, reference=False)
-    saved.configure()
+    vc.configure(saved)
     from more_common.casadi_graph import RppCasadiGraph
-    a, b = RppCasadiGraph(original.get_instance().graph()), RppCasadiGraph(saved.get_instance().graph())
+    a, b = RppCasadiGraph(vc.instance_of(original).graph()), RppCasadiGraph(vc.instance_of(saved).graph())
     g = rng()
-    n_in = sum(d.size for d in original.get_instance().graph().inputDescription)
-    n_state = sum(d.size for d in original.get_instance().graph().stateDescription)
+    n_in = sum(d.size for d in vc.instance_of(original).graph().inputDescription)
+    n_state = sum(d.size for d in vc.instance_of(original).graph().stateDescription)
     for _ in range(10):
         x, u = g.uniform(-1, 1, n_state), g.uniform(-1, 1, n_in)
         assert np.array_equal(np.asarray(a.output(x, u)), np.asarray(b.output(x, u)))

@@ -119,7 +119,7 @@ def test_the_fin_part_holds_the_printed_numbers_it_cites_and_the_plugin_none():
 def test_a_form_waiting_on_a_source_refuses_to_initialise_saying_so(slot, form, source):
     fin = _classes()["Fin"]
     with vc.refusing(NotImplementedError, match=f"waits on source: {source}"):
-        vc.context_of(fin, {slot: form}).configure()
+        vc.configure(vc.context_of(fin, {slot: form}))
 
 
 @pytest.mark.parametrize("slot, form", [("inflow", "wake"), ("flow_angle", "large_angle"), ("section", "stall"),
@@ -127,7 +127,7 @@ def test_a_form_waiting_on_a_source_refuses_to_initialise_saying_so(slot, form, 
 def test_a_fin_refuses_an_unknown_form_and_names_the_choices(slot, form):
     fin = _classes()["Fin"]
     with vc.refusing(ValueError, match=f"Fin: {slot} must be one of"):
-        vc.context_of(fin, {slot: form}).configure()
+        vc.configure(vc.context_of(fin, {slot: form}))
 
 
 def test_the_plugin_layer_holds_no_trace_of_the_retired_part_base():

@@ -31,7 +31,7 @@ PLUGIN_NAMES = LEAVES + list(VEHICLES)
 
 def _build_leaf(cls, values):
     context = vc.context_of(cls, values, reference=False)
-    context.configure()
+    vc.configure(context)
     return context
 
 

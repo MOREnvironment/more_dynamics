@@ -2,7 +2,7 @@
 current)" (``current_form = "yaw_rate_terms"``, ``remus100.m`` 118-123 @ 6e78e98) and "Otter (MSS, ocean current)"
 (``current_form = "full_rotation_rate"``, ``otter_legacy.m`` 126-131 @ 6e78e98). Each is a copy of the still-water part with
 that one selector changed: every parameter file equal but it, the same linked actuators; built by rpp's own
-``ComponentContextBuilder`` the vehicle has the three current inputs before its actuator inputs.
+``ComponentRuntimeBuilder`` the vehicle has the three current inputs before its actuator inputs.
 
 Author:    Enio Krizman
 Date:      2026-10-26
@@ -55,14 +55,14 @@ def _build(plugin, name):
     try:
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
-        from rpp_py.context_builder import ComponentContextBuilder
+        from rpp_py.context_builder import ComponentRuntimeBuilder
         manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
-        context = ComponentContextBuilder(data_manager=manager).build_component_from_path(
+        runtime = ComponentRuntimeBuilder(data_manager=manager).build_component_from_path(
             str(_folder(plugin, name)))
-        context.configure()
+        runtime.configure().require_success("configure part")
     except Exception as exc:  # more_dynamics is not registered here
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
-    return context.get_instance()
+    return vc.keep_alive(runtime).get_instance()
 
 
 @pytest.mark.parametrize("plugin, still, current, form, commands", PAIRS)

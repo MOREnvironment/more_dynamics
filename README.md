@@ -76,6 +76,7 @@ From Python, as Luka's and Matko's tests do, with a `ComponentContext` (the regi
 from rpp_py.data_manager import DataManager
 DataManager()                                   # before the generated plugin types are imported
 from rpp_py.context import ComponentContext
+from rpp_py.runtime import ComponentRuntime
 from rpp_py.parameter_handler import ParameterHandler
 from more_dynamics.plugins.vehicle_models.spheroid_auv import SpheroidAuv
 from more_dynamics.plugins.hydrostatics.submerged_restoring import SubmergedRestoring
@@ -91,8 +92,9 @@ def context(cls, parameters=None, children=None):
 remus = context(SpheroidAuv, {"current_form": "yaw_rate_terms"}, {
     "hydrostatics": [context(SubmergedRestoring)], "hydrodynamics": [context(AuvHullLoads)],
     "actuators": [context(FinPairsDeflectionOnly), context(Propeller)]})
-remus.configure()
-vehicle = remus.get_instance()            # vehicle.graph() is one CasADi graph; vehicle.signals(x, u) reads any named quantity
+runtime = ComponentRuntime(remus)         # from rpp_py.runtime
+runtime.configure()
+vehicle = runtime.get_instance()          # vehicle.graph() is one CasADi graph; vehicle.signals(x, u) reads any named quantity
 ```
 
 ### Swapping a force producer: same vehicle, two sets

@@ -32,7 +32,7 @@ REGISTER_MESSAGE = ("rpp's generated plugin types for more_dynamics are not avai
 
 @contextmanager
 def refusing(expected, match=None):
-    """A plugin's refusal as the lifecycle reports it: ``context.configure()`` raises ``LifecycleError`` carrying the
+    """A plugin's refusal as the lifecycle reports it: ``configure(context)`` raises ``LifecycleError`` carrying the
     refusal's text, and the plugin's own exception is its cause; ``expected`` and ``match`` are checked on the cause."""
     from rpp_py.lifecycle import LifecycleError
     holder = SimpleNamespace(value=None)
@@ -147,6 +147,35 @@ def context_of(cls, params=None, children=None, spec=None, reference=True):
                             spec=spec if spec is not None else getattr(cls, "COMPONENTS", {}))
 
 
+def configure(context):
+    """Configure a hand-made context as its runtime does, children first; the runtime that owns it."""
+    from rpp_py.runtime import ComponentRuntime
+    runtime = ComponentRuntime(context)
+    runtime.configure()
+    return runtime
+
+
+_RUNTIMES = []  # the runtimes of the built scripts: they own their components while the tests run
+
+
+def keep_alive(runtime):
+    _RUNTIMES.append(runtime)
+    return runtime
+
+
+def vessels_of(runtime, slot="vessels"):
+    """Configure a built script and return the instances in its ``vessels`` slot."""
+    keep_alive(runtime)
+    runtime.configure().require_success("configure script")
+    return list(runtime.get_context().enumerate_subcomponent_instances(slot))
+
+
+def instance_of(context):
+    """The plugin instance of a hand-made context."""
+    from rpp_py.runtime import ComponentRuntime
+    return ComponentRuntime(context).get_instance()
+
+
 def child(item):
     """``(class, parameters)``, a class, or an already made context -> its context."""
     if not isinstance(item, (type, tuple)):
@@ -163,8 +192,8 @@ def build_context(vehicle_class, params=None, *, hydrostatics, hydrodynamics, ac
                 "hydrostatics": [child(hydrostatics)], "hydrodynamics": [child(hydrodynamics)],
                 "actuators": [child(a) for a in actuators]}
     context = context_of(vehicle_class, params, children, reference=reference)
-    context.configure()
-    return context.get_instance()
+    configure(context)
+    return instance_of(context)
 
 
 def pick(cls, values, names=None):

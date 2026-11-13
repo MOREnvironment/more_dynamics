@@ -1,5 +1,5 @@
 """The frozen REMUS 100 runs through the library's ``.rppws``: the vehicle is
-built by rpp's own ``ComponentContextBuilder`` from the named part ``REMUS 100
+built by rpp's own ``ComponentRuntimeBuilder`` from the named part ``REMUS 100
 (MSS)`` (configuration ``remus100`` of ``script_descriptions/vehicle_simulation.json``,
 through the ``VehicleSimulation`` of ``scripts/vehicles/vehicle_simulation.py``),
 not assembled by ``vehicle_contract`` from the frozen parameter file as

@@ -37,7 +37,7 @@ replacement.
 
 ## Verified
 
-* The part builds through rpp's `ComponentContextBuilder` and runs in `scripts/vehicles/vehicle_simulation.py`
+* The part builds through rpp's `ComponentRuntimeBuilder` and runs in `scripts/vehicles/vehicle_simulation.py`
   (configuration `npsauv`).
 * Its dynamics at 50 random states and wrenches equal those of the hull-only vehicle built by the frozen-data test
   (`tests/vehicle_models/test_derivative_auv.py`, `_build_hull`) with maximum difference 0.0.

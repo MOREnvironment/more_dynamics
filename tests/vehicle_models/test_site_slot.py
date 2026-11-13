@@ -2,7 +2,7 @@
 component, ``Site``, in the slot of every vehicle (no vehicle declares them), private to a vehicle by default and
 linked into several vehicles by a scenario that puts them in the same water.
 
-The linking is rpp's one sharing mechanism: ``ComponentContextBuilder.resolve_component`` redirects a linked
+The linking is rpp's one sharing mechanism: ``ComponentRuntimeBuilder.resolve_component`` redirects a linked
 subcomponent record to the original component's own folder
 (``rpp_py/context_builder.py`` 190-206, ``rpp_py/data_manager.py`` 123-127), so every parent that links the
 component reads the same ``params/parameters.py``. The scenario tree is written here in a temporary folder in the
@@ -98,17 +98,16 @@ def _scenario(tmp_path, site_id, vehicles):
 
 def _build(tmp_path, description_path):
     try:
-        from rpp_py.context_builder import ComponentContextBuilder
+        from rpp_py.context_builder import ComponentRuntimeBuilder
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
     except Exception as exc:  # pragma: no cover - environment without rpp
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
     vc.plugins()
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(tmp_path))
-    context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
+    runtime = ComponentRuntimeBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description_path), configuration="scenario")
-    context.configure()
-    return context.get_component("vessels")
+    return vc.vessels_of(runtime)
 
 
 def _site_values(vessel):
@@ -147,9 +146,9 @@ def test_the_site_gives_its_three_quantities_in_both_forms():
     for form, values in (("given", {"gravity": 9.5, "water_density": 1000.0, "kinematic_viscosity": 1.1e-06}),
                          ("latitude", {"latitude": 0.0, "water_density": 1000.0, "kinematic_viscosity": 1.1e-06})):
         site = vc.child((p.Site, {"site_form": form, **values}))
-        site.configure()
+        vc.configure(site)
         from more_common.casadi_graph import RppCasadiGraph
-        graph = RppCasadiGraph(site.get_instance().graph())
+        graph = RppCasadiGraph(vc.instance_of(site).graph())
         assert [d.name for d in graph.payload.outputDescription] == ["water_density", "gravity", "kinematic_viscosity"]
         out = np.asarray(graph.output(np.zeros(0), np.zeros(0))).ravel()
         assert out[0] == 1000.0 and out[2] == 1.1e-06
@@ -159,14 +158,14 @@ def test_the_site_gives_its_three_quantities_in_both_forms():
 def test_an_unknown_site_form_is_refused_naming_the_choices():
     p = vc.plugins()
     with vc.refusing(p.CompositionError, match="site_form must be one of"):
-        vc.child((p.Site, {"site_form": "geodetic"})).configure()
+        vc.configure(vc.child((p.Site, {"site_form": "geodetic"})))
 
 
 def test_the_committed_shared_site_scenario_links_one_site_into_both_boats():
     """``vehicle_simulation.json`` configuration ``shared_site``: two boats of the Otter's parameters link the one
     ``Scenario site``; each builds to the frozen Otter vehicle, and their site is the one component's."""
     try:
-        from rpp_py.context_builder import ComponentContextBuilder
+        from rpp_py.context_builder import ComponentRuntimeBuilder
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
     except Exception as exc:  # pragma: no cover - environment without rpp
@@ -174,10 +173,9 @@ def test_the_committed_shared_site_scenario_links_one_site_into_both_boats():
     vc.plugins()
     description = LIBRARY / ".rppws" / "script_descriptions" / "vehicle_simulation.json"
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
-    context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
+    runtime = ComponentRuntimeBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description), configuration="shared_site")
-    context.configure()
-    boats = context.get_component("vessels")
+    boats = vc.vessels_of(runtime)
     assert len(boats) == 2
     linked = [entry for entry in (json.loads(p.read_text()) for p in (LIBRARY / ".rppws" / "parts").rglob("description.json")
                                   if "LinkedComponentId" in p.read_text())

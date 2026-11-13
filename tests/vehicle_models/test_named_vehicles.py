@@ -1,5 +1,5 @@
 """The named vehicles of the library's own ``.rppws`` (REMUS 100 (published reference), Otter
-(MSS) and Grethe), built by rpp's own ``ComponentContextBuilder`` from
+(MSS) and Grethe), built by rpp's own ``ComponentRuntimeBuilder`` from
 ``.rppws/script_descriptions/vehicle_simulation.json``. REMUS 100 (published reference) and
 Otter (MSS) equal the plugins' declared defaults, whose gates are in
 ``test_spheroid_auv.py`` and ``test_catamaran.py``; Grethe's own physics gates
@@ -35,13 +35,13 @@ def _build(configuration):
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
         data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
-        from rpp_py.context_builder import ComponentContextBuilder
-        context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
+        from rpp_py.context_builder import ComponentRuntimeBuilder
+        runtime = ComponentRuntimeBuilder(data_manager=data_manager).build_script_from_description_path(
             str(DESCRIPTION), configuration=configuration)
-        context.configure()
+        vessels = vc.vessels_of(runtime)
     except Exception as exc:  # more_dynamics is not registered here
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
-    return context.get_component("vessels")[0]
+    return vessels[0]
 
 
 def _states(n, seed):

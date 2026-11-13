@@ -20,7 +20,7 @@ options E-101/A-64 Section 3.3 name — not yet built, so these fail today,
 naming the missing option or parameter (U8b's work list); (5) sanity bands
 and the validity flag (question 1); (6) the 2026 trim check (labelled,
 skipped); (7) a named, test-only ``.rppws`` part "Grethe" built through rpp's
-own ``ComponentContextBuilder``.
+own ``ComponentRuntimeBuilder``.
 
 No library, model or plugin file is changed by this job (U8b builds them);
 no August data (safeguard rule 20).
@@ -486,17 +486,17 @@ def _named_grethe_part(tmp_path, library_root, *, vehicle_params, hydrostatics_p
 
 def _build_named_part(tmp_path, description_path):
     try:
-        from rpp_py.context_builder import ComponentContextBuilder
+        from rpp_py.context_builder import ComponentRuntimeBuilder
         from rpp_py.data_manager import DataManager
         from rpp_plugin_registrator.library_manager import LibraryManager
     except Exception as exc:  # pragma: no cover - environment without rpp
         pytest.skip(f"{vc.REGISTER_MESSAGE} ({type(exc).__name__}: {str(exc)[:80]})")
     vc.plugins()
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(tmp_path))
-    context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
+    runtime = ComponentRuntimeBuilder(data_manager=data_manager).build_script_from_description_path(
         str(description_path), configuration="grethe")
-    context.configure()
-    return context.get_component("vessels")[0]
+    vessels = vc.vessels_of(runtime)
+    return vessels[0]
 
 
 def test_named_part_grethe_builds_with_todays_valid_options(tmp_path):

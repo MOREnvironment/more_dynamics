@@ -242,16 +242,15 @@ def _assert_matches(vessel, part, case, fraction=None):
 
 def _workspace_vessel(configuration):
     vc.plugins()
-    from rpp_py.context_builder import ComponentContextBuilder
+    from rpp_py.context_builder import ComponentRuntimeBuilder
     from rpp_py.data_manager import DataManager
     from rpp_plugin_registrator.library_manager import LibraryManager
     if configuration not in json.loads(DESCRIPTION.read_text())["Configurations"]:
         pytest.fail(f"vehicle_simulation.json has no configuration {configuration!r}")
     data_manager = DataManager(library_manager=LibraryManager(), workspace_path=str(LIBRARY))
-    context = ComponentContextBuilder(data_manager=data_manager).build_script_from_description_path(
+    runtime = ComponentRuntimeBuilder(data_manager=data_manager).build_script_from_description_path(
         str(DESCRIPTION), configuration=configuration)
-    context.configure()
-    return context.get_component("vessels")[0]
+    return vc.vessels_of(runtime)[0]
 
 
 def _part_folder(name):

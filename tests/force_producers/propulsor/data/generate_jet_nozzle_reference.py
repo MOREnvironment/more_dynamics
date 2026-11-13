@@ -56,8 +56,8 @@ def main():
     for name, numbers in sets.items():
         params = {HIS_NAMES.get(k, k): v for k, v in numbers.items()}
         context = vc.context_of(JetNozzle, params)
-        context.configure()
-        graph = RppCasadiGraph(context.get_instance().graph())
+        vc.configure(context)
+        graph = RppCasadiGraph(vc.instance_of(context).graph())
         low, high = numbers["min_angle"], numbers["max_angle"]
         states = [[0.0, 0.0], [1.0, high], [-1.0, low]]
         inputs = [[0.0, 0.0], [1.0, 1.0], [-1.0, -1.0], [1.0, -1.0], [-1.0, 1.0]]

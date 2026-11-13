@@ -8,6 +8,7 @@ from rpp_py.data_manager import DataManager
 _DATA_MANAGER = DataManager()
 
 from rpp_py.context import ComponentContext
+from rpp_py.runtime import ComponentRuntime
 from rpp_py.parameter_handler import ParameterHandler
 from more_common.casadi_graph import RppCasadiGraph
 from more_simulation.simulation import Simulation
@@ -60,7 +61,7 @@ def test_jet_nozzle():
     params.params["location"] = [-1.0, 0.05, 0.1]
     params.params["trim_angle"] = 0.05
     context = ComponentContext(instance=jet_nozzle, params=params)
-    context.configure()
+    ComponentRuntime(context).configure()
 
     graph = RppCasadiGraph(jet_nozzle.graph())
 
