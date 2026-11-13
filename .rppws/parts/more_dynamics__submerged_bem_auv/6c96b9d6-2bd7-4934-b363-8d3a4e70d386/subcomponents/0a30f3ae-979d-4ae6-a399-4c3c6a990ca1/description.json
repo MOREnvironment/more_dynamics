@@ -1,0 +1,17 @@
+{
+    "Id": "0a30f3ae-979d-4ae6-a399-4c3c6a990ca1",
+    "Name": "Marie hydrostatics",
+    "PluginType": "more_dynamics::HydrostaticsModel",
+    "PluginName": "more_dynamics::SubmergedRestoring",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SubmergedBemAuv",
+        "SlotName": "hydrostatics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

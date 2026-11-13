@@ -1,0 +1,10 @@
+{
+    "Id": "e6af2575-ec58-422f-b85e-21fb3e225998",
+    "Name": "Marie propulsor",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Propulsor",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

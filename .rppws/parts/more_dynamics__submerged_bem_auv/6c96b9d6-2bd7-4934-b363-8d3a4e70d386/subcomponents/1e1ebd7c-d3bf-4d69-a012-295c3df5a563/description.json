@@ -1,0 +1,17 @@
+{
+    "Id": "1e1ebd7c-d3bf-4d69-a012-295c3df5a563",
+    "Name": "Marie hull loads",
+    "PluginType": "more_dynamics::HydrodynamicsModel",
+    "PluginName": "more_dynamics::BemHullLoads",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": {
+        "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SubmergedBemAuv",
+        "SlotName": "hydrodynamics",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}

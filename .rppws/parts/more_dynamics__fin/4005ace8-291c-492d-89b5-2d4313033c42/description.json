@@ -1,0 +1,10 @@
+{
+    "Id": "4005ace8-291c-492d-89b5-2d4313033c42",
+    "Name": "Marie rudder fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
+    "ParentComponentInfo": null
+}

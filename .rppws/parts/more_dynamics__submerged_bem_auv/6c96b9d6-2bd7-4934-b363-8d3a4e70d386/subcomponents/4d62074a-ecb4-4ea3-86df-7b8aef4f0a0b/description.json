@@ -1,0 +1,14 @@
+{
+    "Id": "4d62074a-ecb4-4ea3-86df-7b8aef4f0a0b",
+    "Name": "Stern plane fin 2",
+    "LinkedComponentId": "23cadc2a-6f6a-4140-838d-105b85649d6f",
+    "LinkedComponentWorkspace": "more_dynamics",
+    "ParentComponentInfo": {
+        "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
+        "PluginType": "more_dynamics::VehicleModel3D",
+        "PluginName": "more_dynamics::SubmergedBemAuv",
+        "SlotName": "actuators",
+        "Library": "more_dynamics",
+        "IsLinked": false
+    }
+}
