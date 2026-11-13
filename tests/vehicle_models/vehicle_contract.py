@@ -33,12 +33,18 @@ REGISTER_MESSAGE = ("rpp's generated plugin types for more_dynamics are not avai
 @contextmanager
 def refusing(expected, match=None):
     """A plugin's refusal as the lifecycle reports it: ``configure(context)`` raises ``LifecycleError`` carrying the
-    refusal's text, and the plugin's own exception is its cause; ``expected`` and ``match`` are checked on the cause."""
+    refusal's text. The refusal of the configured plugin itself has its own exception as the cause, and ``expected``
+    and ``match`` are checked on the cause. The refusal of a child comes up as the failed result's text only, with no
+    cause: ``match`` is then checked on that text, and the exception type is not carried by the runtime."""
     from rpp_py.lifecycle import LifecycleError
     holder = SimpleNamespace(value=None)
     with pytest.raises(LifecycleError) as caught:
         yield holder
     cause = holder.value = caught.value.__cause__
+    if cause is None:
+        if match is not None:
+            assert re.search(match, str(caught.value)), (match, str(caught.value))
+        return
     assert isinstance(cause, expected), (type(cause), str(caught.value))
     if match is not None:
         assert re.search(match, str(cause)), (match, str(cause))
