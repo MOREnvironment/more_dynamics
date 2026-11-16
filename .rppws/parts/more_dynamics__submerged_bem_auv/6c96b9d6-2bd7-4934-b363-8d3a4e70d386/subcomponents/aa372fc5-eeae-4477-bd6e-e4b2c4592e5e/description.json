@@ -1,8 +1,11 @@
 {
-    "Id": "19bed29c-05d8-4002-9395-c8c8cfbb686d",
-    "Name": "Rudder fin 2",
-    "LinkedComponentId": "4005ace8-291c-492d-89b5-2d4313033c42",
-    "LinkedComponentWorkspace": "more_dynamics",
+    "Id": "aa372fc5-eeae-4477-bd6e-e4b2c4592e5e",
+    "Name": "Keel fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
     "ParentComponentInfo": {
         "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
         "PluginType": "more_dynamics::VehicleModel3D",

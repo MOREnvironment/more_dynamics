@@ -1,7 +1,7 @@
 {
-    "Id": "4d62074a-ecb4-4ea3-86df-7b8aef4f0a0b",
-    "Name": "Stern plane fin 2",
-    "LinkedComponentId": "23cadc2a-6f6a-4140-838d-105b85649d6f",
+    "Id": "94301d58-7d6d-45f2-a802-40ddba02c88b",
+    "Name": "Propulsor",
+    "LinkedComponentId": "e6af2575-ec58-422f-b85e-21fb3e225998",
     "LinkedComponentWorkspace": "more_dynamics",
     "ParentComponentInfo": {
         "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",

@@ -1,0 +1,20 @@
+# The values the four fins of Marie share, read by the params/parameters.py of Top fin, Keel fin, Starboard fin and Port fin.
+# Every value is MGM's LAUV_Marie: more_generic_models config/vehicles/LAUV_Marie/actuators.yaml (key: line), the same value for
+# all four fins in the per-fin lists there (MGM @ e86985cd). Per-fin values (fin_position, lift_axis) are in each fin's own
+# parameters.py. Changing a value here changes all four fins.
+chord_axis: [1.0, 0.0, 0.0]        # MGM lifting_fins.py:76: chord = BODY x
+fin_area: 0.0065                   # m^2, MGM actuators.yaml:47 (fin_area, every entry)
+fin_span: 0.0875                   # m, MGM actuators.yaml:48 (fin_span)
+aspect_ratio_factor: 2.0           # MGM actuators.yaml:49 (placeholder, not measured)
+section_efficiency: 0.9            # MGM actuators.yaml:50 (placeholder, not measured)
+max_deflection: 0.4363323129985824 # rad, MGM actuators.yaml:58 (delta_max 25 deg)
+inflow: rigid_point                # MGM actuators.yaml:55
+flow_angle: small_angle            # MGM actuators.yaml:56
+interference: none                 # MGM actuators.yaml:57
+lift_law: finite_wing              # MGM actuators.yaml:51
+lift_slope_form: low_aspect_ratio  # MGM actuators.yaml:52
+section: linear_section            # MGM actuators.yaml:53-54: drag_law none, stall_law none, lift only
+zero_lift_drag: 0.0                # MGM actuators.yaml:53 (drag_law none)
+servo_dynamics: none               # MGM actuators.yaml header line 20: fins follow their command (no servo state)
+servo_rate_limit: false            # MGM actuators.yaml header line 20: the rate limit sits on the command in control.yaml
+servo_angle_limit: on_command      # range delta_max, MGM actuators.yaml:58

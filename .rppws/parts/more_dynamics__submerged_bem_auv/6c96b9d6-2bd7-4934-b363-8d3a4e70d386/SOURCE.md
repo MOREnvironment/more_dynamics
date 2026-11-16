@@ -6,16 +6,30 @@ matches MGM): `more_generic_models/config/vehicles/LAUV_Marie/{plant,actuators}.
 `develop` e86985cd (read only). The table below gives each parameter, its value and the MGM file and line; a script read the
 saved part with rpp's own parameter loader and asserted each row equal to the MGM value (89 rows, all equal).
 
-Made with the orchestrator's `rpp ws component ...` commands (create, `subcomponent create`, `subcomponent assign` for the links,
-`parameter set`) in a registered copy of the library; the links were then named as the REMUS 100 part names them ("Rudder fin 1" ...).
-Composition, as the REMUS 100 part: slots `hydrostatics` (`SubmergedRestoring`), `hydrodynamics` (`BemHullLoads`), `site`
-(`Site`) own, and `actuators` five links in order: `Marie rudder fin` twice (top and keel fin), `Marie stern plane fin` twice
-(starboard and port), `Marie propulsor`. Inputs: the current (3), four fin deflections (rad: rudder, rudder, stern plane,
-stern plane) and the shaft speed (rpm). The two fins of a pair take the same value to give MGM's two ganged commands.
+Made with the orchestrator's `rpp ws component ...` commands (`subcomponent remove`, `subcomponent create`, `subcomponent assign`) in a registered copy of the library; each fin's `params/parameters.py` was then written by hand (see below).
+Composition: slots `hydrostatics` (`SubmergedRestoring`), `hydrodynamics` (`BemHullLoads`), `site` (`Site`) own, and `actuators`
+five children in order: four **own** `Fin` components `Top fin`, `Keel fin`, `Starboard fin`, `Port fin` (MGM fin index 0, 1, 2, 3),
+then the link `Propulsor` to the saved `Marie propulsor`. Inputs: the current (3), then one command per actuator in list order
+(`fin_angle_command` x4, `drive_command`): the four fin deflections (rad) in the order top, keel, starboard, port, and the shaft
+speed (rpm). The vehicle gives each child its command by list position only (`vehicle_graph.py`, "the vehicle's inputs, in list
+order"), so the order of the fins in the slot is what sends the rudder command to top and keel (inputs 4, 5) and the stern-plane
+command to starboard and port (inputs 6, 7), as MGM's `fin_command: [0, 0, 1, 1]` (`actuators.yaml:42`) does. The caller gives
+a pair the same value to get MGM's two ganged commands.
 
-**The links are the form rpp_py #5 is about**: two links to one fin part in one slot cannot be built by the runtime builder
-until #5 is fixed. This part is not built through the builder yet; the checks below build the same plugins from this part's
-saved values by hand (`ComponentContext`, as `tests/vehicle_models/vehicle_contract.py` does).
+**No link twice** (RPP decision, Luka): a link is an immutable pointer that carries the target's parameters and plugin type, so two
+links to one component in one slot are not allowed. Each physical fin is its own component with its own `params/parameters.py`
+(its `fin_position` and `lift_axis`). The values the four fins share are in one file, `data/fins_common.yml` of this part
+(next to this file), which every fin's `parameters.py` reads with
+`Path(__file__).resolve().parents[3] / "data" / "fins_common.yml"` (file -> `params` -> fin folder -> `subcomponents` -> this part)
+and `yaml.safe_load`. `parameters.py` is a Python script on purpose. **Saving from the editor or `parameter set` rewrites a
+`parameters.py` as plain values** (`component_storage.py`, `_build_component_parameters_source`): the yml read and the comments are
+then gone and the values stay as they were; each fin's file says so in its first comment. Duplicating or re-saving a fin outside
+this part breaks the relative path. Both loaders keep `__file__`: rpp_py `ParameterHandler` (`spec_from_file_location`) and the
+orchestrator `ComponentParameterStore.load` (develop: `spec_from_file_location`; PR 18 branch: `exec` with `__file__` set), checked
+on both.
+
+The saved fin parts `Marie rudder fin` and `Marie stern plane fin` that this part used to link twice are removed (nothing else linked them).
+This part builds through `ComponentRuntimeBuilder` (checks below); no hand assembly is needed.
 
 ## Relation to `tests/vehicle_models/data/marie/marie_parameters.json` ("Marie (estimated)")
 
@@ -75,42 +89,34 @@ Long lists are summarised (count, first, last); the saved part holds them in ful
 | site | `water_density` | 1025.0 | `rho` | `globals.yaml:6` |
 | site | `kinematic_viscosity` | 1e-06 | literal `1e-6` of the cross-flow Reynolds number (no yaml key) | `dynamics/plant/matrices/hydrodynamics.py:221` |
 | site | `site_form` | "latitude" | gravity from the latitude, as MGM `resolve_globals` | `scenario.py:213-215` |
-| rudder fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 0 (`lifting_fins.py` `_position`) | `actuators.yaml:46`, `actuators.yaml:45` |
-| rudder fin | `lift_axis` | [0.0, -1.0, 0.0] | `deflection_sign * R_x(fin_roll_angle) z` of fin 0: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `actuators.yaml:44` |
-| rudder fin | `fin_area` | 0.0065 | `fin_area[0]` | `actuators.yaml:47` |
-| rudder fin | `fin_span` | 0.0875 | `fin_span[0]` | `actuators.yaml:48` |
-| rudder fin | `aspect_ratio_factor` | 2.0 | `aspect_ratio_factor[0]` | `actuators.yaml:49` |
-| rudder fin | `section_efficiency` | 0.9 | `section_efficiency[0]` | `actuators.yaml:50` |
-| rudder fin | `max_deflection` | 0.4363323129985824 | `delta_max` 25 deg (to rad) | `actuators.yaml:58` |
-| rudder fin | `inflow` | "rigid_point" | `inflow` | `actuators.yaml:55` |
-| rudder fin | `flow_angle` | "small_angle" | `flow_angle` | `actuators.yaml:56` |
-| rudder fin | `interference` | "none" | `interference` | `actuators.yaml:57` |
-| rudder fin | `lift_law` | "finite_wing" | `lift_law` | `actuators.yaml:51` |
-| rudder fin | `lift_slope_form` | "low_aspect_ratio" | `lift_slope_form` | `actuators.yaml:52` |
-| rudder fin | `section` | "linear_section" | `drag_law none`, `stall_law none`: lift only | code / header |
-| rudder fin | `zero_lift_drag` | 0.0 | `drag_law none` | code / header |
-| rudder fin | `servo_dynamics` | "none" | header `actuators.yaml:20`: "fins follow their command (no servo state)" | code / header |
-| rudder fin | `servo_rate_limit` | false | header `actuators.yaml:20`: the rate limit sits on the command in `control.yaml` | code / header |
-| rudder fin | `servo_angle_limit` | "on_command" | range `delta_max` | code / header |
-| rudder fin | `chord_axis` | [1.0, 0.0, 0.0] | `lifting_fins.py`: chord = BODY x | code / header |
-| stern plane fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 2 (`lifting_fins.py` `_position`) | `actuators.yaml:46`, `actuators.yaml:45` |
-| stern plane fin | `lift_axis` | [0.0, 0.0, -1.0] | `deflection_sign * R_x(fin_roll_angle) z` of fin 2: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `actuators.yaml:44` |
-| stern plane fin | `fin_area` | 0.0065 | `fin_area[2]` | `actuators.yaml:47` |
-| stern plane fin | `fin_span` | 0.0875 | `fin_span[2]` | `actuators.yaml:48` |
-| stern plane fin | `aspect_ratio_factor` | 2.0 | `aspect_ratio_factor[2]` | `actuators.yaml:49` |
-| stern plane fin | `section_efficiency` | 0.9 | `section_efficiency[2]` | `actuators.yaml:50` |
-| stern plane fin | `max_deflection` | 0.4363323129985824 | `delta_max` 25 deg (to rad) | `actuators.yaml:58` |
-| stern plane fin | `inflow` | "rigid_point" | `inflow` | `actuators.yaml:55` |
-| stern plane fin | `flow_angle` | "small_angle" | `flow_angle` | `actuators.yaml:56` |
-| stern plane fin | `interference` | "none" | `interference` | `actuators.yaml:57` |
-| stern plane fin | `lift_law` | "finite_wing" | `lift_law` | `actuators.yaml:51` |
-| stern plane fin | `lift_slope_form` | "low_aspect_ratio" | `lift_slope_form` | `actuators.yaml:52` |
-| stern plane fin | `section` | "linear_section" | `drag_law none`, `stall_law none`: lift only | code / header |
-| stern plane fin | `zero_lift_drag` | 0.0 | `drag_law none` | code / header |
-| stern plane fin | `servo_dynamics` | "none" | header `actuators.yaml:20`: "fins follow their command (no servo state)" | code / header |
-| stern plane fin | `servo_rate_limit` | false | header `actuators.yaml:20`: the rate limit sits on the command in `control.yaml` | code / header |
-| stern plane fin | `servo_angle_limit` | "on_command" | range `delta_max` | code / header |
-| stern plane fin | `chord_axis` | [1.0, 0.0, 0.0] | `lifting_fins.py`: chord = BODY x | code / header |
+| Top fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 0; `fin_radius` is 0.0 for every fin, a placeholder (hull diameter at the fins not measured, register item M-0679), kept 0 so the comparison with MGM stays one-to-one | `actuators.yaml:46`, `:45`, `:43`; `lifting_fins.py:92` |
+| Top fin | `lift_axis` | [0.0, -1.0, 0.0] | `deflection_sign * R_x(fin_roll_angle) z` = `(-1) (0, -sin 270 deg, cos 270 deg)` of fin 0: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `:44`; `lifting_fins.py:78`, `:179` |
+| Top fin | command input | input 4 of the vehicle (rudder command) | `fin_command[0]` = 0; list position in the slot | `actuators.yaml:42`; `lifting_fins.py:60`, `:179` |
+| Keel fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 1; `fin_radius` is 0.0 for every fin, a placeholder (hull diameter at the fins not measured, register item M-0679), kept 0 so the comparison with MGM stays one-to-one | `actuators.yaml:46`, `:45`, `:43`; `lifting_fins.py:92` |
+| Keel fin | `lift_axis` | [0.0, -1.0, 0.0] | `deflection_sign * R_x(fin_roll_angle) z` = `(+1) (0, -sin 90 deg, cos 90 deg)` of fin 1: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `:44`; `lifting_fins.py:78`, `:179` |
+| Keel fin | command input | input 5 of the vehicle (rudder command) | `fin_command[1]` = 0; list position in the slot | `actuators.yaml:42`; `lifting_fins.py:60`, `:179` |
+| Starboard fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 2; `fin_radius` is 0.0 for every fin, a placeholder (hull diameter at the fins not measured, register item M-0679), kept 0 so the comparison with MGM stays one-to-one | `actuators.yaml:46`, `:45`, `:43`; `lifting_fins.py:92` |
+| Starboard fin | `lift_axis` | [0.0, 0.0, -1.0] | `deflection_sign * R_x(fin_roll_angle) z` = `(-1) (0, -sin 0 deg, cos 0 deg)` of fin 2: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `:44`; `lifting_fins.py:78`, `:179` |
+| Starboard fin | command input | input 6 of the vehicle (stern plane command) | `fin_command[2]` = 1; list position in the slot | `actuators.yaml:42`; `lifting_fins.py:60`, `:179` |
+| Port fin | `fin_position` | [-0.83, 0.0, 0.0] | `(fin_x, fin_radius cos(roll), fin_radius sin(roll))` of fin 3; `fin_radius` is 0.0 for every fin, a placeholder (hull diameter at the fins not measured, register item M-0679), kept 0 so the comparison with MGM stays one-to-one | `actuators.yaml:46`, `:45`, `:43`; `lifting_fins.py:92` |
+| Port fin | `lift_axis` | [0.0, 0.0, -1.0] | `deflection_sign * R_x(fin_roll_angle) z` = `(+1) (0, -sin 180 deg, cos 180 deg)` of fin 3: MGM has the sign in the linkage, RPP in the axis | `actuators.yaml:43`, `:44`; `lifting_fins.py:78`, `:179` |
+| Port fin | command input | input 7 of the vehicle (stern plane command) | `fin_command[3]` = 1; list position in the slot | `actuators.yaml:42`; `lifting_fins.py:60`, `:179` |
+| all four fins (`data/fins_common.yml`) | `fin_area` | 0.0065 | `fin_area` (every entry) | `actuators.yaml:47` |
+| all four fins (`data/fins_common.yml`) | `fin_span` | 0.0875 | `fin_span` | `actuators.yaml:48` |
+| all four fins (`data/fins_common.yml`) | `aspect_ratio_factor` | 2.0 | `aspect_ratio_factor` | `actuators.yaml:49` |
+| all four fins (`data/fins_common.yml`) | `section_efficiency` | 0.9 | `section_efficiency` | `actuators.yaml:50` |
+| all four fins (`data/fins_common.yml`) | `max_deflection` | 0.4363323129985824 | `delta_max` 25 deg (to rad) | `actuators.yaml:58` |
+| all four fins (`data/fins_common.yml`) | `inflow` | "rigid_point" | `inflow` | `actuators.yaml:55` |
+| all four fins (`data/fins_common.yml`) | `flow_angle` | "small_angle" | `flow_angle` | `actuators.yaml:56` |
+| all four fins (`data/fins_common.yml`) | `interference` | "none" | `interference` | `actuators.yaml:57` |
+| all four fins (`data/fins_common.yml`) | `lift_law` | "finite_wing" | `lift_law` | `actuators.yaml:51` |
+| all four fins (`data/fins_common.yml`) | `lift_slope_form` | "low_aspect_ratio" | `lift_slope_form` | `actuators.yaml:52` |
+| all four fins (`data/fins_common.yml`) | `section` | "linear_section" | `drag_law none`, `stall_law none`: lift only | `actuators.yaml:53-54` |
+| all four fins (`data/fins_common.yml`) | `zero_lift_drag` | 0.0 | `drag_law none` | `actuators.yaml:53` |
+| all four fins (`data/fins_common.yml`) | `servo_dynamics` | "none" | header: "fins follow their command (no servo state)" | `actuators.yaml:20` |
+| all four fins (`data/fins_common.yml`) | `servo_rate_limit` | false | header: the rate limit sits on the command in `control.yaml` | `actuators.yaml:20` |
+| all four fins (`data/fins_common.yml`) | `servo_angle_limit` | "on_command" | range `delta_max` | `actuators.yaml:58` |
+| all four fins (`data/fins_common.yml`) | `chord_axis` | [1.0, 0.0, 0.0] | chord = BODY x | `lifting_fins.py:76` |
 | propulsor | `power_law_coefficient` | 0.00842703 | `k_thrust` | `actuators.yaml:65` |
 | propulsor | `power_law_exponent` | 2.2633 | `p_thrust` | `actuators.yaml:66` |
 | propulsor | `astern_thrust_ratio` | 1.0 | `astern_ratio` | `actuators.yaml:67` |
@@ -137,7 +143,7 @@ with three placeholders (`aspect_ratio_factor`, `section_efficiency`, `fin_radiu
 
 Hull level at 20 m depth, fins at zero, still water; the speed at which the surge acceleration of the full 6-DOF dynamics is
 zero (brentq), at the shaft speeds below. RPP: `SubmergedBemAuv` + `SubmergedRestoring` + `BemHullLoads` + `Site` + 4 `Fin` +
-`Propulsor` built by hand from this part's saved values. MGM: `World` of the scenario `marie_line_following`, `SubmergedBemPlant` +
+`Propulsor`, now built from this part's folder by `ComponentRuntimeBuilder` (four own fins, `fins_common.yml` read). MGM: `World` of the scenario `marie_line_following`, `SubmergedBemPlant` +
 `LiftingFins` + `PowerLawPropeller` (`vehicles/LAUV_Marie`), the same method as MGM's `test_power_law_propeller.py`.
 
 | Hull | rpm | RPP u (m/s) | MGM u (m/s) | difference |
@@ -151,6 +157,13 @@ zero (brentq), at the shaft speeds below. RPP: `SubmergedBemAuv` + `SubmergedRes
 (+0.1 rad, 1.5 m/s: Y -4.805332457512563 N, N 3.988425939735427 N m), the stern-plane pair (Z -4.805332457512563 N, M
 -3.988425939735427 N m) and the propulsor at 2000 rpm (X 23.572519528271435 N, K -0.06722882569463014 N m).
 
+Re-run after the split into four own fins (part built by the runtime builder, 2026-11-16): the four fin wrenches summed equal MGM's
+`LiftingFins` wrench in 18 cases (three velocities including sway, heave and rates, six command pairs of both signs), worst difference
+8.9e-16 (largest entry 14.4); each fin alone: a rudder command gives a force only on top and keel, a stern-plane command only on starboard
+and port, each half of MGM's pair value. Steady surge speed: neutral buoyancy 1118 rpm 1.287172975584607, 1500 rpm 1.7973314059424694
+(MGM 1.287172975584607 and 1.7973314059424663, difference 3e-15); as built 1.287179528395304 and 1.7973360834487067 (MGM 1.287179528395304 and 1.7973360834487038, 3e-15). The MGM speeds are the values recorded above, not
+recomputed in this re-run; the MGM fin wrenches were recomputed.
+
 ## Gaps: what MGM has for Marie that the plugin types here cannot represent (nothing worked around)
 
 * **Hull lift stall** (`plant.yaml:37-39`, `lift_stall_law` smoothstep, angle and width 20 deg): `BemHullLoads` has no stall
@@ -159,8 +172,8 @@ zero (brentq), at the shaft speeds below. RPP: `SubmergedBemAuv` + `SubmergedRes
 * **Seabed contact** (`plant.yaml:40` `contact_station_count` 25, bed constants in the environment files): no counterpart in
   `SubmergedBemAuv` or the force producers.
 * **Ganged fin commands**: MGM takes two commands (rudder, stern plane) for four fins, with the linkage sign in
-  `deflection_sign`; the RPP part takes four deflections, the sign is folded into `lift_axis`, and the caller must give a pair the
-  same value. Same as the REMUS 100 part.
+  `deflection_sign`; the RPP part takes four deflections (one per own fin component), the sign is folded into each fin's `lift_axis`, and the caller must
+  give a pair the same value.
 * **Fin command-rate limit** 300 deg/s: in MGM it acts on the command in `control.yaml` (`delta_r_dot_max`, `delta_s_dot_max`);
   the RPP fins have none (`servo_rate_limit` false), as in MGM's actuator.
 * **Shaft-rate channel** (`actuators.yaml:63`, `propeller_rate`, read by the `PropellerRateSpeed` sensor): the RPP `Propulsor`
@@ -174,10 +187,9 @@ zero (brentq), at the shaft speeds below. RPP: `SubmergedBemAuv` + `SubmergedRes
 
 ## Findings about the tooling (not worked around here)
 
-* The 0.2 orchestrator drops a link assigned into an empty list slot: `create_linked_subcomponent_folder`
-  (`rpp_orchestrator/component_storage.py`) takes `parent_record.subcomponents.get(slot_name, [])` and appends to that
-  fresh list, which is never stored back, so the parent's `description.json` has no `actuators` although the link folders are
-  written. To get the well-formed layout of the REMUS part a placeholder fin was created in the slot first, the five links
-  assigned, and the placeholder removed.
-* `rpp ws component rename` refuses a linked subcomponent ("A linked subcomponent cannot be renamed"); the link names
-  "Rudder fin 1/2", "Stern plane fin 1/2", "Propulsor" were written into the link `description.json` files, as in the REMUS part.
+* `rpp ws component rename` refuses a linked subcomponent ("A linked subcomponent cannot be renamed"); the link name "Propulsor" was
+  written into the link `description.json`. The slot was emptied (`subcomponent remove` of all five links) and refilled in order, so
+  the fins come before the propulsor in the list; `subcomponent create` into the emptied list slot stored the children in the
+  parent (the earlier problem of a link assigned into an empty list slot did not occur).
+* A fin created by the orchestrator carries all plugin parameters, with empty lists for the unset ones; each fin's `parameters.py`
+  was written by hand with the same set of names as the earlier fin parts.

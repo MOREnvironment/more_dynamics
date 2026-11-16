@@ -1,8 +1,11 @@
 {
-    "Id": "0aa99f79-5978-45dc-bb31-fde6ee284d8b",
-    "Name": "Stern plane fin 1",
-    "LinkedComponentId": "23cadc2a-6f6a-4140-838d-105b85649d6f",
-    "LinkedComponentWorkspace": "more_dynamics",
+    "Id": "6a3682ab-be61-4210-b3dc-0c000d610aa8",
+    "Name": "Top fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
     "ParentComponentInfo": {
         "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
         "PluginType": "more_dynamics::VehicleModel3D",

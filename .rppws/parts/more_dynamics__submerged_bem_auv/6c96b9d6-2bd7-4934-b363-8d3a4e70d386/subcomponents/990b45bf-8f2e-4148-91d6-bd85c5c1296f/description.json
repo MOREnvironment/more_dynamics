@@ -1,8 +1,11 @@
 {
-    "Id": "067f29c3-54d8-4418-a7aa-c0158ac6bbe4",
-    "Name": "Propulsor",
-    "LinkedComponentId": "e6af2575-ec58-422f-b85e-21fb3e225998",
-    "LinkedComponentWorkspace": "more_dynamics",
+    "Id": "990b45bf-8f2e-4148-91d6-bd85c5c1296f",
+    "Name": "Starboard fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
     "ParentComponentInfo": {
         "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
         "PluginType": "more_dynamics::VehicleModel3D",

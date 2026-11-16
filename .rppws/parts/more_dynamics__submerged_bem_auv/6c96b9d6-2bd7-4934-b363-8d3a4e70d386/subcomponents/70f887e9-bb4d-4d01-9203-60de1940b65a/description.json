@@ -1,8 +1,11 @@
 {
-    "Id": "024137d7-1898-4ad0-b99b-40e4a20c742f",
-    "Name": "Rudder fin 1",
-    "LinkedComponentId": "4005ace8-291c-492d-89b5-2d4313033c42",
-    "LinkedComponentWorkspace": "more_dynamics",
+    "Id": "70f887e9-bb4d-4d01-9203-60de1940b65a",
+    "Name": "Port fin",
+    "PluginType": "more_dynamics::ForceProducer",
+    "PluginName": "more_dynamics::Fin",
+    "Library": "more_dynamics",
+    "SubcomponentSpec": {},
+    "Subcomponents": {},
     "ParentComponentInfo": {
         "Id": "6c96b9d6-2bd7-4934-b363-8d3a4e70d386",
         "PluginType": "more_dynamics::VehicleModel3D",

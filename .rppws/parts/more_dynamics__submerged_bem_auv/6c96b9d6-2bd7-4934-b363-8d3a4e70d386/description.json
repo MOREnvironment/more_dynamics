@@ -37,39 +37,39 @@
         },
         "actuators": [
             {
-                "Id": "024137d7-1898-4ad0-b99b-40e4a20c742f",
+                "Id": "6a3682ab-be61-4210-b3dc-0c000d610aa8",
                 "PluginType": "more_dynamics::ForceProducer",
                 "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": true
+                "IsLinked": false
             },
             {
-                "Id": "19bed29c-05d8-4002-9395-c8c8cfbb686d",
+                "Id": "aa372fc5-eeae-4477-bd6e-e4b2c4592e5e",
                 "PluginType": "more_dynamics::ForceProducer",
                 "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": true
+                "IsLinked": false
             },
             {
-                "Id": "0aa99f79-5978-45dc-bb31-fde6ee284d8b",
+                "Id": "990b45bf-8f2e-4148-91d6-bd85c5c1296f",
                 "PluginType": "more_dynamics::ForceProducer",
                 "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": true
+                "IsLinked": false
             },
             {
-                "Id": "4d62074a-ecb4-4ea3-86df-7b8aef4f0a0b",
+                "Id": "70f887e9-bb4d-4d01-9203-60de1940b65a",
                 "PluginType": "more_dynamics::ForceProducer",
                 "PluginName": "more_dynamics::Fin",
                 "SlotName": "actuators",
                 "Library": "more_dynamics",
-                "IsLinked": true
+                "IsLinked": false
             },
             {
-                "Id": "067f29c3-54d8-4418-a7aa-c0158ac6bbe4",
+                "Id": "94301d58-7d6d-45f2-a802-40ddba02c88b",
                 "PluginType": "more_dynamics::ForceProducer",
                 "PluginName": "more_dynamics::Propulsor",
                 "SlotName": "actuators",

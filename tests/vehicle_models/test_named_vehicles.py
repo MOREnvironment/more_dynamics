@@ -144,8 +144,9 @@ def _own_parameters(part_id):
     ``test_every_parameter_file_names_only_parameters_its_plugin_declares`` reads them)."""
     for description in RPPWS.joinpath("parts").rglob("description.json"):
         if json.loads(description.read_text()).get("Id") == part_id:
-            namespace = {}
-            exec((description.parent / "params" / "parameters.py").read_text(), namespace)
+            parameters_file = description.parent / "params" / "parameters.py"
+            namespace = {"__file__": str(parameters_file)}
+            exec(parameters_file.read_text(), namespace)
             cp = namespace["ComponentParameters"]
             return {k: getattr(cp, k) for k in vars(cp) if not k.startswith("_")}
     raise AssertionError(f"no part with id {part_id!r}")
@@ -192,8 +193,9 @@ def test_every_parameter_file_names_only_parameters_its_plugin_declares():
         if path is None or record["Library"] != "more_dynamics":
             continue  # a part of another library in Luka's tree
         cls = getattr(importlib.import_module(path[:-3].replace("/", ".")), name)
-        namespace = {}
-        exec((description.parent / "params" / "parameters.py").read_text(), namespace)
+        parameters_file = description.parent / "params" / "parameters.py"
+        namespace = {"__file__": str(parameters_file)}  # as the loaders give it: a parameters.py may read a file next to its part
+        exec(parameters_file.read_text(), namespace)
         values = {k for k in vars(namespace["ComponentParameters"]) if not k.startswith("_")}
         assert values <= {d.name for d in cls.PARAMETERS}, (name, values - {d.name for d in cls.PARAMETERS})
         checked += 1
