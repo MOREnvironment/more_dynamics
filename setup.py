@@ -12,5 +12,6 @@ setup(
         "rpp-common>=0.1.0",
         "rpp-py>=0.1.0",
         "numpy",
+        "more_transformations>=0.4.0",
     ],
 )
